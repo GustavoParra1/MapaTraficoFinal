@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎥 TEST CÁMARA - Diagnóstico</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            padding: 20px; 
+            background: #f3f4f6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #1d4ed8; }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            background: #1d4ed8;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #1e40af; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        video {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            background: #000;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #1d4ed8;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-left: 4px solid #1d4ed8;
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .error { color: #dc2626; font-weight: bold; }
+        .info { color: #3b82f6; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🎥 TEST CÁMARA - Diagnóstico Completo</h1>
+    <p>Este test verifica si tu cámara funciona correctamente para WebRTC</p>
+    
+    <button onclick="testCamera()">🔴 1. Solicitar Cámara</button>
+    <button onclick="testEnumerateDevices()">📱 2. Enumerar Dispositivos</button>
+    <button onclick="testVideoPlayback()">▶️ 3. Reproducir + Analizar Frames</button>
+    <button onclick="testConstraints()">⚙️ 4. Probar con diferentes constraints</button>
+    <button onclick="clearLog()">🗑️ Limpiar Log</button>
+</div>
+
+<video id="testVideo" autoplay muted playsinline></video>
+
+<div class="card">
+    <h3>📋 Resultados:</h3>
+    <div class="log" id="logBox"></div>
+</div>
+
+<script>
+let testStream = null;
+
+function log(message, type = 'info') {
+    const logBox = document.getElementById('logBox');
+    const timestamp = new Date().toLocaleTimeString();
+    const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+    logBox.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+    logBox.scrollTop = logBox.scrollHeight;
+    console.log(message);
+}
+
+function clearLog() {
+    document.getElementById('logBox').innerHTML = '';
+}
+
+async function testEnumerateDevices() {
+    log('=== ENUMERANDO DISPOSITIVOS ===', 'info');
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        log(`Total dispositivos: ${devices.length}`, 'info');
+        
+        const cameras = devices.filter(d => d.kind === 'videoinput');
+        log(`Cámaras encontradas: ${cameras.length}`, cameras.length > 0 ? 'success' : 'error');
+        
+        cameras.forEach((cam, idx) => {
+            log(`  [${idx}] ${cam.label || 'Cámara desconocida'} (${cam.deviceId.substring(0, 10)}...)`, 'info');
+        });
+        
+        const mics = devices.filter(d => d.kind === 'audioinput');
+        log(`Micrófonos: ${mics.length}`, 'info');
+        
+    } catch (e) {
+        log(`❌ Error: ${e.message}`, 'error');
+    }
+}
+
+async function testCamera() {
+    log('=== SOLICITANDO ACCESO A CÁMARA ===', 'info');
+    try {
+        log('Pidiendo: video: true, audio: true', 'info');
+        testStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        log('✅ Stream obtenido exitosamente', 'success');
+        
+        const videoTracks = testStream.getVideoTracks();
+        const audioTracks = testStream.getAudioTracks();
+        log(`✅ VideoTracks: ${videoTracks.length}`, 'success');
+        log(`✅ AudioTracks: ${audioTracks.length}`, 'success');
+        
+        if (videoTracks.length > 0) {
+            const track = videoTracks[0];
+            log(`  Video track ID: ${track.id}`, 'info');
+            log(`  Enabled: ${track.enabled}`, 'info');
+            log(`  ReadyState: ${track.readyState}`, track.readyState === 'live' ? 'success' : 'error');
+            
+            const settings = track.getSettings();
+            log(`  Settings:`, 'info');
+            log(`    Width: ${settings.width || 'N/A'}`, 'info');
+            log(`    Height: ${settings.height || 'N/A'}`, 'info');
+            log(`    FrameRate: ${settings.frameRate || 'N/A'}`, 'info');
+            log(`    AspectRatio: ${settings.aspectRatio || 'N/A'}`, 'info');
+        }
+        
+    } catch (e) {
+        log(`❌ Error: ${e.name} - ${e.message}`, 'error');
+    }
+}
+
+async function testVideoPlayback() {
+    if (!testStream) {
+        log('❌ Primero solicita la cámara', 'error');
+        return;
+    }
+    
+    log('=== REPRODUCIENDO VIDEO ===', 'info');
+    const video = document.getElementById('testVideo');
+    video.srcObject = testStream;
+    
+    try {
+        await video.play();
+        log('✅ Video reproduciendo', 'success');
+        
+        // Monitorear frames
+        let frameCount = 0;
+        let lastFrameTime = Date.now();
+        
+        const monitorId = setInterval(() => {
+            const now = Date.now();
+            const elapsed = (now - lastFrameTime) / 1000;
+            
+            log(`📹 Video state - paused: ${video.paused}, currentTime: ${video.currentTime.toFixed(2)}s, readyState: ${video.readyState}`, 'info');
+            log(`📹 Canvas test: ${video.offsetWidth}x${video.offsetHeight}px`, 'info');
+            
+            // Intentar dibujar en canvas para ver si hay frames
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                const imgData = ctx.getImageData(0, 0, 1, 1);
+                const pixelData = imgData.data;
+                log(`  Pixel muestra: R=${pixelData[0]}, G=${pixelData[1]}, B=${pixelData[2]}, A=${pixelData[3]}`, 'info');
+            } catch (e) {
+                log(`  Canvas test error: ${e.message}`, 'error');
+            }
+            
+        }, 1000);
+        
+        setTimeout(() => {
+            clearInterval(monitorId);
+            log('✅ Monitoreo completado', 'success');
+        }, 5000);
+        
+    } catch (e) {
+        log(`❌ play() error: ${e.message}`, 'error');
+    }
+}
+
+async function testConstraints() {
+    log('=== PROBANDO DIFERENTES CONSTRAINTS ===', 'info');
+    
+    const testCases = [
+        { name: 'Ultra HD (4K)', constraints: { video: { width: { ideal: 3840 }, height: { ideal: 2160 } } } },
+        { name: 'Full HD (1080p)', constraints: { video: { width: { ideal: 1920 }, height: { ideal: 1080 } } } },
+        { name: 'HD (720p)', constraints: { video: { width: { ideal: 1280 }, height: { ideal: 720 } } } },
+        { name: 'VGA (480p)', constraints: { video: { width: { ideal: 640 }, height: { ideal: 480 } } } },
+        { name: 'Sin constraints', constraints: { video: true } },
+    ];
+    
+    for (const testCase of testCases) {
+        try {
+            log(`Intentando: ${testCase.name}...`, 'info');
+            const stream = await navigator.mediaDevices.getUserMedia(testCase.constraints);
+            const track = stream.getVideoTracks()[0];
+            const settings = track.getSettings();
+            log(`  ✅ ${testCase.name}: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`, 'success');
+            
+            // Detener tracks
+            stream.getTracks().forEach(t => t.stop());
+        } catch (e) {
+            log(`  ❌ ${testCase.name}: ${e.message}`, 'error');
+        }
+    }
+}
+
+</script>
+
+</body>
+</html>

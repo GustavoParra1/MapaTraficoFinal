@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visor Cámara Patrulla</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: black;
+  }
+
+  #playBtn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background: #16a34a;
+    color: white;
+  }
+</style>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+
+<body>
+
+<video
+  id="remoteVideo"
+  playsinline
+  muted
+></video>
+
+<button id="playBtn">🔊 Activar audio</button>
+
+<script>
+// ============================
+// 🔥 FIREBASE
+// ============================
+firebase.initializeApp({
+  apiKey: "AIzaSyA3ylZLA1OHZpa5_Y0-6F02oBqZU0bIO6M",
+  authDomain: "seguridad-mdp.firebaseapp.com",
+  databaseURL: "https://seguridad-mdp-default-rtdb.firebaseio.com",
+  projectId: "seguridad-mdp"
+});
+
+const db = firebase.database();
+
+// ============================
+// 📡 WEBRTC (VIEWER)
+// ============================
+const params = new URLSearchParams(location.search);
+const movil = params.get("id");
+
+if (!movil) {
+  alert("Falta ID de patrulla");
+  throw new Error("ID no recibido");
+}
+
+// Limpieza automática al desconectar
+db.ref(`webrtc/${movil}/answer`).onDisconnect().remove();
+db.ref(`webrtc/${movil}/ice_com`).onDisconnect().remove();
+
+const pc = new RTCPeerConnection({
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:numb.viagenie.ca",
+      credential: "webrtc@live.com",
+      username: "webrtc@live.com"
+    }
+  ]
+});
+
+pc.addTransceiver("video", { direction: "recvonly" });
+pc.addTransceiver("audio", { direction: "recvonly" });
+
+const video = document.getElementById("remoteVideo");
+const playBtn = document.getElementById("playBtn");
+
+window.iceCandidateBuffer = [];  // 🔥 ESTA LÍNEA TIENE QUE ESTAR ACÁ 🔥
+
+
+
+// ============================
+// 🔊 BOTÓN AUDIO (GESTO)
+// ============================
+playBtn.onclick = () => {
+  video.muted = false;
+  playBtn.style.display = "none";
+  console.log("🔊 Audio activado por el usuario");
+};
+// ============================
+// 🧊 ICE → patrulla
+// ============================
+pc.onicecandidate = e => {
+  if (e.candidate) {
+    db.ref(`webrtc/${movil}/ice_com`).push(e.candidate);
+  }
+};
+
+// ============================
+// 🎥 STREAM REMOTO
+// ============================
+let videoStarted = false;
+
+pc.ontrack = e => {
+  const stream = e.streams[0];
+  console.log(`[WebRTC] Evento 'ontrack' disparado. Stream ID: ${stream.id}`);
+
+  if (stream) {
+      const tracks = stream.getTracks();
+      console.log(`[WebRTC] El stream tiene ${tracks.length} track(s).`);
+      tracks.forEach(track => {
+          console.log(`[WebRTC] Track recibido - ID: ${track.id}, Kind: ${track.kind}, ReadyState: ${track.readyState}, Enabled: ${track.enabled}`);
+      });
+  }
+
+  if (video.srcObject !== stream) {
+    console.log("[DEBUG] El stream es nuevo. Entrando al bloque para asignar srcObject y llamar a play().");
+    video.srcObject = stream;
+
+    if (!videoStarted) {
+      videoStarted = true;
+      video.volume = 0; // Explicitly set volume to 0, sometimes helps with autoplay
+      
+      const playPromise = video.play();
+      console.log("[DEBUG] playPromise returned:", playPromise);
+      if (playPromise !== undefined) {
+          playPromise.then(() => {
+              console.log("%c[DEBUG] playPromise resolved: Video playback initiated.", "color: blue; font-weight: bold;");
+          }).catch((err) => {
+              console.error("Error al intentar reproducir el video (inmediato):", err);
+          });
+      }
+      
+      video.onloadedmetadata = () => {
+        console.log("[Video Element] Metadatos cargados.");
+      };
+      video.onplaying = () => {
+        console.log("%c[Video Element] El video ha comenzado a reproducirse.", "color: green; font-weight: bold;");
+      };
+      video.onerror = () => {
+        console.error("[Video Element] Ocurrió un error en el elemento de video.", video.error);
+      };
+    }
+  } else {
+    console.log("[DEBUG] El stream ya está asignado. Ignorando evento 'ontrack' duplicado.");
+  }
+};
+
+// ============================
+// 🔁 SIGNALING
+// ============================
+db.ref(`webrtc/${movil}/offer`).on("value", async snap => {
+  const offer = snap.val();
+  if (!offer || pc.currentRemoteDescription) return;
+
+  console.log("📥 Offer recibida");
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  iceCandidateBuffer.forEach(c =>
+    pc.addIceCandidate(new RTCIceCandidate(c))
+  );
+  iceCandidateBuffer = [];
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await db.ref(`webrtc/${movil}/answer`).set(answer);
+  console.log("📤 Answer enviada");
+});
+
+// ============================
+// 🧊 ICE desde patrulla
+// ============================
+db.ref(`webrtc/${movil}/ice_patru`)
+  .on("child_added", snap => {
+    const c = snap.val();
+    if (!c) return;
+
+    if (pc.remoteDescription) {
+      pc.addIceCandidate(new RTCIceCandidate(c));
+    } else {
+      iceCandidateBuffer.push(c);
+    }
+  });
+</script>
+
+</body>
+</html>

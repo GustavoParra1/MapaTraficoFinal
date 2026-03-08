@@ -1,0 +1,170 @@
+<!-- MODAL CREAR NUEVO EVENTO -->
+<div id="new-event-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000;">
+  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 8px; max-height: 80vh; overflow-y: auto;">
+    <h3>📹 Nuevo Evento</h3>
+    
+    <div style="margin-bottom: 12px;">
+      <label>Número de Cámara:</label>
+      <input type="text" id="new-event-camera" placeholder="Ej: 12" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+      <label>Lugar del evento:</label>
+      <input type="text" id="new-event-location" placeholder="Ej: Mario Bravo y Talcahuano" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+      <label>Hora de notificación:</label>
+      <input type="time" id="new-event-notification-time" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+      <label>¿Cómo se enteró?</label>
+      <select id="new-event-notification-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="">Seleccionar...</option>
+        <option value="911">911</option>
+        <option value="operador">Operador de sala</option>
+        <option value="patrulla">Patrulla</option>
+        <option value="multiagencia">Multiagencia</option>
+      </select>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+      <button id="create-event-btn" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Crear Evento</button>
+      <button id="cancel-event-btn" style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENEDOR DE EVENTOS -->
+<div id="events-container" style="display: none; position: fixed; top: 80px; right: 20px; width: 400px; height: calc(100vh - 100px); background: white; border: 2px solid #007bff; border-radius: 8px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+  
+  <div style="padding: 15px; border-bottom: 2px solid #007bff; background: #f0f8ff;">
+    <h3 style="margin: 0; color: #007bff;">📋 Eventos Abiertos</h3>
+    <button id="new-event-btn" style="width: 100%; margin-top: 10px; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">+ Nuevo Evento</button>
+  </div>
+  
+  <div id="events-list-container" style="padding: 15px;">
+    <!-- Las tarjetas de eventos se cargarán aquí -->
+  </div>
+  
+</div>
+
+<!-- TARJETA DE EVENTO (template) -->
+<template id="event-card-template">
+  <div class="event-card" style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f9f9f9;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+      <h4 style="margin: 0; color: #333;">
+        <span class="event-camera">Cám. --</span> - <span class="event-location">--</span>
+      </h4>
+      <span class="event-status" style="background: #ffc107; color: white; padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">ABIERTO</span>
+    </div>
+    
+    <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+      <div>Operador: <strong class="event-operator">--</strong></div>
+      <div>Creado: <strong class="event-created">--</strong></div>
+    </div>
+    
+    <!-- FORMULARIO EDITABLE -->
+    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px;">
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Hora Notificación:</label>
+        <div style="display: flex; gap: 5px;">
+          <input type="time" class="event-notification-time" style="flex: 1; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+          <select class="event-notification-type" style="flex: 1; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+            <option value="">Tipo</option>
+            <option value="911">911</option>
+            <option value="operador">Operador</option>
+            <option value="patrulla">Patrulla</option>
+            <option value="multiagencia">Multiagencia</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Inicio Seguimiento:</label>
+        <input type="time" class="event-follow-start-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Breve Informe:</label>
+        <textarea class="event-brief-report" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Observaciones:</label>
+        <textarea class="event-notes" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Policía - Hora:</label>
+          <input type="time" class="event-police-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Policía - Móvil:</label>
+          <input type="text" class="event-police-unit" placeholder="Ej: 45A" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Ambulancia - Hora:</label>
+          <input type="time" class="event-ambulance-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Ambulancia - Móvil:</label>
+          <input type="text" class="event-ambulance-unit" placeholder="Ej: AM1" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Médico que atendió:</label>
+        <input type="text" class="event-attending-doctor" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Retiro Ambulancia:</label>
+          <input type="time" class="event-ambulance-return-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #333;">Retiro Policía:</label>
+          <input type="time" class="event-police-return-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Cierre del Evento:</label>
+        <input type="time" class="event-closure-time" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 12px; font-weight: bold; color: #333;">Observaciones Finales:</label>
+        <textarea class="event-final-notes" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+    </div>
+    
+    <!-- HISTORIAL DE CAMBIOS -->
+    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: #f5f5f5; border-radius: 3px; padding: 8px;">
+      <div style="font-size: 11px; font-weight: bold; color: #666; margin-bottom: 5px;">📝 Historial:</div>
+      <div class="event-history" style="font-size: 11px; color: #555;"></div>
+    </div>
+    
+    <!-- RESPUESTAS DEL ADMIN -->
+    <div class="event-admin-messages" style="border-top: 1px solid #ddd; padding-top: 8px; margin-bottom: 10px; max-height: 120px; overflow-y: auto; background: #e3f2fd; border-radius: 3px; padding: 8px; display: none;">
+      <div style="font-size: 11px; font-weight: bold; color: #1976d2; margin-bottom: 5px;">💬 Admin:</div>
+      <div class="event-messages-list" style="font-size: 11px; color: #555;"></div>
+    </div>
+    
+    <!-- BOTONES DE ACCIÓN -->
+    <div style="display: flex; gap: 8px;">
+      <button class="close-event-btn" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Cerrar Evento</button>
+      <button class="expand-event-btn" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">+</button>
+    </div>
+    
+  </div>
+</template>

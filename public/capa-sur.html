@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirigiendo...</title>
+  <script>
+    // Redirigir automáticamente a operador-interface.html
+    window.location.replace('/operador-interface.html');
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      font-size: 16px;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    .mobile-app-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-height: 100vh;
+      background: #fff;
+      position: relative;
+    }
+    
+    /* HEADER / STATUS BAR */
+    .operator-header {
+      background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+      color: white;
+      padding: max(12px, env(safe-area-inset-top)) 16px 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .operator-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      flex: 1;
+    }
+    
+    .operator-info {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .operator-info span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .logout-btn {
+      background: rgba(255,255,255,0.25);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .logout-btn:active {
+      background: rgba(255,255,255,0.35);
+    }
+    
+    /* TAB NAVIGATION */
+    .tab-navigation {
+      display: flex;
+      gap: 0;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      flex-shrink: 0;
+      padding: 0 0;
+    }
+    
+    .tab-button {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      background: white;
+      color: #666;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+    
+    .tab-button.active {
+      color: #28a745;
+      border-bottom-color: #28a745;
+    }
+    
+    .tab-button:active {
+      background: #f5f5f5;
+    }
+    
+    /* CONTAINER */
+    .operator-container {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    
+    .events-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* FORM SECTION */
+    .event-form {
+      background: white;
+      border-bottom: 8px solid #f5f5f5;
+      flex-shrink: 0;
+    }
+    
+    .section-header {
+      background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+      color: white;
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-content {
+      padding: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 14px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      min-height: 44px;
+      -webkit-appearance: none;
+      appearance: none;
+      background-clip: padding-box;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #28a745;
+      box-shadow: 0 0 0 3px rgba(40,167,69,0.1);
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-size: 15px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .form-row .form-group {
+      margin-bottom: 0;
+    }
+    
+    .section-divider {
+      border-top: 8px solid #f5f5f5;
+      margin: 16px -16px;
+    }
+    
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    
+    /* EVENT BUTTONS */
+    .event-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .btn-primary {
+      padding: 14px 16px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.2s;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-primary:active {
+      background: #218838;
+    }
+    
+    .btn-secondary {
+      padding: 14px 16px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.2s;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-secondary:active {
+      background: #5a6268;
+    }
+    
+    /* EVENTS LIST */
+    .events-list-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .events-list {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      padding-bottom: 24px;
+    }
+    
+    .event-item {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-left: 4px solid #28a745;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      transition: box-shadow 0.2s;
+    }
+    
+    .event-item:active {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .event-item h4 {
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    
+    .event-item-info {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    
+    .event-item-fields {
+      font-size: 12px;
+      color: #555;
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #f0f0f0;
+    }
+    
+    .event-item-fields div {
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    
+    .event-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-right: 8px;
+      letter-spacing: 0.3px;
+    }
+    
+    .event-status.abierto {
+      background: #ffc107;
+      color: white;
+    }
+    
+    .event-status.cerrado {
+      background: #28a745;
+      color: white;
+    }
+    
+    .event-item-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .event-item-buttons button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background 0.2s;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-edit {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-edit:active {
+      background: #218838;
+    }
+    
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-delete:active {
+      background: #c82333;
+    }
+    
+    .empty-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+      font-size: 15px;
+    }
+    
+    /* PANELS VISIBILITY */
+    .form-panel { display: none; }
+    .list-panel { display: none; }
+    .form-panel.active, .list-panel.active { display: flex; }
+    
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-app-wrapper">
+    <div class="operator-header">
+      <h2>🎥 Capa Sur</h2>
+      <div class="operator-info">
+        <span id="operator-name">--</span>
+        <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
+      </div>
+    </div>
+
+    <div class="tab-navigation">
+      <button class="tab-button active" onclick="switchTab('form')">📋 Nuevo</button>
+      <button class="tab-button" onclick="switchTab('list')">📊 Eventos</button>
+    </div>
+
+    <div class="operator-container">
+      <!-- TAB 1: FORM -->
+      <div class="events-panel form-panel active">
+        <div class="panel-content">
+          <div class="event-form">
+            <div class="form-content">
+              <form id="eventForm">
+                <div class="form-group">
+                  <label>🎥 Cámara *</label>
+                  <input type="text" id="event-camera" placeholder="Ej: Cam-12" required>
+                </div>
+
+                <div class="form-group">
+                  <label>📍 Ubicación *</label>
+                  <input type="text" id="event-location" placeholder="Ej: Mario Bravo y Talcahuano" required>
+                </div>
+
+                <div class="form-group">
+                  <label>📞 Notificación *</label>
+                  <select id="event-notification-type" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="911">911</option>
+                    <option value="operador">Operador</option>
+                    <option value="patrulla">Patrulla</option>
+                    <option value="multiagencia">Multiagencia</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>⏰ Hora Notificación</label>
+                  <input type="time" id="event-notification-time">
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="form-group">
+                  <label>📝 Breve Informe</label>
+                  <textarea id="event-brief-report" placeholder="Describe el evento..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>🕐 Inicio Seguimiento</label>
+                  <input type="time" id="event-follow-start-time">
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="form-group">
+                  <span class="section-label">👮 Policía</span>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Llegada</label>
+                    <input type="time" id="event-police-time">
+                  </div>
+                  <div class="form-group">
+                    <label>Móvil</label>
+                    <input type="text" id="event-police-unit" placeholder="45A">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Retiro</label>
+                  <input type="time" id="event-police-return-time">
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="form-group">
+                  <span class="section-label">🚑 Ambulancia</span>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Llegada</label>
+                    <input type="time" id="event-ambulance-time">
+                  </div>
+                  <div class="form-group">
+                    <label>Móvil</label>
+                    <input type="text" id="event-ambulance-unit" placeholder="AM1">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Retiro</label>
+                  <input type="time" id="event-ambulance-return-time">
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="form-group">
+                  <span class="section-label">✅ Cierre</span>
+                </div>
+
+                <div class="form-group">
+                  <label>👨‍⚕️ Médico</label>
+                  <input type="text" id="event-attending-doctor" placeholder="Nombre">
+                </div>
+                <div class="form-group">
+                  <label>Hora Cierre</label>
+                  <input type="time" id="event-closure-time">
+                </div>
+                <div class="form-group">
+                  <label>📌 Notas</label>
+                  <textarea id="event-notes" placeholder="Detalles adicionales..."></textarea>
+                </div>
+
+                <div class="event-buttons">
+                  <button type="submit" class="btn-primary">✅ Enviar</button>
+                  <button type="button" class="btn-secondary" id="operator-cancel-event-btn">❌ Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LIST -->
+      <div class="events-panel list-panel">
+        <div class="events-list-section">
+          <div class="events-list" id="events-list">
+            <div class="empty-message">No hay eventos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    // Inicializar Firebase
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentOperator = null;
+    let currentEvents = {};
+    let editingEventId = null;
+
+    // TAB SWITCHING
+    function switchTab(tabName) {
+      const formPanel = document.querySelector('.form-panel');
+      const listPanel = document.querySelector('.list-panel');
+      const tabButtons = document.querySelectorAll('.tab-button');
+
+      if (tabName === 'form') {
+        formPanel.classList.add('active');
+        listPanel.classList.remove('active');
+        tabButtons[0].classList.add('active');
+        tabButtons[1].classList.remove('active');
+      } else {
+        formPanel.classList.remove('active');
+        listPanel.classList.add('active');
+        tabButtons[0].classList.remove('active');
+        tabButtons[1].classList.add('active');
+      }
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      if (user.email !== "capa-sur@seguridad-mdp.com") {
+        alert("❌ Acceso denegado: Solo para Capa Sur");
+        auth.signOut().then(() => {
+          window.location.href = "login.html";
+        });
+        return;
+      }
+
+      currentOperator = {
+        uid: user.uid,
+        email: user.email,
+        displayName: 'Capa Sur'
+      };
+
+      document.getElementById('operator-name').textContent = currentOperator.displayName;
+      loadEvents();
+    });
+
+    function loadEvents() {
+      if (!currentOperator) return;
+
+      db.collection('eventos')
+        .where('operatorUid', '==', currentOperator.uid)
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+          currentEvents = {};
+          const eventsList = document.getElementById('events-list');
+          eventsList.innerHTML = '';
+
+          snapshot.forEach(doc => {
+            const event = doc.data();
+            if (event.archived !== true) {
+              currentEvents[doc.id] = { id: doc.id, ...event };
+              renderEventItem(doc.id, event);
+            }
+          });
+
+          if (Object.keys(currentEvents).length === 0) {
+            eventsList.innerHTML = '<div class="empty-message">No hay eventos</div>';
+          }
+        });
+    }
+
+    function renderEventItem(eventId, event) {
+      const eventsList = document.getElementById('events-list');
+      if (document.querySelector(`[data-event-id="${eventId}"]`)) return;
+
+      const statusClass = (event.status || 'abierto').toLowerCase() === 'abierto' ? 'abierto' : 'cerrado';
+      const statusText = statusClass === 'abierto' ? 'ABIERTO' : 'CERRADO';
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.setAttribute('data-event-id', eventId);
+
+      let fieldsHTML = '';
+      if (event.notificationTime) fieldsHTML += `<div><strong>Notif.:</strong> ${event.notificationTime}</div>`;
+      if (event.briefReport) fieldsHTML += `<div><strong>Inf.:</strong> ${event.briefReport}</div>`;
+      if (event.followStartTime) fieldsHTML += `<div><strong>Seg.:</strong> ${event.followStartTime}</div>`;
+      if (event.policeTime) fieldsHTML += `<div><strong>Pol.Ll:</strong> ${event.policeTime}</div>`;
+      if (event.policeUnit) fieldsHTML += `<div><strong>Pol.Uni:</strong> ${event.policeUnit}</div>`;
+      if (event.policeReturnTime) fieldsHTML += `<div><strong>Pol.Ret:</strong> ${event.policeReturnTime}</div>`;
+      if (event.ambulanceTime) fieldsHTML += `<div><strong>Amb.Ll:</strong> ${event.ambulanceTime}</div>`;
+      if (event.ambulanceUnit) fieldsHTML += `<div><strong>Amb.Uni:</strong> ${event.ambulanceUnit}</div>`;
+      if (event.ambulanceReturnTime) fieldsHTML += `<div><strong>Amb.Ret:</strong> ${event.ambulanceReturnTime}</div>`;
+      if (event.attendingDoctor) fieldsHTML += `<div><strong>Méd:</strong> ${event.attendingDoctor}</div>`;
+      if (event.closureTime) fieldsHTML += `<div><strong>Cierre:</strong> ${event.closureTime}</div>`;
+      if (event.notes) fieldsHTML += `<div><strong>Notas:</strong> ${event.notes}</div>`;
+
+      item.innerHTML = `
+        <h4>🎥 Cám. ${event.cameraNumber} - ${event.location}</h4>
+        <div style="margin-bottom: 8px;">
+          <span class="event-status ${statusClass}">${statusText}</span>
+          <span style="font-size: 13px; color: #999;">Tipo: ${event.notificationType || '--'}</span>
+        </div>
+        ${fieldsHTML ? `<div class="event-item-fields">${fieldsHTML}</div>` : ''}
+        <div class="event-item-buttons">
+          <button class="btn-edit" onclick="editEvent('${eventId}')">✏️ Editar</button>
+          <button class="btn-delete" onclick="deleteEvent('${eventId}')">🗑️ Eliminar</button>
+        </div>
+      `;
+      eventsList.appendChild(item);
+    }
+
+    document.getElementById('eventForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const eventData = {
+        cameraNumber: document.getElementById('event-camera').value.trim(),
+        location: document.getElementById('event-location').value.trim(),
+        notificationType: document.getElementById('event-notification-type').value,
+        notificationTime: document.getElementById('event-notification-time').value,
+        briefReport: document.getElementById('event-brief-report').value.trim(),
+        followStartTime: document.getElementById('event-follow-start-time').value,
+        policeTime: document.getElementById('event-police-time').value,
+        policeUnit: document.getElementById('event-police-unit').value.trim(),
+        policeReturnTime: document.getElementById('event-police-return-time').value,
+        ambulanceTime: document.getElementById('event-ambulance-time').value,
+        ambulanceUnit: document.getElementById('event-ambulance-unit').value.trim(),
+        ambulanceReturnTime: document.getElementById('event-ambulance-return-time').value,
+        attendingDoctor: document.getElementById('event-attending-doctor').value.trim(),
+        closureTime: document.getElementById('event-closure-time').value,
+        notes: document.getElementById('event-notes').value.trim()
+      };
+
+      try {
+        if (editingEventId) {
+          await db.collection('eventos').doc(editingEventId).update({
+            ...eventData,
+            updatedAt: new Date().toISOString(),
+            lastSentToAdmin: new Date().toISOString()
+          });
+          editingEventId = null;
+          alert('✅ Evento actualizado');
+        } else {
+          const eventId = 'evt_cs_' + Date.now();
+          await db.collection('eventos').doc(eventId).set({
+            id: eventId,
+            ...eventData,
+            operatorUid: currentOperator.uid,
+            operatorName: currentOperator.displayName,
+            operatorEmail: currentOperator.email,
+            layer: 'sur',
+            status: 'abierto',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastSentToAdmin: new Date().toISOString()
+          });
+          alert('✅ Evento creado y enviado al admin');
+        }
+        document.getElementById('eventForm').reset();
+        switchTab('list'); // Ir a lista de eventos
+      } catch (error) {
+        alert('⚠️ Error: ' + error.message);
+      }
+    });
+
+    document.getElementById('operator-cancel-event-btn').addEventListener('click', () => {
+      document.getElementById('eventForm').reset();
+      editingEventId = null;
+    });
+
+    function editEvent(eventId) {
+      const event = currentEvents[eventId];
+      if (!event) return;
+
+      document.getElementById('event-camera').value = event.cameraNumber;
+      document.getElementById('event-location').value = event.location;
+      document.getElementById('event-notification-type').value = event.notificationType;
+      document.getElementById('event-notification-time').value = event.notificationTime || '';
+      document.getElementById('event-brief-report').value = event.briefReport || '';
+      document.getElementById('event-follow-start-time').value = event.followStartTime || '';
+      document.getElementById('event-police-time').value = event.policeTime || '';
+      document.getElementById('event-police-unit').value = event.policeUnit || '';
+      document.getElementById('event-police-return-time').value = event.policeReturnTime || '';
+      document.getElementById('event-ambulance-time').value = event.ambulanceTime || '';
+      document.getElementById('event-ambulance-unit').value = event.ambulanceUnit || '';
+      document.getElementById('event-ambulance-return-time').value = event.ambulanceReturnTime || '';
+      document.getElementById('event-attending-doctor').value = event.attendingDoctor || '';
+      document.getElementById('event-closure-time').value = event.closureTime || '';
+      document.getElementById('event-notes').value = event.notes || '';
+
+      editingEventId = eventId;
+      switchTab('form'); // Ir al formulario
+    }
+
+    async function deleteEvent(eventId) {
+      if (!confirm('¿Eliminar este evento?')) return;
+      try {
+        await db.collection('eventos').doc(eventId).update({
+          archived: true,
+          archivedAt: new Date().toISOString()
+        });
+        alert('✅ Evento eliminado');
+      } catch (error) {
+        alert('⚠️ Error: ' + error.message);
+      }
+    }
+
+    // Función para cerrar sesión
+    function cerrarSesion() {
+      auth.signOut().then(() => {
+        window.location.href = 'login.html';
+      }).catch((error) => {
+        console.error('Error al cerrar sesión:', error);
+        alert('Error: ' + error.message);
+      });
+    }
+  </script>
+</body>
+</html>

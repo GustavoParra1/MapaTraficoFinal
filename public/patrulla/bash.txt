@@ -1,0 +1,5 @@
+/patrulla/
+    patrulla-verde.svg
+    patrulla-amarillo.svg
+    patrulla-gris.svg
+    patrulla-rojo.svg

@@ -1,0 +1,613 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.56849,
+          -37.980485
+        ]
+      },
+      "properties": {
+        "titulo": "Tenían un arma, la descartaron detrás de un paredón e intentaron escapar: uno era menor de edad",
+        "direccion": "Marconi y Libertad",
+        "link": "https://www.infobrisas.com/noticias/2026/01/06/88998-tenian-un-arma-la-descartaron-detras-de-un-paredon-e-intentaron-escapar-uno-era-menor-de-edad",
+        "timestamp": 1767737924033
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5792465,
+          -37.9762524
+        ]
+      },
+      "properties": {
+        "titulo": "Un choque terminó con una discusión, golpes y una policía herida",
+        "direccion": "Champagnat y Balcarce",
+        "link": "https://quedigital.com.ar/policiales/un-choque-termino-con-una-discusion-golpes-y-una-policia-herida/",
+        "timestamp": 1767737929051
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Murió un hombre tras un despiste en la Ruta 2 camino a Mar del Plata",
+        "direccion": "Ruta 2",
+        "link": "https://quedigital.com.ar/policiales/murio-un-hombre-tras-un-despiste-en-la-ruta-2-camino-a-mar-del-plata/",
+        "timestamp": 1768698331159
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5602854,
+          -37.9914601
+        ]
+      },
+      "properties": {
+        "titulo": "Hombre en situación de calle fue detenido por estar armado",
+        "direccion": "Funes y Luro",
+        "link": "https://www.lacapitalmdp.com/hombre-en-situacion-de-calle-fue-detenido-por-estar-armado/",
+        "timestamp": 1768745993839
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5465568,
+          -37.9972688
+        ]
+      },
+      "properties": {
+        "titulo": "Desalojo de “trapitos” en Diagonal Alberdi y San Luis: uno fue aprehendido tras dañar un comercio",
+        "direccion": "Diagonal Alberdi y San Luis",
+        "link": "https://ahoramardelplata.com.ar/policiales/desalojo-de-trapitos-en-diagonal-alberdi-y-san-luis-uno-fue-aprehendido-tras-danar-un-comercio",
+        "timestamp": 1768754095608
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.556308,
+          -37.993471
+        ]
+      },
+      "properties": {
+        "titulo": "Un violento asalto en el centro y un departamento alquilado a una cuadra de una comisaría",
+        "direccion": "Luro y 20",
+        "link": "https://quedigital.com.ar/policiales/un-violento-asalto-en-el-centro-y-un-departamento-alquilado-a-una-cuadra-de-una-comisaria/",
+        "timestamp": 1768907739946
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.590388,
+          -37.976219
+        ]
+      },
+      "properties": {
+        "titulo": "Mendocinos vivieron una noche de terror: les robaron la camioneta con casilla y dejaron a dos chiquitos abandonados en la ruta",
+        "direccion": "Ruta 226",
+        "link": "https://www.infobrisas.com/noticias/2026/01/20/89447-mendocinos-vivieron-una-noche-de-terror-les-robaron-la-camioneta-con-casilla-y-dejaron-a-dos-chiquitos-abandonados-en-la-ruta",
+        "timestamp": 1768915775464
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.590388,
+          -37.976219
+        ]
+      },
+      "properties": {
+        "titulo": "Mendocinos vivieron una noche de terror: les roban la camioneta con casilla y dejan a dos chiquitos abandonados en la ruta",
+        "direccion": "Ruta 226",
+        "link": "https://www.infobrisas.com/noticias/2026/01/20/89447-mendocinos-vivieron-una-noche-de-terror-les-roban-la-camioneta-con-casilla-y-dejan-a-dos-chiquitos-abandonados-en-la-ruta",
+        "timestamp": 1768916076022
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5476901,
+          -38.0126238
+        ]
+      },
+      "properties": {
+        "titulo": "Caso Johana Stanley: detuvieron al último de los prófugos por el violento asalto",
+        "direccion": "Arenales y Castelli",
+        "link": "https://quedigital.com.ar/policiales/caso-johana-stanley-detuvieron-al-ultimo-de-los-profugos-por-el-violento-asalto/",
+        "timestamp": 1769072644340
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5497922,
+          -38.0204494
+        ]
+      },
+      "properties": {
+        "titulo": "Se pelearon por el tránsito y uno amenazó al otro con un arma en el barrio Los Troncos",
+        "direccion": "Sarmiento y Quintana",
+        "link": "https://www.lacapitalmdp.com/se-pelearon-por-el-transito-y-uno-amenazo-al-otro-con-un-arma-en-el-barrio-los-troncos/",
+        "timestamp": 1769090674659
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5497922,
+          -38.0204494
+        ]
+      },
+      "properties": {
+        "titulo": "Una discusión de tránsito terminó con un joven amenazando a otro con una pistola",
+        "direccion": "Sarmiento y Quintana",
+        "link": "https://quedigital.com.ar/policiales/una-discusion-de-transito-termino-con-un-joven-amenazando-a-otro-con-una-pistola/",
+        "timestamp": 1769108200176
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843568,
+          -38.1116209
+        ]
+      },
+      "properties": {
+        "titulo": "Pareja de pungas robó más de diez teléfonos en una fiesta",
+        "direccion": "Ruta 11",
+        "link": "https://www.lacapitalmdp.com/pareja-de-pungas-robo-mas-de-diez-telefonos-en-una-fiesta/",
+        "timestamp": 1769265620232
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.590388,
+          -37.976219
+        ]
+      },
+      "properties": {
+        "titulo": "Robaron una casa rodante con parte de una familia adentro: detuvieron a un adolescente",
+        "direccion": "Ruta 226",
+        "link": "https://quedigital.com.ar/policiales/robaron-una-casa-rodante-con-parte-de-una-familia-adentro-detuvieron-a-un-adolescente/",
+        "timestamp": 1769272526548
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Murió un joven tras el choque entre un auto y un tren en la Ruta 2: hay otros heridos",
+        "direccion": "Ruta 2",
+        "link": "https://ahoramardelplata.com.ar/policiales/murio-un-joven-tras-el-choque-entre-un-auto-y-un-tren-en-la-ruta-2-hay-otros-heridos",
+        "timestamp": 1769431157487
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Un deportista de la Selección argentina de BMX freestyle despistó en la Autovía 2",
+        "direccion": "Ruta 2",
+        "link": "https://www.lacapitalmdp.com/un-deportista-de-la-seleccion-argentina-de-bmx-freestyle-despisto-en-la-autovia-2/",
+        "timestamp": 1769437753683
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5448336,
+          -38.0038583
+        ]
+      },
+      "properties": {
+        "titulo": "Incidente en un Bingo: un turista fue aprehendido por agredir a una policía",
+        "direccion": "Entre Ríos y Moreno",
+        "link": "https://www.lacapitalmdp.com/incidente-en-un-bingo-un-turista-fue-aprehendido-por-agredir-a-una-policia/",
+        "timestamp": 1769441657282
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5491039,
+          -37.9969746
+        ]
+      },
+      "properties": {
+        "titulo": "Los dos conductores protagonistas del choque que lesionó a Bastián habían consumido bebidas alcohólicas",
+        "direccion": "Teníán 0",
+        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/los-dos-conductores-protagonistas-del-choque-que-lesiono-a-bastian-habian-consumido-bebidas-alcoholicas",
+        "timestamp": 1769459139449
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.58043,
+          -37.988235
+        ]
+      },
+      "properties": {
+        "titulo": "Cortes de tránsito y desvíos tras el voraz incendio en la zona de Colón y Perú",
+        "direccion": "Colón y Perú",
+        "link": "https://ahoramardelplata.com.ar/sociedad/cortes-de-transito-y-desvios-tras-el-voraz-incendio-en-la-zona-de-colon-y-peru",
+        "timestamp": 1769534623507
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.58043,
+          -37.988235
+        ]
+      },
+      "properties": {
+        "titulo": "Así fue el voraz incendio en Colón y Perú: las llamas y el después del siniestro",
+        "direccion": "Colón y Perú",
+        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/asi-fue-el-voraz-incendio-en-colon-y-peru-las-llamas-y-el-despues-del-siniestro",
+        "timestamp": 1769534623721
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.55307,
+          -37.98596
+        ]
+      },
+      "properties": {
+        "titulo": "Realizaron trabajos de mantenimiento en la Plaza Pueyrredon",
+        "direccion": "Chacabuco y Dorrego",
+        "link": "https://www.lacapitalmdp.com/realizaron-trabajos-de-mantenimiento-en-la-plaza-pueyrredon/",
+        "timestamp": 1770314385712
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8467752,
+          -38.2319049
+        ]
+      },
+      "properties": {
+        "titulo": "Planificación de una “masacre escolar”: investigan la posible captación de los adolescentes",
+        "direccion": "Miramar y Jujuy",
+        "link": "https://quedigital.com.ar/judiciales/planificacion-de-una-masacre-escolar-investigan-la-posible-captacion-de-los-adolescentes/",
+        "timestamp": 1770314393075
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.55463,
+          -37.99312
+        ]
+      },
+      "properties": {
+        "titulo": "Alarma en el centro de Mar del Plata por un incendio en un edificio ocupado",
+        "direccion": "Ocurrió en España casi 25",
+        "link": "https://quedigital.com.ar/policiales/alarma-en-el-centro-por-un-incendio-mar-del-plata-en-una-casa-ocupada/",
+        "timestamp": 1770314393319
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.559305,
+          -37.972783
+        ]
+      },
+      "properties": {
+        "titulo": "Recuperaron elementos sustraidos de un automóvil y aprehenden al autor",
+        "direccion": "Falkner y Tejedor",
+        "link": "https://www.infobrisas.com/noticias/2026/02/11/90141-recuperaron-elementos-sustraidos-de-un-automovil-y-aprehenden-al-autor",
+        "timestamp": 1770926847425
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Tragedia en Ruta 2: un muerto y dos heridos tras un choque frontal",
+        "direccion": "Ruta 2",
+        "link": "https://www.lacapitalmdp.com/tragedia-en-ruta-2-un-muerto-y-dos-heridos-tras-un-choque-frontal/",
+        "timestamp": 1771089730832
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Un muerto y dos heridos por un choque frontal en Ruta 2",
+        "direccion": "Ruta 2",
+        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/un-muerto-y-dos-heridos-por-un-choque-frontal-en-ruta-2",
+        "timestamp": 1771092729489
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "La familia del joven que murió en un choque en la Ruta 2: “Fue una pesadilla”",
+        "direccion": "Ruta 2",
+        "link": "https://www.lacapitalmdp.com/la-familia-del-joven-que-murio-en-un-choque-en-la-ruta-2-fue-una-pesadilla/",
+        "timestamp": 1771167730348
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5439453,
+          -38.0396486
+        ]
+      },
+      "properties": {
+        "titulo": "Tragedia en la ruta 88: un hombre murió tras un choque provocado por un carpincho",
+        "direccion": "Ruta 88",
+        "link": "https://www.lacapitalmdp.com/tragedia-en-la-ruta-88-un-hombre-murio-tras-un-choque-provocado-por-un-carpincho/",
+        "timestamp": 1771171631114
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "La familia del joven que chocó en la Ruta 2: “Fue una pesadilla”",
+        "direccion": "Ruta 2",
+        "link": "https://www.lacapitalmdp.com/la-familia-del-joven-que-choco-en-la-ruta-2-fue-una-pesadilla/",
+        "timestamp": 1771172232430
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5439453,
+          -38.0396486
+        ]
+      },
+      "properties": {
+        "titulo": "Un hombre murió en la Ruta 88 tras un choque provocado por un carpincho",
+        "direccion": "Ruta 88",
+        "link": "https://www.lacapitalmdp.com/un-hombre-murio-en-la-ruta-88-tras-un-choque-provocado-por-un-carpincho/",
+        "timestamp": 1771172530873
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5904048,
+          -37.9762537
+        ]
+      },
+      "properties": {
+        "titulo": "Desarticulan un loteo ilegal de terrenos al costado de la Ruta 226: seis imputados",
+        "direccion": "Ruta 226",
+        "link": "https://quedigital.com.ar/policiales/desarticulan-un-loteo-ilegal-de-terrenos-al-costado-de-la-ruta-226-seis-imputados/",
+        "timestamp": 1771361284650
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.570886,
+          -38.042646
+        ]
+      },
+      "properties": {
+        "titulo": "Más tomas: desactivaron un intento de usurpación en el barrio El Martillo",
+        "direccion": "Camusso y Arana y Goiri",
+        "link": "https://www.infobrisas.com/noticias/2026/02/17/90340-mas-tomas-desactivaron-un-intento-de-usurpacion-en-el-barrio-el-martillo",
+        "timestamp": 1771402541042
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5677716,
+          -38.0146843
+        ]
+      },
+      "properties": {
+        "titulo": "Intentó huir en una Amarok sin patente y descubrieron que tenía prohibido manejar",
+        "direccion": "Independencia y Almafuerte",
+        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/intento-huir-en-una-amarok-sin-patente-y-descubrieron-que-tenia-prohibido-manejar",
+        "timestamp": 1771419805154
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5724457,
+          -38.0189526
+        ]
+      },
+      "properties": {
+        "titulo": "Persecución policial, choque y vuelco en el barrio San José",
+        "direccion": "Diagonal Canosa y Solís",
+        "link": "https://www.lacapitalmdp.com/lo-persiguio-la-policia-por-sospechar-que-robaba-autos-y-volco/",
+        "timestamp": 1771450177936
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5480888,
+          -37.9974955
+        ]
+      },
+      "properties": {
+        "titulo": "Ciclistas cansados de los robos se manifestaron en el centro de Mar del Plata",
+        "direccion": "Luro y Mitre para exigir medidas",
+        "link": "https://loquepasa.net/ciclistas-cansados-de-los-robos-se-manifestaron-en-el-centro-de-mar-del-plata/",
+        "timestamp": 1771457141543
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.590759,
+          -37.990824
+        ]
+      },
+      "properties": {
+        "titulo": "Barrio Bernardino Rivadavia: un hombre murió carbonizado en un incendio",
+        "direccion": "Alvarado y Castelli",
+        "link": "https://www.lacapitalmdp.com/barrio-bernardino-rivadavia-un-hombre-murio-carbonizado-en-un-incendio/",
+        "timestamp": 1771505278763
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5795132,
+          -37.9976442
+        ]
+      },
+      "properties": {
+        "titulo": "Encontraron a un cuerpo carbonizado tras un incendio en una casa",
+        "direccion": "Jara y Alvarado",
+        "link": "https://quedigital.com.ar/policiales/encontraron-a-un-cuerpo-carbonizado-tras-un-incendio-en-una-casa/",
+        "timestamp": 1771507974062
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5795132,
+          -37.9976442
+        ]
+      },
+      "properties": {
+        "titulo": "Encontraron un cuerpo carbonizado tras un incendio en una casa",
+        "direccion": "Jara y Alvarado",
+        "link": "https://quedigital.com.ar/policiales/encontraron-un-cuerpo-carbonizado-tras-un-incendio-en-una-casa/",
+        "timestamp": 1771508871481
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5687344,
+          -38.0177738
+        ]
+      },
+      "properties": {
+        "titulo": "Robo, persecución, choque y vuelco: detuvieron a un joven",
+        "direccion": "Vieytes y Catamarca y terminó en",
+        "link": "https://quedigital.com.ar/policiales/robo-persecucion-y-vuelco-detuvieron-a-un-joven/",
+        "timestamp": 1771525073200
+      }
+    }
+  ]
+}

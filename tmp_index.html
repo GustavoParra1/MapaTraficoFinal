@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Tráfico</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+  <!-- Flaticon (opcional) -->
+  <link href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.min.css" rel="stylesheet">
+
+  <!-- Tu CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+</head>
+<body>
+
+ <!-- === PANEL IZQUIERDO === -->
+ <div id="left-sidebar">
+  <h2 style="text-align: center;">
+    CIMU<br>
+    Centro de Inteligencia y<br>Monitoreo Urbano
+  </h2>
+  <div id="user-info" style="text-align: center; padding: 10px; border-bottom: 1px solid #ddd;">
+    <span id="user-email" style="font-weight: bold;"></span>
+    <button id="logout-btn" style="margin-top: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Cerrar Sesión</button>
+  </div>
+    <!-- ============================================ -->
+<!-- SELECTOR DE TIPO DE MAPA -->
+<!-- ============================================ -->
+<div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+  <h4>🗺️ Tipo de Mapa Base</h4>
+  <select id="base-map-selector">
+    <option value="osm">OpenStreetMap (Gratis)</option>
+    <option value="google-streets">Google Maps - Calles</option>
+    <option value="google-satellite">Google Maps - Satélite</option>
+    <option value="google-hybrid">Google Maps - Híbrido</option>
+  </select>
+</div>
+
+<!-- ============================================ -->
+<!-- NUEVO: STREET VIEW -->
+<!-- ============================================ -->
+<div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+  <h4>🚶 Street View</h4>
+  <button id="streetview-btn" style="width: 100%; padding: 10px; background: #4285f4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+    Activar Street View
+  </button>
+  <p id="streetview-instructions" style="display: none; font-size: 0.85em; color: #666; margin-top: 8px; text-align: center;">
+    📍 Haz clic en el mapa para ver Street View
+  </p>
+</div>
+<!-- ============================================ -->
+    <div id="search-container" class="filter-group">
+      <h4>Buscador de Direcciones</h4>
+      <input type="text" id="address-input" placeholder="Ingrese una dirección...">
+      <button id="search-button">Buscar</button>
+    </div>
+
+    <div id="control-panel">
+      <h4>Capas</h4>
+      <label><input type="checkbox" id="semaforos-checkbox"> Semáforos</label>
+      <label><input type="checkbox" id="siniestros-checkbox"> Siniestros (<span id="total-siniestros-count">0</span>)</label>
+      <label><input type="checkbox" id="heatmap-checkbox"> Mapa de Calor</label>
+      <label><input type="checkbox" id="alertas-checkbox"> Alertas</label>
+
+      <div class="filter-group">
+        <h4>Filtrar por Barrio:</h4>
+        <select id="barrio-filter"><option value="all">Todos los Barrios</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Año:</h4>
+        <select id="year-filter"><option value="all">Todos los Años</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Participante:</h4>
+        <select id="participant-filter"><option value="all">Todos</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Causa:</h4>
+        <select id="cause-filter"><option value="all">Todas</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Hora:</h4>
+        <label for="start-hour-filter">Desde:</label>
+        <select id="start-hour-filter"><option value="all">Todas</option></select>
+        <label for="end-hour-filter">Hasta:</label>
+        <select id="end-hour-filter"><option value="all">Todas</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Calle:</h4>
+        <input type="text" id="street-filter" placeholder="Escriba el nombre de la calle...">
+      </div>
+
+      <button id="clear-filters-btn">Limpiar Filtros</button>
+
+      <h4>Estilo de Tráfico</h4>
+      <label><input type="radio" name="traffic-style" value="absolute"> Absoluto</label>
+      <label><input type="radio" name="traffic-style" value="relative"> Relativo</label>
+      <label><input type="radio" name="traffic-style" value="none" checked> Ocultar</label>
+    </div>
+
+    <div class="filter-group zone-filter-group">
+      <h4>Filtrar por Zona:</h4>
+      <label><input type="radio" name="zone-filter" value="none" checked> Ninguna</label>
+      <label><input type="radio" name="zone-filter" value="norte"> Capa Norte</label>
+      <label><input type="radio" name="zone-filter" value="sur"> Capa Sur</label>
+    </div>
+
+    <div id="traffic-legend-container"></div>
+  </div>
+
+  <!-- === MAPA CENTRAL === -->
+  <div id="mapid"></div>
+
+  <!-- ROSA DE LOS VIENTOS -->
+  <div id="compass-rose">
+    <div class="compass-inner">
+      <div class="compass-cardinal north">N</div>
+      <div class="compass-cardinal south">S</div>
+      <div class="compass-cardinal east">E</div>
+      <div class="compass-cardinal west">O</div>
+  
+      <div class="compass-star">
+        <div class="star-point north-point"></div>
+        <div class="star-point south-point"></div>
+        <div class="star-point east-point"></div>
+        <div class="star-point west-point"></div>
+      </div>
+  
+      <div class="compass-center"></div>
+    </div>
+  </div>
+  <div id="info-cobertura-escolar">
+    <h4>📘 Cobertura Escolar</h4>
+    <p>Indica el porcentaje de colegios que tienen una cámara pública a menos de <b>100 m</b>.</p>
+    <div class="leyenda">
+      <div class="leyenda-item alto"><span></span> Cobertura baja (&lt; 50%)</div>
+      <div class="leyenda-item medio"><span></span> Cobertura media (50–80%)</div>
+      <div class="leyenda-item bajo"><span></span> Cobertura alta (&gt; 80%)</div>
+    </div>
+    <p style="margin-top:6px;font-size:11px;color:#555;">
+      Los porcentajes se calculan por barrio en función de la cantidad de colegios cubiertos por cámaras.
+    </p>
+  </div>
+  
+
+  <!-- === PANEL DERECHO === -->
+  <div id="right-panel">
+    <h3>Cámaras</h3>
+    <label><input type="checkbox" id="camaras-checkbox"> Mostrar Cámaras</label>
+    <label><input type="checkbox" id="camaras-privadas-checkbox"> Mostrar Cámaras Privadas</label>
+    <label><input type="checkbox" id="zonas-sin-cobertura-checkbox"> Cobertura de Cámaras</label>
+    <label><input type="checkbox" id="zonas-sin-cobertura-negativo-checkbox"> Zonas sin Cobertura</label>
+    <label><input type="checkbox" id="corredores-escolares-checkbox"> Corredores Escolares</label>
+    <label><input type="checkbox" id="colegios-checkbox"> Colegios</label>
+  <div class="layer-option">
+           <input type="checkbox" id="colegios-cobertura-checkbox">
+    <label for="colegios-cobertura-checkbox">Cobertura Escolar (colegios + cámaras)</label>
+  </div>
+    
+
+    <h3>Líneas de Colectivo</h3>
+    <div class="filter-group">
+      <input type="text" id="bus-line-search" placeholder="Buscar línea...">
+      <select id="bus-line-select"><option value="">Seleccione una línea</option></select>
+      <button id="show-bus-route-button">Mostrar Recorrido</button>
+    </div>
+    <label><input type="checkbox" id="bus-route-checkbox"> Mostrar Recorrido</label>
+
+    <h3>Cámaras LPR</h3>
+                <div class="filter-group lpr-buttons-container">      <select id="lpr-camera-select"><option value="">Seleccione una cámara LPR</option></select>
+      <button id="show-lpr-radius-button">Mostrar Radio</button>
+    </div>
+
+    <h3>Aforos</h3>
+    <label><input type="checkbox" id="aforos-checkbox"> Mostrar Aforos</label>
+    <div id="aforos-filters" style="display: none;">
+      <h4>Filtros de Aforos</h4>
+      <div class="filter-group"><label for="aforo-year-filter">Año:</label><select id="aforo-year-filter"></select></div>
+      <div class="filter-group"><label for="aforo-start-hour-filter">Hora (desde):</label><select id="aforo-start-hour-filter"></select></div>
+      <div class="filter-group"><label for="aforo-end-hour-filter">Hora (hasta):</label><select id="aforo-end-hour-filter"></select></div>
+    </div>
+
+    <div id="flow-list"></div>
+    <div id="aforo-details-container" style="display: none;">
+      <h4 id="aforo-details-title">Detalle por día</h4>
+      <div id="aforo-day-list"></div>
+    </div>
+
+    <hr> <!-- Add a separator for better visual grouping -->
+
+    <h3>Patrullas</h3>
+    <label><input type="checkbox" id="patrullas-checkbox"> Mostrar Patrullas</label>
+
+    <h3>Robo Automotor</h3>
+    <label><input type="checkbox" id="robo-automotor-checkbox"> Mostrar Robos</label>
+    <div id="robo-automotor-filters" style="display: none;">
+      <h4>Filtros de Robo Automotor</h4>
+      <div class="filter-group"><label for="robo-automotor-year-filter">Año:</label><select id="robo-automotor-year-filter"></select></div>
+      <label><input type="checkbox" id="robo-heatmap-checkbox"> Mapa de Calor (Robos)</label>
+    </div>
+  </div>
+
+
+  
+
+
+  <!-- === PANELES SECUNDARIOS === -->
+  <div id="alert-list-panel" class="panel-floating">
+    <div class="panel-header"><h4>Alertas Recientes</h4></div>
+    <div id="alert-list-content" class="panel-content"></div>
+  </div>
+
+  <div id="top-siniestros-panel" class="panel-floating">
+    <div class="panel-header"><h4>Top 10 Siniestros</h4></div>
+    <div id="top-siniestros-content" class="panel-content"></div>
+  </div>
+
+  <div id="top-robo-panel" class="panel-floating">
+    <div class="panel-header"><h4>Top 10 Robos Automotor</h4></div>
+    <div id="top-robo-content" class="panel-content"></div>
+  </div>
+
+  <div id="consulta-results-panel" style="display: none;">
+    <div class="panel-header"><h4>Resultado de la Consulta</h4></div>
+    <div id="consulta-results-content"></div>
+    <!-- Nuevo panel para siniestros por día -->
+    <div id="siniestros-por-dia-panel" style="display: none;">
+      <h5>Siniestros por Día de la Semana</h5>
+      <div id="siniestros-dia-content"></div>
+    </div>
+    <div id="analisis-causa-container" style="display: none; padding: 0 15px 15px 15px; border-top: 1px solid #ccc; margin-top: 10px;"></div>
+    <button id="clear-consulta-results-btn">Limpiar</button>
+  </div>
+
+  <!-- === PANEL DE CONSULTAS === -->
+  <div id="consultas-panel" style="display: none;">
+    <div class="panel-header"><h4>Consultas al Sistema <button class="close-button">X</button></h4></div>
+    <div id="consultas-content">
+      <details>
+        <summary>Análisis de Siniestros y Delitos</summary>
+        <button class="consulta-btn" data-consulta="concentracion_siniestros">¿Zonas con mayor concentración de siniestros?</button>
+        <button class="consulta-btn" data-consulta="barrios_mas_robos">5 Barrios con más eventos Robo Automotor</button>
+        <!-- Botón: Evaluación de Calles Inseguras -->
+        <h3 style="margin-top:15px;">🛣️ Análisis de Calles</h3>
+        <div class="consulta-item">
+        <button class="consulta-btn" onclick="analizarCallesSeguras(event, { topN: 20 })">
+        🚨 Top 20 Calles Más Peligrosas
+       </button>
+    </div>
+        <button class="consulta-btn" data-consulta="siniestros_noche">Mostrar siniestros en horario nocturno (22-06hs)</button>
+        <button class="consulta-btn" data-consulta="robos_por_dia">
+        📅 ¿Qué día de la semana hay más robos?
+        </button>        
+        <button class="consulta-btn" data-consulta="tipos_siniestros_comunes">Listar Causas de siniestros mas comunes</button>
+        <button class="consulta-btn" data-consulta="ultimas_alertas">¿Dónde se generaron las últimas alertas?</button>
+      <details>
+        <summary>📉 Tendencias por Causa Específica</summary>
+    <button class="consulta-btn" data-consulta="tendencia_distraccion">
+        📈 ¿Están aumentando las distracciones?
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_semaforo">
+        🚦 ¿Disminuyeron las violaciones de semáforo?
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_exceso_velocidad">
+        ⚡ Tendencia: Exceso de Velocidad
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_peaton_imprudente">
+        🚶‍♂️ Tendencia: Peatón imprudente
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_no_prioridad">
+        🔁 Tendencia: No Respeto Prioridad de Paso
+    </button>
+      </details>
+     
+        <button class="consulta-btn" data-consulta="barrios_mas_siniestros">Los 5 Barrios que tienen más Siniestros</button>
+        <button class="consulta-btn" data-consulta="siniestros_hora_pico">Mostrar siniestros en hora pico (07-09 y 17-19hs)</button>        
+        <button class="consulta-btn" data-consulta="esquinas_mas_siniestros">¿Cuáles son las 10 esquinas con más siniestros?</button>
+        <button class="consulta-btn" data-consulta="esquinas_sin_semaforo_criticas">
+          🚦❌ Cruces Críticos SIN Semáforo
+      </button>        
+        <button class="consulta-btn" data-consulta="heatmap_robos">🔥 Mapa de calor: Robos con detención/secuestro</button>   
+        <button class="consulta-btn" data-consulta="siniestros_por_dia">¿Qué día de la semana hay más siniestros?</button>
+        <button class="consulta-btn" data-consulta="robos_zonas_sin_camaras">
+          🎯 Robos en Zonas sin Cámaras
+        </button>
+        
+        <button class="consulta-btn" data-consulta="siniestros_por_mes">
+          📊 Siniestros por Mes
+        </button>
+        
+        <button class="consulta-btn" data-consulta="robos_sin_intervencion">
+          🚨 Eventos Categoria Robos Automotor
+        </button>
+        <button class="consulta-btn" data-consulta="esquinas_peligrosas_peatones_ciclistas">
+          🚶‍♀️ Identificar las 10 esquinas más peligrosas para peatones y ciclistas 🚲
+        </button>
+        <!-- Agregar este botón en el panel de consultas, en la sección apropiada -->
+        <button class="consulta-btn" data-consulta="siniestros_corredores_escolares">
+          🎒 Siniestros en Corredores Escolares
+        </button>
+        
+      </details>
+      <details>
+
+          <summary>Optimización de Recursos</summary>
+          
+          <button class="consulta-btn" data-consulta="patrullaje_sugerido">
+            🚓 Rutas de patrullaje óptimas basadas en incidentes
+          </button>
+          
+          <!-- Controles adicionales para la consulta -->
+          <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; display: none;" id="patrullaje-controls">
+            <label for="num-rutas-input" style="display: block; margin-bottom: 5px;">Número de rutas a generar:</label>
+            <input type="number" id="num-rutas-input" min="1" max="10" value="3" style="width: 60px; padding: 5px;">
+            
+            <label for="turno-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Turno:</label>
+            <select id="turno-patrullaje" style="width: 100%; padding: 5px;">
+              <option value="all">Todos los horarios</option>
+              <option value="mañana">Mañana (6:00-14:00)</option>
+              <option value="tarde">Tarde (14:00-22:00)</option>
+              <option value="noche">Noche (22:00-6:00)</option>
+            </select>
+            
+            <label for="dias-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Días:</label>
+            <select id="dias-patrullaje" style="width: 100%; padding: 5px;">
+              <option value="all">Todos los días</option>
+              <option value="laborables">Días laborables</option>
+              <option value="finde">Fines de semana</option>
+            </select>
+          </div>
+        </details> 
+        <details>
+        <summary>Análisis de Cámaras y Cobertura</summary>
+        <button class="consulta-btn" data-consulta="barrios_menor_cobertura">¿Qué barrios tienen menor cobertura de cámaras?</button>
+        <button class="consulta-btn" data-consulta="camaras_sin_siniestros">🛡️ Cámaras sin siniestros cercanos (100m)</button>
+        <button class="consulta-btn" data-consulta="correlacion_camaras_robos">
+        📊 ¿Los barrios con más cámaras tienen menos robos?
+        </button>        
+        <button class="consulta-btn" data-consulta="comparar_camaras">🎯 Comparar cámaras públicas vs. privadas</button>        
+        <button class="consulta-btn" data-consulta="zonas_ciegas">Identificar "zonas ciegas" (siniestros sin cámaras)</button>        
+        <button class="consulta-btn" data-consulta="siniestros_en_zonas_descubiertas">🔥 Siniestros No Visualizados (NSD)</button>
+        <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px;">
+          <label for="moto-hour-input" style="display: block; margin-bottom: 5px;">Hora para análisis de motos:</label>
+          <input type="number" id="moto-hour-input" min="0" max="23" value="8" style="width: 60px; padding: 5px;">
+        </div>
+        <button class="consulta-btn" data-consulta="circulacion_motos_hora">¿Zonas con mayor circulación de motos por hora?</button>
+        <button class="consulta-btn" data-consulta="densidad_camaras_barrio">Calcular densidad de cámaras por barrio (cámaras/km²)</button>
+        <button class="consulta-btn" data-consulta="densidad_camaras_vs_siniestros">📊 Densidad: Cámaras vs Siniestros</button>
+        <button class="consulta-btn" data-consulta="proponer_ubicaciones_camaras">🎯 Proponer Ubicaciones para Nuevas Cámaras</button>
+      </details>
+      <details>
+        <summary>Análisis de Infraestructura y Transporte</summary>
+        <button class="consulta-btn" data-consulta="lineas_colectivo_siniestros">Cámaras con >20 Siniestros Cercanos (50m)</button>        
+        <button class="consulta-btn" data-consulta="siniestros_cerca_paradas_colectivo">Siniestros cerca de cámaras de colectivo (30m)</button>        
+        <button class="consulta-btn" data-consulta="visualizar_recorridos_colectivos">Visualizar todas las cámaras de recorridos de colectivos</button>
+        <button class="consulta-btn" data-consulta="semaforos_mas_siniestros">🚦 Semáforos con más siniestros viales</button>
+        <button class="consulta-btn" data-consulta="evolucion_temporal_siniestros">
+          📈 ¿Cómo evolucionaron los siniestros en los últimos 3 años?
+        </button>
+      </details>
+      <div id="consulta-resultados"></div>
+    </div>
+  </div>
+
+  <!-- === TOUR GUIDE === -->
+  <div id="tour-overlay" class="hidden"></div>
+  <div id="tour-welcome" class="hidden">
+    <div class="tour-card">
+      <div class="tour-header">
+        <div class="tour-logo">📍</div>
+        <h1>Sistema de Mapas de Tráfico</h1>
+        <p>Mar del Plata — Centro de Monitoreo</p>
+      </div>
+      <div class="tour-options">
+        <div class="tour-option" data-mode="basic">
+          <div class="tour-icon blue">▶</div>
+          <div>
+            <h3>Tour Básico (5 min)</h3>
+            <p>Navegá, activá capas y usá filtros básicos.</p>
+          </div>
+        </div>
+        <div class="tour-option" data-mode="advanced">
+          <div class="tour-icon purple">🧭</div>
+          <div>
+            <h3>Tour Avanzado (8 min)</h3>
+            <p>Herramientas de análisis, mapas de calor y cámaras LPR.</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-footer"><button id="skip-tour">Omitir tour →</button></div>
+    </div>
+  </div>
+
+  <div id="tour-tooltip" class="hidden">
+    <div id="tour-header">
+      <span id="tour-step"></span>
+      <button id="tour-close">✕</button>
+    </div>
+    <h3 id="tour-title"></h3>
+    <p id="tour-description"></p>
+    <div id="tour-nav">
+      <button id="tour-prev">◀ Anterior</button>
+      <button id="tour-next">Siguiente ▶</button>
+    </div>
+  </div>
+  <!-- === FIN TOUR GUIDE === -->
+
+  
+  <button id="btn-open-consultas" class="map-overlay-button">
+  <span class="question-mark">?</span>
+  <span class="button-text">PREGUNTAS / AYUDA</span>
+</button>
+
+  <!-- === MODAL DE EXPLICACIÓN === -->
+  <div id="info-modal" class="info-modal-overlay" style="display: none;">
+    <div class="info-modal-content">
+      <div class="info-modal-header">
+        <h4 id="info-modal-title">Análisis de Correlación</h4>
+        <button id="info-modal-close-btn" class="close-button">X</button>
+      </div>
+      <div id="info-modal-body">
+        <!-- El contenido se insertará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- === LIBRERÍAS Y SCRIPTS === -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<!-- Patch: requestCanvas with willReadFrequently to avoid Canvas2D warnings -->
+<script>
+(function(){
+  const origGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(type, options){
+    try {
+      if (type === '2d') {
+        if (!options) options = { willReadFrequently: true };
+        else if (typeof options === 'object' && options.willReadFrequently === undefined) options.willReadFrequently = true;
+      }
+    } catch(e) { /* ignore */ }
+    return origGetContext.call(this, type, options);
+  };
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
+
+<!-- Google Maps API (carga async/defer para mejor rendimiento) -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E"></script>
+
+<!-- Google Mutant Plugin -->
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.4/dist/Leaflet.GoogleMutant.js"></script>
+
+<!-- ================= PANEL DE CHAT (BASE) ================= -->
+<div id="chatBasePanel">
+
+  <h3 class="draggable-header" id="chatBasePanel-header">
+    💬 Chat con <span id="chatBaseMovil"></span>
+    <button id="cerrarChatBaseBtn" class="close-button">✖</button>
+  </h3>
+
+  <div id="chatBaseMsgs"></div>
+
+  <div style="display: flex; gap: 5px;">
+    <input
+      id="chatBaseInput"
+      placeholder="Escribir mensaje..."
+      style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #aaa;"
+      disabled
+    >
+    <button id="enviarChatBaseBtn"
+      style="padding: 8px 14px; background: #1d4ed8; color: white; border: none; border-radius: 6px;"
+      disabled
+    >
+      Enviar
+    </button>
+  </div>
+
+</div>
+
+
+
+<div id="visor-patrulla" class="visor-hidden">
+  <div class="visor-header" id="visor-patrulla-header" style="cursor: move;">
+    <span>🎥 Cámara Patrulla: <span id="nombre-patrulla-visor"></span></span>
+    <button onclick="cerrarVisor(event)">✖</button>
+  </div>
+  <div class="visor-video-wrapper">
+    <!-- Reproductor HLS con hls.js -->
+    <video id="visorVideo" autoplay controls playsinline muted style="background: #000;"></video>
+  </div>
+</div>
+
+<div id="chat-com-panel" class="panel-floating" style="display:none; width:320px; height:400px;">
+  <div class="panel-header" id="chat-com-header" style="cursor: move;">
+    <h4>📣 Chat con móviles</h4>
+    <button id="close-chat-com" class="close-button">X</button>
+  </div>
+  <div id="chat-com-mensajes" class="panel-content" style="overflow-y:auto; height:330px; padding:10px;"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase-config.js"></script>
+
+<!-- HLS.js para reproducción de streams HLS -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<script>
+  let emergenciaZoomActiva = false;
+</script>
+
+<script src="script.js"></script>
+
+</body>
+</html>

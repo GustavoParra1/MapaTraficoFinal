@@ -1,0 +1,24 @@
+{
+  "name": "mapa-trafico",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Mapa con alertas de siniestros",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.6.1",
+    "helmet": "^8.1.0",
+    "node-fetch": "^2.7.0",
+    "rss-parser": "^3.13.0",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.3",
+    "xml2js": "^0.6.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,579 @@
+N CAMARA,DIRECCION,FECHA,DIA,HORA,PART,TOTAL
+306,Quintana y Patricio Peralta Ramos,12/10/2022,sabado,06 a 07,auto,1434
+306,Quintana y Patricio Peralta Ramos,12/10/2022,sabado,06 a 07,moto,54
+306,Quintana y Patricio Peralta Ramos,12/10/2022,sabado,06 a 07,bici,12
+306,Quintana y Patricio Peralta Ramos,12/10/2022,sabado,06 a 07,colectivo,12
+306,Quintana y Patricio Peralta Ramos,12/10/2022,sabado,06 a 07,camiones,0
+23,Colon y Jara ,11/02/2022,miercoles,06 a 07,auto,620
+23,Colon y Jara ,11/02/2022,miercoles,06 a 07,moto,102
+23,Colon y Jara ,11/02/2022,miercoles,06 a 07,bici,94
+23,Colon y Jara ,11/02/2022,miercoles,06 a 07,colectivo,18
+23,Colon y Jara ,11/02/2022,miercoles,06 a 07,camiones,28
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,06 a 07,auto,515
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,06 a 07,moto,69
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,06 a 07,bici,35
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,06 a 07,colectivo,10
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,06 a 07,camiones,19
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,07 a 08,auto,1296
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,07 a 08,moto,75
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,07 a 08,bici,34
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,07 a 08,colectivo,19
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,07 a 08,camiones,22
+58,Luro e Italia,12/07/2022,miercoles,07 a 08,auto,780
+58,Luro e Italia,12/07/2022,miercoles,07 a 08,moto,76
+58,Luro e Italia,12/07/2022,miercoles,07 a 08,bici,40
+58,Luro e Italia,12/07/2022,miercoles,07 a 08,colectivo,60
+58,Luro e Italia,12/07/2022,miercoles,07 a 08,camiones,16
+493,Ruta 11 y Toscana,11/02/2023,jueves,07 a 08,auto,940
+493,Ruta 11 y Toscana,11/02/2023,jueves,07 a 08,moto,30
+493,Ruta 11 y Toscana,11/02/2023,jueves,07 a 08,bici,4
+493,Ruta 11 y Toscana,11/02/2023,jueves,07 a 08,colectivo,14
+493,Ruta 11 y Toscana,11/02/2023,jueves,07 a 08,camiones,0
+493,Ruta 11 y Toscana,10/31/2022,lunes,07 a 08,auto,892
+493,Ruta 11 y Toscana,10/31/2022,lunes,07 a 08,moto,20
+493,Ruta 11 y Toscana,10/31/2022,lunes,07 a 08,bici,2
+493,Ruta 11 y Toscana,10/31/2022,lunes,07 a 08,colectivo,12
+493,Ruta 11 y Toscana,10/31/2022,lunes,07 a 08,camiones,8
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,auto,495
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,moto,9
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,bici,6
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,colectivo,12
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,camiones,12
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,auto,495
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,moto,9
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,bici,6
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,colectivo,21
+493,Ruta 11 y Toscana,01/04/2023,miercoles,07 a 08,camiones,6
+589,Ruta 11 y Scaglia,10/25/2022,martes,07 a 08,auto,1336
+589,Ruta 11 y Scaglia,10/25/2022,martes,07 a 08,moto,36
+589,Ruta 11 y Scaglia,10/25/2022,martes,07 a 08,bici,12
+589,Ruta 11 y Scaglia,10/25/2022,martes,07 a 08,colectivo,24
+589,Ruta 11 y Scaglia,10/25/2022,martes,07 a 08,camiones,16
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,07 a 08,auto,1101
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,07 a 08,moto,36
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,07 a 08,bici,6
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,07 a 08,colectivo,27
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,07 a 08,camiones,20
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,07 a 08,auto,1461
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,07 a 08,moto,110
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,07 a 08,bici,37
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,07 a 08,colectivo,21
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,07 a 08,camiones,35
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,07 a 08,auto,1552
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,07 a 08,moto,76
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,07 a 08,bici,30
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,07 a 08,colectivo,25
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,07 a 08,camiones,83
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,07 a 08,auto,1068
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,07 a 08,moto,48
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,07 a 08,bici,22
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,07 a 08,colectivo,39
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,07 a 08,camiones,156
+684,Ruta 2 y Rotonda Aeroparque,01/27/2023,viernes,07 a 08,auto,1385
+684,Ruta 2 y Rotonda Aeroparque,01/27/2023,viernes,07 a 08,moto,78
+684,Ruta 2 y Rotonda Aeroparque,01/27/2023,viernes,07 a 08,bici,22
+684,Ruta 2 y Rotonda Aeroparque,01/27/2023,viernes,07 a 08,colectivo,32
+684,Ruta 2 y Rotonda Aeroparque,01/27/2023,viernes,07 a 08,camiones,84
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,07 a 08,auto,1412
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,07 a 08,moto,60
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,07 a 08,bici,32
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,07 a 08,colectivo,16
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,07 a 08,camiones,0
+532,Luro y Leguizamon,10/05/2022,miercoles,07 a 08,auto,1335
+532,Luro y Leguizamon,10/05/2022,miercoles,07 a 08,moto,137
+532,Luro y Leguizamon,10/05/2022,miercoles,07 a 08,bici,35
+532,Luro y Leguizamon,10/05/2022,miercoles,07 a 08,colectivo,54
+532,Luro y Leguizamon,10/05/2022,miercoles,07 a 08,camiones,84
+56,Luro y Catamarca,10/05/2022,miercoles,07 a 08,auto,1052
+56,Luro y Catamarca,10/05/2022,miercoles,07 a 08,moto,52
+56,Luro y Catamarca,10/05/2022,miercoles,07 a 08,bici,66
+56,Luro y Catamarca,10/05/2022,miercoles,07 a 08,colectivo,82
+56,Luro y Catamarca,10/05/2022,miercoles,07 a 08,camiones,28
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,auto,1140
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,moto,68
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,bici,36
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,colectivo,48
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,camiones,56
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,auto,1080
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,moto,56
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,bici,42
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,colectivo,52
+304,Luro y Carrillo,11/03/2022,jueves,07 a 08,camiones,86
+304,Luro y Carrillo,10/03/2022,lunes,07 a 08,auto,1077
+304,Luro y Carrillo,10/03/2022,lunes,07 a 08,moto,18
+304,Luro y Carrillo,10/03/2022,lunes,07 a 08,bici,25
+304,Luro y Carrillo,10/03/2022,lunes,07 a 08,colectivo,90
+304,Luro y Carrillo,10/03/2022,lunes,07 a 08,camiones,90
+304,Luro y Carrillo,02/08/2023,miercoles,07 a 08,auto,828
+304,Luro y Carrillo,02/08/2023,miercoles,07 a 08,moto,28
+304,Luro y Carrillo,02/08/2023,miercoles,07 a 08,bici,16
+304,Luro y Carrillo,02/08/2023,miercoles,07 a 08,colectivo,26
+304,Luro y Carrillo,02/08/2023,miercoles,07 a 08,camiones,49
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,07 a 08,auto,306
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,07 a 08,moto,30
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,07 a 08,bici,12
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,07 a 08,colectivo,18
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,07 a 08,camiones,0
+585,H.Yrigoyen y Av. Colon,12/07/2022,miercoles,07 a 08,auto,1140
+585,H.Yrigoyen y Av. Colon,12/07/2022,miercoles,07 a 08,moto,152
+585,H.Yrigoyen y Av. Colon,12/07/2022,miercoles,07 a 08,bici,88
+585,H.Yrigoyen y Av. Colon,12/07/2022,miercoles,07 a 08,colectivo,12
+585,H.Yrigoyen y Av. Colon,12/07/2022,miercoles,07 a 08,camiones,36
+547,General paz y Primera Junta,12/07/2022,miercoles,07 a 08,auto,48
+547,General paz y Primera Junta,12/07/2022,miercoles,07 a 08,moto,0
+547,General paz y Primera Junta,12/07/2022,miercoles,07 a 08,bici,0
+547,General paz y Primera Junta,12/07/2022,miercoles,07 a 08,colectivo,6
+547,General paz y Primera Junta,12/07/2022,miercoles,07 a 08,camiones,0
+75,Edison y Vertiz,05/03/2023,miercoles,07 a 08,auto,398
+75,Edison y Vertiz,05/03/2023,miercoles,07 a 08,moto,74
+75,Edison y Vertiz,05/03/2023,miercoles,07 a 08,bici,29
+75,Edison y Vertiz,05/03/2023,miercoles,07 a 08,colectivo,31
+75,Edison y Vertiz,05/03/2023,miercoles,07 a 08,camiones,43
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,07 a 08,auto,1252
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,07 a 08,moto,122
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,07 a 08,bici,43
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,07 a 08,colectivo,20
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,07 a 08,camiones,12
+284,Edison y Calabria,05/03/2023,miercoles,07 a 08,auto,1350
+284,Edison y Calabria,05/03/2023,miercoles,07 a 08,moto,121
+284,Edison y Calabria,05/03/2023,miercoles,07 a 08,bici,30
+284,Edison y Calabria,05/03/2023,miercoles,07 a 08,colectivo,31
+284,Edison y Calabria,05/03/2023,miercoles,07 a 08,camiones,13
+33,Edison y 12 de Octubre ,11/02/2023,miercoles,07 a 08,auto,1813
+33,Edison y 12 de Octubre ,11/02/2023,miercoles,07 a 08,moto,120
+33,Edison y 12 de Octubre ,11/02/2023,miercoles,07 a 08,bici,27
+33,Edison y 12 de Octubre ,11/02/2023,miercoles,07 a 08,colectivo,42
+33,Edison y 12 de Octubre ,11/02/2023,miercoles,07 a 08,camiones,23
+33,Edison y 12 de Octubre ,05/03/2022,miercoles,07 a 08,auto,1861
+33,Edison y 12 de Octubre ,05/03/2022,miercoles,07 a 08,moto,107
+33,Edison y 12 de Octubre ,05/03/2022,miercoles,07 a 08,bici,33
+33,Edison y 12 de Octubre ,05/03/2022,miercoles,07 a 08,colectivo,30
+33,Edison y 12 de Octubre ,05/03/2022,miercoles,07 a 08,camiones,21
+226,Centenario y Soler,10/31/2022,lunes,07 a 08,auto,1584
+226,Centenario y Soler,10/31/2022,lunes,07 a 08,moto,116
+226,Centenario y Soler,10/31/2022,lunes,07 a 08,bici,32
+226,Centenario y Soler,10/31/2022,lunes,07 a 08,colectivo,24
+226,Centenario y Soler,10/31/2022,lunes,07 a 08,camiones,168
+226,Centenario y Soler,02/08/2023,miercoles,07 a 08,auto,1582
+226,Centenario y Soler,02/08/2023,miercoles,07 a 08,moto,69
+226,Centenario y Soler,02/08/2023,miercoles,07 a 08,bici,12
+226,Centenario y Soler,02/08/2023,miercoles,07 a 08,colectivo,25
+226,Centenario y Soler,02/08/2023,miercoles,07 a 08,camiones,195
+202,Independencia y Tres de Febrero,12/07/2022,miercoles,07 a 08,auto,1400
+202,Independencia y Tres de Febrero,12/07/2022,miercoles,07 a 08,moto,120
+202,Independencia y Tres de Febrero,12/07/2022,miercoles,07 a 08,bici,56
+202,Independencia y Tres de Febrero,12/07/2022,miercoles,07 a 08,colectivo,28
+202,Independencia y Tres de Febrero,12/07/2022,miercoles,07 a 08,camiones,16
+58,luro e Italia,05/16/2022,lunes,07 a 08,auto,780
+58,luro e Italia,05/16/2022,lunes,07 a 08,moto,76
+58,luro e Italia,05/16/2022,lunes,07 a 08,bici,40
+58,luro e Italia,05/16/2022,lunes,07 a 08,colectivo,60
+58,luro e Italia,05/16/2022,lunes,07 a 08,camiones,16
+476,Independencia y R. Pena,12/07/2022,miercoles,07 a 08,auto,1180
+476,Independencia y R. Pena,12/07/2022,miercoles,07 a 08,moto,163
+476,Independencia y R. Pena,12/07/2022,miercoles,07 a 08,bici,76
+476,Independencia y R. Pena,12/07/2022,miercoles,07 a 08,colectivo,32
+476,Independencia y R. Pena,12/07/2022,miercoles,07 a 08,camiones,32
+581,Independencia y Belgrano,12/07/2022,miercoles,07 a 08,auto,1288
+581,Independencia y Belgrano,12/07/2022,miercoles,07 a 08,moto,184
+581,Independencia y Belgrano,12/07/2022,miercoles,07 a 08,bici,92
+581,Independencia y Belgrano,12/07/2022,miercoles,07 a 08,colectivo,128
+581,Independencia y Belgrano,12/07/2022,miercoles,07 a 08,camiones,40
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,07 a 08,auto,2513
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,07 a 08,moto,209
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,07 a 08,bici,94
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,07 a 08,colectivo,17
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,07 a 08,camiones,23
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,07 a 08,auto,2776
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,07 a 08,moto,176
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,07 a 08,bici,86
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,07 a 08,colectivo,30
+262,F. U. Camet y Rio Negro,05/22/2024,miercoles,07 a 08,camiones,20
+367,Juan B.Justo y Guemes,11/02/2022,miercoles,08 a 09,auto,2620
+367,Juan B.Justo y Guemes,11/02/2022,miercoles,08 a 09,moto,220
+367,Juan B.Justo y Guemes,11/02/2022,miercoles,08 a 09,bici,64
+367,Juan B.Justo y Guemes,11/02/2022,miercoles,08 a 09,colectivo,40
+367,Juan B.Justo y Guemes,11/02/2022,miercoles,08 a 09,camiones,80
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,08 a 09,auto,1422
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,08 a 09,moto,81
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,08 a 09,bici,33
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,08 a 09,colectivo,15
+684,Ruta 2 y Rotonda Aeroparque,01/06/2023,viernes,08 a 09,camiones,96
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,08 a 09,auto,1644
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,08 a 09,moto,60
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,08 a 09,bici,54
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,08 a 09,colectivo,12
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,08 a 09,camiones,24
+148,Mario Bravo y Galicia,11/02/2022,miercoles,08 a 09,auto,972
+148,Mario Bravo y Galicia,11/02/2022,miercoles,08 a 09,moto,246
+148,Mario Bravo y Galicia,11/02/2022,miercoles,08 a 09,bici,0
+148,Mario Bravo y Galicia,11/02/2022,miercoles,08 a 09,colectivo,6
+148,Mario Bravo y Galicia,11/02/2022,miercoles,08 a 09,camiones,42
+702,Av. J.B.Justo y Av. Independencia,11/02/2022,miercoles,08 a 09,auto,5190
+702,Av. J.B.Justo y Av. Independencia,11/02/2022,miercoles,08 a 09,moto,486
+702,Av. J.B.Justo y Av. Independencia,11/02/2022,miercoles,08 a 09,bici,210
+702,Av. J.B.Justo y Av. Independencia,11/02/2022,miercoles,08 a 09,colectivo,96
+702,Av. J.B.Justo y Av. Independencia,11/02/2022,miercoles,08 a 09,camiones,126
+251,F. U. Camet y Mugaburu,10/05/2022,miercoles,08 a 09,auto,1828
+251,F. U. Camet y Mugaburu,10/05/2022,miercoles,08 a 09,moto,124
+251,F. U. Camet y Mugaburu,10/05/2022,miercoles,08 a 09,bici,40
+251,F. U. Camet y Mugaburu,10/05/2022,miercoles,08 a 09,colectivo,88
+251,F. U. Camet y Mugaburu,10/05/2022,miercoles,08 a 09,camiones,20
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,08 a 09,auto,1335
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,08 a 09,moto,93
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,08 a 09,bici,20
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,08 a 09,colectivo,47
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,08 a 09,camiones,29
+367,Juan B. Justo y Guemes,05/16/2022,lunes,08 a 09,auto,2620
+367,Juan B. Justo y Guemes,05/16/2022,lunes,08 a 09,moto,220
+367,Juan B. Justo y Guemes,05/16/2022,lunes,08 a 09,bici,64
+367,Juan B. Justo y Guemes,05/16/2022,lunes,08 a 09,colectivo,40
+367,Juan B. Justo y Guemes,05/16/2022,lunes,08 a 09,camiones,80
+596,Independencia y Luro,11/02/2022,miercoles,08 a 09,auto,3178
+596,Independencia y Luro,11/02/2022,miercoles,08 a 09,moto,272
+596,Independencia y Luro,11/02/2022,miercoles,08 a 09,bici,150
+596,Independencia y Luro,11/02/2022,miercoles,08 a 09,colectivo,254
+596,Independencia y Luro,11/02/2022,miercoles,08 a 09,camiones,38
+478,Independencia y Alberti,12/07/2022,miercoles,08 a 09,auto,3032
+478,Independencia y Alberti,12/07/2022,miercoles,08 a 09,moto,324
+478,Independencia y Alberti,12/07/2022,miercoles,08 a 09,bici,136
+478,Independencia y Alberti,12/07/2022,miercoles,08 a 09,colectivo,32
+478,Independencia y Alberti,12/07/2022,miercoles,08 a 09,camiones,12
+585,H.Yrigoyen y Av. Colon ,05/15/2024,miercoles,08 a 09,bici,75
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,09 a 10,auto,1566
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,09 a 10,moto,72
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,09 a 10,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,09 a 10,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,09 a 10,camiones,12
+448,Jara y Alberti,11/02/2022,miercoles,09 a 10,auto,1796
+448,Jara y Alberti,11/02/2022,miercoles,09 a 10,moto,136
+448,Jara y Alberti,11/02/2022,miercoles,09 a 10,bici,132
+448,Jara y Alberti,11/02/2022,miercoles,09 a 10,colectivo,24
+448,Jara y Alberti,11/02/2022,miercoles,09 a 10,camiones,56
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,10 a 11,auto,1524
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,10 a 11,moto,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,10 a 11,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,10 a 11,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,10 a 11,camiones,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,11 a 12,auto,1272
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,11 a 12,moto,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,11 a 12,bici,12
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,11 a 12,colectivo,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,11 a 12,camiones,0
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,11 a 12,auto,1546
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,11 a 12,moto,135
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,11 a 12,bici,27
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,11 a 12,colectivo,39
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,11 a 12,camiones,48
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,12 a 13,auto,1678
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,12 a 13,moto,129
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,12 a 13,bici,36
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,12 a 13,colectivo,17
+285,Tripulantes Fournier y Edison ,05/03/2023,miercoles,12 a 13,camiones,29
+367,Juan B.Justo y Guemes,11/01/2022,martes,12 a 13,auto,2655
+367,Juan B.Justo y Guemes,11/01/2022,martes,12 a 13,moto,165
+367,Juan B.Justo y Guemes,11/01/2022,martes,12 a 13,bici,45
+367,Juan B.Justo y Guemes,11/01/2022,martes,12 a 13,colectivo,54
+367,Juan B.Justo y Guemes,11/01/2022,martes,12 a 13,camiones,63
+493,Ruta 11 y Toscana,11/02/2023,jueves,12 a 13,auto,694
+493,Ruta 11 y Toscana,11/02/2023,jueves,12 a 13,moto,22
+493,Ruta 11 y Toscana,11/02/2023,jueves,12 a 13,bici,16
+493,Ruta 11 y Toscana,11/02/2023,jueves,12 a 13,colectivo,18
+493,Ruta 11 y Toscana,11/02/2023,jueves,12 a 13,camiones,14
+493,Ruta 11 y Toscana,01/04/2023,miercoles,12 a 13,auto,1314
+493,Ruta 11 y Toscana,01/04/2023,miercoles,12 a 13,moto,51
+493,Ruta 11 y Toscana,01/04/2023,miercoles,12 a 13,bici,6
+493,Ruta 11 y Toscana,01/04/2023,miercoles,12 a 13,colectivo,15
+493,Ruta 11 y Toscana,01/04/2023,miercoles,12 a 13,camiones,9
+589,Ruta 11 y Scaglia,10/25/2022,martes,12 a 13,auto,1174
+589,Ruta 11 y Scaglia,10/25/2022,martes,12 a 13,moto,58
+589,Ruta 11 y Scaglia,10/25/2022,martes,12 a 13,bici,24
+589,Ruta 11 y Scaglia,10/25/2022,martes,12 a 13,colectivo,28
+589,Ruta 11 y Scaglia,10/25/2022,martes,12 a 13,camiones,72
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,12 a 13,auto,1237
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,12 a 13,moto,64
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,12 a 13,bici,8
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,12 a 13,colectivo,25
+589,Ruta 11 y Scaglia,12/21/2022,miercoles,12 a 13,camiones,59
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,12 a 13,auto,1703
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,12 a 13,moto,65
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,12 a 13,bici,21
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,12 a 13,colectivo,40
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,12 a 13,camiones,33
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,12 a 13,auto,1353
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,12 a 13,moto,45
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,12 a 13,bici,9
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,12 a 13,colectivo,27
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,12 a 13,camiones,111
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,12 a 13,auto,1158
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,12 a 13,moto,30
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,12 a 13,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,12 a 13,colectivo,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,12 a 13,camiones,0
+304,Luro y Carrillo,02/08/2023,miercoles,12 a 13,auto,1047
+304,Luro y Carrillo,02/08/2023,miercoles,12 a 13,moto,44
+304,Luro y Carrillo,02/08/2023,miercoles,12 a 13,bici,40
+304,Luro y Carrillo,02/08/2023,miercoles,12 a 13,colectivo,30
+304,Luro y Carrillo,02/08/2023,miercoles,12 a 13,camiones,77
+75,Edison y Vertiz,05/03/2023,miercoles,12 a 13,auto,463
+75,Edison y Vertiz,05/03/2023,miercoles,12 a 13,moto,60
+75,Edison y Vertiz,05/03/2023,miercoles,12 a 13,bici,15
+75,Edison y Vertiz,05/03/2023,miercoles,12 a 13,colectivo,31
+75,Edison y Vertiz,05/03/2023,miercoles,12 a 13,camiones,50
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,12 a 13,auto,1184
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,12 a 13,moto,84
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,12 a 13,bici,36
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,12 a 13,colectivo,16
+279,Edison y Fortunato e la Plaza ,05/03/2023,miercoles,12 a 13,camiones,48
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,12 a 13,auto,1976
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,12 a 13,moto,187
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,12 a 13,bici,22
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,12 a 13,colectivo,39
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,12 a 13,camiones,32
+226,Centenario y Soler,02/08/2023,miercoles,12 a 13,auto,1726
+226,Centenario y Soler,02/08/2023,miercoles,12 a 13,moto,98
+226,Centenario y Soler,02/08/2023,miercoles,12 a 13,bici,50
+226,Centenario y Soler,02/08/2023,miercoles,12 a 13,colectivo,22
+226,Centenario y Soler,02/08/2023,miercoles,12 a 13,camiones,228
+226,Centenario y Soler,11/02/2022,miercoles,12 a 13,auto,1608
+226,Centenario y Soler,11/02/2022,miercoles,12 a 13,moto,78
+226,Centenario y Soler,11/02/2022,miercoles,12 a 13,bici,4
+226,Centenario y Soler,11/02/2022,miercoles,12 a 13,colectivo,18
+226,Centenario y Soler,11/02/2022,miercoles,12 a 13,camiones,280
+585,H.Yrigoyen y Av. Colon ,04/15/2024,miercoles,12 a 13,bici,53
+58,Luro e Italia,12/07/2022,miercoles,13 a 14,auto,1632
+58,Luro e Italia,12/07/2022,miercoles,13 a 14,moto,116
+58,Luro e Italia,12/07/2022,miercoles,13 a 14,bici,48
+58,Luro e Italia,12/07/2022,miercoles,13 a 14,colectivo,52
+58,Luro e Italia,12/07/2022,miercoles,13 a 14,camiones,48
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,13 a 14,auto,786
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,13 a 14,moto,30
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,13 a 14,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,13 a 14,colectivo,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,13 a 14,camiones,0
+329,Luro y Portugal,10/05/2022,miercoles,13 a 14,auto,1688
+329,Luro y Portugal,10/05/2022,miercoles,13 a 14,moto,144
+329,Luro y Portugal,10/05/2022,miercoles,13 a 14,bici,80
+329,Luro y Portugal,10/05/2022,miercoles,13 a 14,colectivo,72
+329,Luro y Portugal,10/05/2022,miercoles,13 a 14,camiones,60
+305,Luro y Pigue,10/05/2022,miercoles,13 a 14,auto,1840
+305,Luro y Pigue,10/05/2022,miercoles,13 a 14,moto,172
+305,Luro y Pigue,10/05/2022,miercoles,13 a 14,bici,120
+305,Luro y Pigue,10/05/2022,miercoles,13 a 14,colectivo,36
+305,Luro y Pigue,10/05/2022,miercoles,13 a 14,camiones,72
+344,Luro y Estado de Israel,10/05/2022,miercoles,13 a 14,auto,2304
+344,Luro y Estado de Israel,10/05/2022,miercoles,13 a 14,moto,200
+344,Luro y Estado de Israel,10/05/2022,miercoles,13 a 14,bici,148
+344,Luro y Estado de Israel,10/05/2022,miercoles,13 a 14,colectivo,48
+344,Luro y Estado de Israel,10/05/2022,miercoles,13 a 14,camiones,68
+246,Luro y Errea,10/05/2022,miercoles,13 a 14,auto,1604
+246,Luro y Errea,10/05/2022,miercoles,13 a 14,moto,176
+246,Luro y Errea,10/05/2022,miercoles,13 a 14,bici,60
+246,Luro y Errea,10/05/2022,miercoles,13 a 14,colectivo,40
+246,Luro y Errea,10/05/2022,miercoles,13 a 14,camiones,68
+56,Luro y Catamarca,10/05/2022,miercoles,13 a 14,auto,1652
+56,Luro y Catamarca,10/05/2022,miercoles,13 a 14,moto,216
+56,Luro y Catamarca,10/05/2022,miercoles,13 a 14,bici,76
+56,Luro y Catamarca,10/05/2022,miercoles,13 a 14,colectivo,160
+56,Luro y Catamarca,10/05/2022,miercoles,13 a 14,camiones,48
+104,Alberti y San Juan,12/15/2022,jueves,13 a 14,auto,972
+104,Alberti y San Juan,12/15/2022,jueves,13 a 14,moto,84
+104,Alberti y San Juan,12/15/2022,jueves,13 a 14,bici,30
+104,Alberti y San Juan,12/15/2022,jueves,13 a 14,colectivo,6
+104,Alberti y San Juan,12/15/2022,jueves,13 a 14,camiones,0
+436,Luro y Cordoba,10/05/2022,miercoles,13 a 14,auto,900
+436,Luro y Cordoba,10/05/2022,miercoles,13 a 14,moto,100
+436,Luro y Cordoba,10/05/2022,miercoles,13 a 14,bici,12
+436,Luro y Cordoba,10/05/2022,miercoles,13 a 14,colectivo,112
+436,Luro y Cordoba,10/05/2022,miercoles,13 a 14,camiones,12
+54,luro y Arturo Alio,10/05/2022,miercoles,13 a 14,auto,1988
+54,luro y Arturo Alio,10/05/2022,miercoles,13 a 14,moto,228
+54,luro y Arturo Alio,10/05/2022,miercoles,13 a 14,bici,112
+54,luro y Arturo Alio,10/05/2022,miercoles,13 a 14,colectivo,64
+54,luro y Arturo Alio,10/05/2022,miercoles,13 a 14,camiones,68
+11,luro y 14 de julio,10/05/2022,miercoles,13 a 14,auto,1674
+11,luro y 14 de julio,10/05/2022,miercoles,13 a 14,moto,132
+11,luro y 14 de julio,10/05/2022,miercoles,13 a 14,bici,81
+11,luro y 14 de julio,10/05/2022,miercoles,13 a 14,colectivo,78
+11,luro y 14 de julio,10/05/2022,miercoles,13 a 14,camiones,24
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,14 a 15,auto,407
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,14 a 15,moto,24
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,14 a 15,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,14 a 15,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,14 a 15,camiones,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,15 a 16,auto,246
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,15 a 16,moto,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,15 a 16,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,15 a 16,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,15 a 16,camiones,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,16 a 17,auto,276
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,16 a 17,moto,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,16 a 17,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,16 a 17,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,16 a 17,camiones,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,17 a 18,auto,330
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,17 a 18,moto,6
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,17 a 18,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,17 a 18,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,17 a 18,camiones,0
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,17 a 18,auto,624
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,17 a 18,moto,54
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,17 a 18,bici,18
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,17 a 18,colectivo,6
+276,Av. Fortunato de la Plaza y Vernet,12/07/2022,miercoles,17 a 18,camiones,0
+285,Tripulantes Fournier y Edison ,08/05/2023,lunes,18 a 19,auto,1829
+285,Tripulantes Fournier y Edison ,08/05/2023,lunes,18 a 19,moto,107
+285,Tripulantes Fournier y Edison ,08/05/2023,lunes,18 a 19,bici,32
+285,Tripulantes Fournier y Edison ,08/05/2023,lunes,18 a 19,colectivo,20
+285,Tripulantes Fournier y Edison ,08/05/2023,lunes,18 a 19,camiones,6
+582,San Martin y San Luis,10/05/2022,miercoles,18 a 19,auto,428
+582,San Martin y San Luis,10/05/2022,miercoles,18 a 19,moto,18
+582,San Martin y San Luis,10/05/2022,miercoles,18 a 19,bici,18
+582,San Martin y San Luis,10/05/2022,miercoles,18 a 19,colectivo,2
+582,San Martin y San Luis,10/05/2022,miercoles,18 a 19,camiones,2
+521,San Luis y Belgrano,10/05/2022,miercoles,18 a 19,auto,940
+521,San Luis y Belgrano,10/05/2022,miercoles,18 a 19,moto,196
+521,San Luis y Belgrano,10/05/2022,miercoles,18 a 19,bici,148
+521,San Luis y Belgrano,10/05/2022,miercoles,18 a 19,colectivo,8
+521,San Luis y Belgrano,10/05/2022,miercoles,18 a 19,camiones,0
+493,Ruta 11 y Toscana,11/02/2023,jueves,18 a 19,auto,800
+493,Ruta 11 y Toscana,11/02/2023,jueves,18 a 19,moto,42
+493,Ruta 11 y Toscana,11/02/2023,jueves,18 a 19,bici,16
+493,Ruta 11 y Toscana,11/02/2023,jueves,18 a 19,colectivo,24
+493,Ruta 11 y Toscana,11/02/2023,jueves,18 a 19,camiones,4
+493,Ruta 11 y Toscana,10/31/2022,lunes,18 a 19,auto,660
+493,Ruta 11 y Toscana,10/31/2022,lunes,18 a 19,moto,20
+493,Ruta 11 y Toscana,10/31/2022,lunes,18 a 19,bici,8
+493,Ruta 11 y Toscana,10/31/2022,lunes,18 a 19,colectivo,12
+493,Ruta 11 y Toscana,10/31/2022,lunes,18 a 19,camiones,8
+493,Ruta 11 y Toscana,01/04/2023,miercoles,18 a 19,auto,1149
+493,Ruta 11 y Toscana,01/04/2023,miercoles,18 a 19,moto,39
+493,Ruta 11 y Toscana,01/04/2023,miercoles,18 a 19,bici,12
+493,Ruta 11 y Toscana,01/04/2023,miercoles,18 a 19,colectivo,30
+493,Ruta 11 y Toscana,01/04/2023,miercoles,18 a 19,camiones,9
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,18 a 19,auto,1745
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,18 a 19,moto,90
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,18 a 19,bici,14
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,18 a 19,colectivo,32
+589,Ruta 11 y Scaglia,02/08/2023,miercoles,18 a 19,camiones,16
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,18 a 19,auto,1222
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,18 a 19,moto,56
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,18 a 19,bici,22
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,18 a 19,colectivo,24
+684,Ruta 2 y Rotonda Aeroparque,10/31/2022,lunes,18 a 19,camiones,74
+684,Ruta 2 y Rotonda Aeroparque,01/26/2023,jueves,18 a 19,auto,1478
+684,Ruta 2 y Rotonda Aeroparque,01/26/2023,jueves,18 a 19,moto,37
+684,Ruta 2 y Rotonda Aeroparque,01/26/2023,jueves,18 a 19,bici,7
+684,Ruta 2 y Rotonda Aeroparque,01/26/2023,jueves,18 a 19,colectivo,25
+684,Ruta 2 y Rotonda Aeroparque,01/26/2023,jueves,18 a 19,camiones,84
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,18 a 19,auto,198
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,18 a 19,moto,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,18 a 19,bici,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,18 a 19,colectivo,0
+306,Quintana y Patricio Peralta Ramos,12/10/2022,s?bado,18 a 19,camiones,0
+304,Luro y Carrillo,11/03/2022,jueves,18 a 19,auto,1146
+304,Luro y Carrillo,11/03/2022,jueves,18 a 19,moto,44
+304,Luro y Carrillo,11/03/2022,jueves,18 a 19,bici,6
+304,Luro y Carrillo,11/03/2022,jueves,18 a 19,colectivo,46
+304,Luro y Carrillo,11/03/2022,jueves,18 a 19,camiones,46
+304,Luro y Carrillo,10/31/2022,lunes,18 a 19,auto,804
+304,Luro y Carrillo,10/31/2022,lunes,18 a 19,moto,33
+304,Luro y Carrillo,10/31/2022,lunes,18 a 19,bici,15
+304,Luro y Carrillo,10/31/2022,lunes,18 a 19,colectivo,27
+304,Luro y Carrillo,10/31/2022,lunes,18 a 19,camiones,30
+304,Luro y Carrillo,02/08/2023,miercoles,18 a 19,auto,999
+304,Luro y Carrillo,02/08/2023,miercoles,18 a 19,moto,42
+304,Luro y Carrillo,02/08/2023,miercoles,18 a 19,bici,24
+304,Luro y Carrillo,02/08/2023,miercoles,18 a 19,colectivo,29
+304,Luro y Carrillo,02/08/2023,miercoles,18 a 19,camiones,44
+585,H.Yrigoyen y Av. Colon ,10/05/2022,miercoles,18 a 19,auto,3366
+585,H.Yrigoyen y Av. Colon ,10/05/2022,miercoles,18 a 19,moto,150
+585,H.Yrigoyen y Av. Colon ,10/05/2022,miercoles,18 a 19,bici,156
+585,H.Yrigoyen y Av. Colon ,10/05/2022,miercoles,18 a 19,colectivo,36
+585,H.Yrigoyen y Av. Colon ,10/05/2022,miercoles,18 a 19,camiones,6
+519,9 de Julio e H. Yrigoyen,10/05/2022,miercoles,18 a 19,auto,786
+519,9 de Julio e H. Yrigoyen,10/05/2022,miercoles,18 a 19,moto,66
+519,9 de Julio e H. Yrigoyen,10/05/2022,miercoles,18 a 19,bici,72
+519,9 de Julio e H. Yrigoyen,10/05/2022,miercoles,18 a 19,colectivo,0
+519,9 de Julio e H. Yrigoyen,10/05/2022,miercoles,18 a 19,camiones,6
+547,General paz y Primera Junta,12/07/2022,miercoles,18 a 19,auto,200
+547,General paz y Primera Junta,12/07/2022,miercoles,18 a 19,moto,12
+547,General paz y Primera Junta,12/07/2022,miercoles,18 a 19,bici,16
+547,General paz y Primera Junta,12/07/2022,miercoles,18 a 19,colectivo,6
+547,General paz y Primera Junta,12/07/2022,miercoles,18 a 19,camiones,0
+262,F. U. Camet y Rio Negro,09/28/2022,miercoles,18 a 19,auto,3548
+262,F. U. Camet y Rio Negro,09/28/2022,miercoles,18 a 19,moto,224
+262,F. U. Camet y Rio Negro,09/28/2022,miercoles,18 a 19,bici,100
+262,F. U. Camet y Rio Negro,09/28/2022,miercoles,18 a 19,colectivo,32
+262,F. U. Camet y Rio Negro,09/28/2022,miercoles,18 a 19,camiones,8
+262,F. U. Camet y Rio Negro,11/02/2022,miercoles,18 a 19,auto,3532
+262,F. U. Camet y Rio Negro,11/02/2022,miercoles,18 a 19,moto,248
+262,F. U. Camet y Rio Negro,11/02/2022,miercoles,18 a 19,bici,212
+262,F. U. Camet y Rio Negro,11/02/2022,miercoles,18 a 19,colectivo,32
+262,F. U. Camet y Rio Negro,11/02/2022,miercoles,18 a 19,camiones,24
+75,Edison y Vertiz,05/03/2023,miercoles,18 a 19,auto,400
+75,Edison y Vertiz,05/03/2023,miercoles,18 a 19,moto,40
+75,Edison y Vertiz,05/03/2023,miercoles,18 a 19,bici,8
+75,Edison y Vertiz,05/03/2023,miercoles,18 a 19,colectivo,29
+75,Edison y Vertiz,05/03/2023,miercoles,18 a 19,camiones,16
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,18 a 19,auto,1984
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,18 a 19,moto,139
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,18 a 19,bici,23
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,18 a 19,colectivo,24
+33,Edison y 12 de Octubre ,05/03/2023,miercoles,18 a 19,camiones,25
+503,Constitucion y Patagones,11/02/2022,miercoles,18 a 19,auto,2177
+503,Constitucion y Patagones,11/02/2022,miercoles,18 a 19,moto,94
+503,Constitucion y Patagones,11/02/2022,miercoles,18 a 19,bici,52
+503,Constitucion y Patagones,11/02/2022,miercoles,18 a 19,colectivo,10
+503,Constitucion y Patagones,11/02/2022,miercoles,18 a 19,camiones,4
+23,Colon y Jara ,11/02/2022,miercoles,18 a 19,auto,3918
+23,Colon y Jara ,11/02/2022,miercoles,18 a 19,moto,370
+23,Colon y Jara ,11/02/2022,miercoles,18 a 19,bici,230
+23,Colon y Jara ,11/02/2022,miercoles,18 a 19,colectivo,38
+23,Colon y Jara ,11/02/2022,miercoles,18 a 19,camiones,24
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,auto,2992
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,moto,356
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,bici,120
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,colectivo,32
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,camiones,104
+226,Centenario y Soler,02/08/2023,miercoles,18 a 19,auto,1514
+226,Centenario y Soler,02/08/2023,miercoles,18 a 19,moto,123
+226,Centenario y Soler,02/08/2023,miercoles,18 a 19,bici,29
+226,Centenario y Soler,02/08/2023,miercoles,18 a 19,colectivo,26
+226,Centenario y Soler,02/08/2023,miercoles,18 a 19,camiones,88
+226,Centenario y Soler,11/02/2022,miercoles,18 a 19,auto,1560
+226,Centenario y Soler,11/02/2022,miercoles,18 a 19,moto,108
+226,Centenario y Soler,11/02/2022,miercoles,18 a 19,bici,29
+226,Centenario y Soler,11/02/2022,miercoles,18 a 19,colectivo,36
+226,Centenario y Soler,11/02/2022,miercoles,18 a 19,camiones,80
+700,Colon e Independencia,10/05/2022,miercoles,18 a 19,auto,5022
+700,Colon e Independencia,10/05/2022,miercoles,18 a 19,moto,414
+700,Colon e Independencia,10/05/2022,miercoles,18 a 19,bici,168
+700,Colon e Independencia,10/05/2022,miercoles,18 a 19,colectivo,150
+700,Colon e Independencia,10/05/2022,miercoles,18 a 19,camiones,12
+202,Independencia y Tres de Febrero,10/05/2022,miercoles,18 a 19,auto,2616
+202,Independencia y Tres de Febrero,10/05/2022,miercoles,18 a 19,moto,192
+202,Independencia y Tres de Febrero,10/05/2022,miercoles,18 a 19,bici,30
+202,Independencia y Tres de Febrero,10/05/2022,miercoles,18 a 19,colectivo,42
+202,Independencia y Tres de Febrero,10/05/2022,miercoles,18 a 19,camiones,30
+481,Alberti y Dorrego,12/07/2022,miercoles,18 a 19,auto,1156
+481,Alberti y Dorrego,12/07/2022,miercoles,18 a 19,moto,36
+481,Alberti y Dorrego,12/07/2022,miercoles,18 a 19,bici,120
+481,Alberti y Dorrego,12/07/2022,miercoles,18 a 19,colectivo,60
+481,Alberti y Dorrego,12/07/2022,miercoles,18 a 19,camiones,0
+437,25 de Mayo y Mitre,10/05/2022,miercoles,18 a 19,auto,615
+437,25 de Mayo y Mitre,10/05/2022,miercoles,18 a 19,moto,60
+437,25 de Mayo y Mitre,10/05/2022,miercoles,18 a 19,bici,96
+437,25 de Mayo y Mitre,10/05/2022,miercoles,18 a 19,colectivo,51
+437,25 de Mayo y Mitre,10/05/2022,miercoles,18 a 19,camiones,3
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,auto,2992
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,moto,104
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,bici,356
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,colectivo,120
+586,Champagnat y Belgrano,11/02/2022,miercoles,18 a 19,camiones,32
+585,Colon y Mitre,10/05/2022,miercoles,18 a 19,auto,2322
+585,Colon y Mitre,10/05/2022,miercoles,18 a 19,moto,108
+585,Colon y Mitre,10/05/2022,miercoles,18 a 19,bici,96
+585,Colon y Mitre,10/05/2022,miercoles,18 a 19,colectivo,30
+585,Colon y Mitre,10/05/2022,miercoles,18 a 19,camiones,12
+585,H.Yrigoyen y Av. Colon ,04/15/2024,miercoles,18 a 19,bici,55

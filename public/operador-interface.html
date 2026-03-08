@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Sistema de Reportes de Eventos - Operador</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    body {
+      display: flex;
+      flex-direction: column;
+      background: #f5f5f5;
+      color: #333;
+    }
+    
+    /* ===== ESTILOS BASE - ESCRITORIO ===== */
+    .operator-header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 20px;
+      background: #007bff;
+      color: white;
+      flex: 0 0 auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .operator-header h2 {
+      margin: 0;
+      font-size: 24px;
+      color: white;
+    }
+    
+    .operator-info {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    
+    .operator-info span {
+      font-size: 16px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    
+    #operator-logout-btn {
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    
+    #operator-logout-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    #operator-logout-btn:active {
+      background: rgba(255,255,255,0.25);
+    }
+    
+    #operator-clear-chat-btn {
+      padding: 10px 16px;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    
+    #operator-clear-chat-btn:hover {
+      background: #ee5a52;
+    }
+    
+    .operator-container {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      gap: 16px;
+      padding: 16px 20px;
+      overflow: hidden;
+    }
+    
+    .communication-panel {
+      flex: 0 0 35%;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .communication-header {
+      padding: 16px 18px;
+      background: #17a2b8;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+    
+    .messages-area {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .empty-messages {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #999;
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .empty-messages p {
+      margin: 0;
+    }
+    
+    .message {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.4;
+      border-left: 3px solid #17a2b8;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .message-timestamp {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+    
+    .events-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .events-header {
+      padding: 16px 18px;
+      background: #28a745;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      flex: 0 0 auto;
+    }
+    
+    .events-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+    }
+    
+    .event-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .event-form label {
+      font-weight: 600;
+      color: #333;
+      font-size: 20px;
+      margin-bottom: 8px;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .event-form input,
+    .event-form select,
+    .event-form textarea {
+      width: 100%;
+      padding: 16px 18px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 20px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      min-height: 56px;
+      -webkit-appearance: none;
+      appearance: none;
+      background-clip: padding-box;
+    }
+
+    .event-form textarea {
+      min-height: 130px;
+      padding: 16px 18px;
+      resize: vertical;
+      font-size: 18px;
+    }
+
+    .event-form input:focus,
+    .event-form select:focus,
+    .event-form textarea:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    
+    .event-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    #operator-create-event-btn {
+      flex: 1;
+      padding: 18px 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      transition: background 0.2s;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #operator-create-event-btn:active {
+      background: #218838;
+    }
+
+    #operator-cancel-event-btn {
+      flex: 1;
+      padding: 18px 20px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      transition: background 0.2s;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #operator-cancel-event-btn:active {
+      background: #5a6268;
+    }
+    
+    /* ===== RESPONSIVE TABLET (768px - 1024px) ===== */
+    @media (max-width: 1024px) {
+      .operator-container {
+        flex-direction: column;
+      }
+      
+      .communication-panel {
+        flex: 0 0 auto;
+        max-height: 250px;
+        min-width: 100%;
+      }
+      
+      .events-panel {
+        flex: 1;
+        min-height: 300px;
+      }
+    }
+    
+    /* ===== RESPONSIVE MÓVIL GRANDE (481px - 768px) ===== */
+    @media (max-width: 768px) {
+      .operator-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 14px 16px;
+      }
+      
+      .operator-header h2 {
+        font-size: 28px;
+      }
+      
+      .operator-info {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      
+      .operator-info span {
+        font-size: 18px;
+        flex: 1;
+      }
+      
+      #operator-logout-btn {
+        padding: 12px 16px;
+        font-size: 15px;
+        min-height: 44px;
+      }
+      
+      .operator-container {
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+        flex: 1;
+      }
+      
+      .communication-panel {
+        flex: 0 0 auto;
+        max-height: 140px;
+        min-width: 100%;
+      }
+      
+      .communication-header {
+        padding: 12px 14px;
+        font-size: 20px;
+      }
+      
+      .messages-area {
+        max-height: 80px;
+        padding: 12px;
+        gap: 8px;
+      }
+      
+      .message {
+        font-size: 15px;
+        padding: 10px 12px;
+      }
+      
+      .events-panel {
+        flex: 1;
+        min-height: 350px;
+      }
+      
+      .events-header {
+        padding: 14px 16px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      
+      .events-content {
+        padding: 16px;
+      }
+      
+      .event-form label {
+        font-size: 19px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      
+      .event-form input,
+      .event-form select,
+      .event-form textarea {
+        font-size: 19px;
+        min-height: 52px;
+        padding: 15px 14px;
+      }
+      
+      .event-form textarea {
+        min-height: 120px;
+      }
+      
+      .event-buttons {
+        gap: 12px;
+      }
+      
+      #operator-create-event-btn,
+      #operator-cancel-event-btn {
+        padding: 16px 18px;
+        font-size: 19px;
+        min-height: 50px;
+      }
+    }
+    
+    /* ===== RESPONSIVE MÓVIL PEQUEÑO (<481px) ===== */
+    @media (max-width: 480px) {
+      body {
+        font-size: 24px;
+      }
+      
+      .operator-header {
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px 14px;
+      }
+      
+      .operator-header h2 {
+        font-size: 30px;
+        margin: 0;
+      }
+      
+      .operator-info {
+        width: 100%;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      
+      .operator-info span {
+        font-size: 18px;
+        flex: 1;
+      }
+      
+      #operator-logout-btn {
+        flex: 0 0 auto;
+        padding: 12px 18px;
+        font-size: 16px;
+        min-height: 46px;
+      }
+      
+      .operator-container {
+        flex-direction: column;
+        padding: 10px;
+        gap: 8px;
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .communication-panel {
+        flex: 0 0 auto;
+        max-height: 100px;
+        min-width: 100%;
+      }
+      
+      .communication-header {
+        padding: 12px 14px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .messages-area {
+        max-height: 80px;
+        padding: 10px;
+        gap: 6px;
+      }
+
+      .message {
+        font-size: 16px;
+        padding: 8px 10px;
+        max-width: 100%;
+      }
+
+      .message-timestamp {
+        font-size: 13px;
+      }
+
+      .empty-messages {
+       font-size: 15px;
+      }
+      
+      .events-panel {
+        flex: 1;
+        min-height: calc(100vh - 220px);
+      }
+      
+      .events-header {
+        padding: 16px 14px;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      
+      .events-content {
+        padding: 16px 14px;
+      }
+      
+      .event-form {
+        gap: 14px;
+      }
+      
+      .event-form label {
+        font-size: 20px;
+        margin-bottom: 10px;
+        font-weight: 700;
+        display: block;
+        line-height: 1.2;
+      }
+
+      .event-form input,
+      .event-form select,
+      .event-form textarea {
+        font-size: 20px !important;
+        min-height: 54px;
+        padding: 16px 14px;
+        border-radius: 6px;
+      }
+
+      .event-form textarea {
+        min-height: 130px;
+      }
+
+      .event-buttons {
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      #operator-create-event-btn,
+      #operator-cancel-event-btn {
+        padding: 16px 18px;
+        font-size: 20px;
+        min-height: 54px;
+        width: 100%;
+      }
+    }
+    
+    /* ===== ANIMACIONES ===== */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .message {
+      animation: slideIn 0.3s ease;
+    }
+  </style>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <!-- MODAL DE REGISTRO DE OPERADOR -->
+  <div id="operator-login-modal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 9999; flex-direction: column;">
+    <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%; text-align: center;">
+      <h3 style="margin: 0 0 20px 0; color: #333; font-size: 28px; font-weight: bold;">👤 Ingreso de Operador</h3>
+      <p style="color: #666; margin: 0 0 24px 0; font-size: 18px;">Ingresa tu nombre para registrar tu turno</p>
+      
+      <input type="text" id="operator-name-input" placeholder="Tu nombre" style="width: 100%; padding: 18px 20px; border: 2px solid #ddd; border-radius: 6px; font-size: 20px; margin-bottom: 18px; min-height: 56px;">
+      
+      <button id="operator-login-btn" style="width: 100%; padding: 18px 20px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 20px; font-weight: bold; cursor: pointer; min-height: 56px; display: flex; align-items: center; justify-content: center;">✅ Ingresar Turno</button>
+      
+      <div id="operator-login-message" style="margin-top: 16px; color: #666; font-size: 14px;"></div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="operator-header">
+    <div>
+      <h2>📱 Sistema de Reportes de Eventos</h2>
+    </div>
+    <div class="operator-info">
+      <span id="operator-name" style="font-weight: bold; font-size: 20px;">👤 Operador</span>
+      <span id="operator-rol" style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 3px;">Capa</span>
+      <button id="operator-clear-chat-btn" style="display:none" data-hide-capa="true">🗑️ Limpiar Chat</button>
+      <button id="operator-logout-btn">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="operator-container">
+    
+    <!-- PANEL DE COMUNICACIÓN (Chat con Admin) -->
+    <div class="communication-panel">
+      <div class="communication-header">💬 Mensajes del Centro de Control</div>
+      <div class="messages-area" id="operator-messages-area">
+        <div class="empty-messages">
+          <p>Esperando mensajes del centro de control...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL DE EVENTOS (Formulario) -->
+    <div class="events-panel">
+      <div class="events-header">📹 Nuevo Evento de Emergencia</div>
+      <div class="events-content">
+        <form class="event-form" id="operator-event-form">
+          <div>
+            <label for="operator-camera">Número de Cámara:</label>
+            <input type="text" id="operator-camera" placeholder="Ej: 12" required>
+          </div>
+
+          <div>
+            <label for="operator-location">Ubicación del Evento:</label>
+            <input type="text" id="operator-location" placeholder="Ej: Mario Bravo y Talcahuano" required>
+          </div>
+
+          <div>
+            <label for="operator-notification-time">Hora de Notificación:</label>
+            <input type="time" id="operator-notification-time" required>
+          </div>
+
+          <div>
+            <label for="operator-notification-type">¿Cómo se enteró?</label>
+            <select id="operator-notification-type" required>
+              <option value="">Seleccionar...</option>
+              <option value="anillo_digital">ANILLO DIGITAL</option>
+              <option value="cate_911">CATE 911</option>
+              <option value="com">COM</option>
+              <option value="cpm">CPM</option>
+              <option value="dde">DDE</option>
+              <option value="mac">MAC</option>
+              <option value="multiagencia">MULTIAGENCIA</option>
+              <option value="origen_diferido">ORIGEN DIFERIDO</option>
+              <option value="same">SAME</option>
+              <option value="smart_move_pro">SMART MOVE PRO</option>
+              <option value="gael">GAEL</option>
+              <option value="gestya">GESTYA</option>
+              <option value="bykom">BYKOM</option>
+              <option value="ubi">UBI</option>
+              <option value="totem">TOTEM</option>
+              <option value="maker">MAKER</option>
+              <option value="fustec">FUSTEC</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="operator-brief-report">Descripción Breve:</label>
+            <textarea id="operator-brief-report" placeholder="Describa brevemente el incidente..."></textarea>
+          </div>
+
+          <div class="event-buttons">
+            <button type="submit" id="operator-create-event-btn">✅ Crear Evento</button>
+            <button type="reset" id="operator-cancel-event-btn">🔄 Limpiar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANEL DE EVENTOS EN SEGUIMIENTO (Edición) -->
+    <div class="events-panel" style="border-top: 2px solid #ff9800;">
+      <div class="events-header" style="background: #ff9800; color: white; border-bottom: 2px solid #e68900;">📊 Eventos en Seguimiento</div>
+      <div class="events-content" id="operator-events-list-area">
+        <div class="empty-messages">
+          <p>No hay eventos en seguimiento</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script>
+    // ===== INICIALIZACIÓN =====
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const rtdb = firebase.database();
+
+    let currentOperator = null;
+    let operatorLayer = null;
+    const enabledContinueButtons = new Map(); // Guardar estado de botones "Continuar"
+    const eventStepState = new Map(); // Guardar qué paso está visible (1 o 2)
+
+    // ===== AUTH LISTENER =====
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  // Detectar capa/rol del operador - SOLO Capa Norte y Sur
+  if (user.email.includes("capa-norte")) {
+    operatorLayer = "norte";
+  } else if (user.email.includes("capa-sur")) {
+    operatorLayer = "sur";
+  } else {
+    alert("❌ Acceso denegado: esta interfaz es solo para Capa Norte y Capa Sur");
+    auth.signOut().then(() => window.location.href = "login.html");
+    return;
+  }
+
+  currentOperator = {
+    uid: user.uid,
+    email: user.email,
+    layer: operatorLayer,
+    displayName: user.email.split('@')[0]
+  };
+
+  // Mostrar/ocultar botón limpiar chat
+  const clearChatBtn = document.getElementById('operator-clear-chat-btn');
+  if (user.email === 'com@seguridad-mdp.com') {
+    clearChatBtn.style.display = 'flex';
+  } else {
+    clearChatBtn.style.display = 'none';
+  }
+
+  checkOperatorRegistration();
+
+  document.getElementById("operator-rol").textContent =
+    `📍 ${operatorLayer.toUpperCase()}`;
+
+  loadOperatorMessages();
+  listenToNewMessages();
+  loadOperatorEvents();
+});
+
+    // ===== CARGAR MENSAJES DEL ADMIN DESDE RTDB =====
+    function loadOperatorMessages() {
+      if (!currentOperator || !currentOperator.uid) {
+        console.warn('⚠️ Usuario no identificado');
+        return;
+      }
+
+      // Generar layerKey igual que en script.js
+      let layerKey;
+      if (currentOperator.layer === 'norte') {
+        layerKey = 'capa-norte';
+      } else if (currentOperator.layer === 'sur') {
+        layerKey = 'capa-sur';
+      } else {
+        layerKey = currentOperator.layer; // mac, uppl, multiagencia, encargado-sala
+      }
+
+      const db = firebase.firestore();
+      const chatDocPath = `chats-com/${currentOperator.uid}`;
+      
+      // Verificar si hay un timestamp de limpieza
+      let lastClearedAt = null;
+      db.doc(chatDocPath).get().then((doc) => {
+        if (doc.exists && doc.data().lastClearedAt) {
+          lastClearedAt = new Date(doc.data().lastClearedAt);
+          console.log(`🧹 Chat fue limpiado en: ${lastClearedAt.toISOString()}`);
+        }
+      });
+      
+      // Cargar últimos mensajes del admin desde RTDB (usando la clave que admin usa)
+      rtdb.ref(`chats-com/${layerKey}/messages`)
+        .limitToLast(50)
+        .once('value')
+        .then((snapshot) => {
+          const messagesArea = document.getElementById('operator-messages-area');
+          messagesArea.innerHTML = '';
+
+          if (!snapshot.exists()) {
+            messagesArea.innerHTML = '<div class="empty-messages"><p>Sin mensajes</p></div>';
+            return;
+          }
+
+          const messages = snapshot.val();
+          let messageCount = 0;
+          
+          Object.keys(messages).forEach(key => {
+            const msg = messages[key];
+            
+            // Filtrar: no mostrar mensajes anteriores a la última limpieza
+            if (lastClearedAt && msg.timestamp) {
+              const msgDate = new Date(msg.timestamp);
+              if (msgDate <= lastClearedAt) {
+                console.log(`⏭️ Salteando mensaje anterior a limpieza: ${msg.timestamp}`);
+                return;
+              }
+            }
+            
+            renderMessage(msg);
+            messageCount++;
+          });
+
+          // Si todos fueron filtrados, mostrar vacío
+          if (messageCount === 0 && lastClearedAt) {
+            messagesArea.innerHTML = '<div class="empty-messages"><p>Sin mensajes (chat limpiado)</p></div>';
+          }
+
+          // Scroll al final
+          messagesArea.scrollTop = messagesArea.scrollHeight;
+        })
+        .catch(err => console.error('Error cargando mensajes:', err));
+    }
+
+    // ===== ESCUCHAR NUEVOS MENSAJES EN TIEMPO REAL =====
+    function listenToNewMessages() {
+      if (!currentOperator || !currentOperator.uid) {
+        console.warn('⚠️ Usuario no identificado');
+        return;
+      }
+
+      // Generar layerKey igual que en script.js
+      let layerKey;
+      if (currentOperator.layer === 'norte') {
+        layerKey = 'capa-norte';
+      } else if (currentOperator.layer === 'sur') {
+        layerKey = 'capa-sur';
+      } else {
+        layerKey = currentOperator.layer; // mac, uppl, multiagencia, encargado-sala
+      }
+      
+      console.log(`📡 Escuchando mensajes en: chats-com/${layerKey}/messages`);
+
+      rtdb.ref(`chats-com/${layerKey}/messages`)
+        .on('child_added', (snapshot) => {
+          const msg = snapshot.val();
+          if (msg) {
+            console.log('💬 Nuevo mensaje recibido:', msg);
+            renderMessage(msg);
+            
+            // Marcar como leído en Firestore
+            markMessageAsReadByOperator(layerKey, snapshot.key);
+            
+            // Scroll al final
+            setTimeout(() => {
+              const area = document.getElementById('operator-messages-area');
+              area.scrollTop = area.scrollHeight;
+            }, 100);
+          }
+        });
+    }
+
+    // ===== MARCAR MENSAJE COMO LEÍDO POR OPERADOR =====
+    function markMessageAsReadByOperator(layerKey, messageKey) {
+      const chatDocPath = `chats-com/${layerKey}`;
+      const messages = db.doc(chatDocPath).collection('messages');
+      
+      // Buscar el documento del mensaje por timestamp o por otro identificador
+      // Como alternativa, vamos a marcar todos los mensajes sin leer del operador como leídos
+      const unreadMessages = messages.where('isRead', '==', false);
+      unreadMessages.get().then((snapshot) => {
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => {
+          batch.update(doc.ref, {
+            isRead: true,
+            readAt: new Date().toISOString()
+          });
+        });
+        batch.commit().then(() => {
+          console.log(`✅ Mensajes marcados como leídos (${snapshot.docs.length})`);
+        }).catch(err => console.error('Error marcando mensajes:', err));
+      }).catch(err => console.error('Error obteniendo mensajes no leídos:', err));
+    }
+
+    // ===== RENDERIZAR MENSAJE =====
+    function renderMessage(msgData) {
+      const messagesArea = document.getElementById('operator-messages-area');
+
+      if (messagesArea.querySelector('.empty-messages')) {
+        messagesArea.innerHTML = '';
+      }
+
+      const msgEl = document.createElement('div');
+      msgEl.className = 'message incoming';
+
+      const time = new Date(msgData.timestamp).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      msgEl.innerHTML = `
+        <div>${msgData.text || msgData.mensaje || 'Mensaje'}</div>
+        <div class="message-timestamp">${time}</div>
+      `;
+
+      messagesArea.appendChild(msgEl);
+    }
+
+    // ===== CREAR EVENTO COMO TARJETA EN RTDB =====
+    document.getElementById('operator-event-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!currentOperator) {
+        alert('Error: Usuario no autenticado');
+        return;
+      }
+
+      if (!currentOperatorName) {
+        alert('⚠️ Debes registrarte primero en el ingreso de operador');
+        document.getElementById('operator-login-modal').style.display = 'flex';
+        return;
+      }
+
+      const camera = document.getElementById('operator-camera').value.trim();
+      const location = document.getElementById('operator-location').value.trim();
+      const notifTime = document.getElementById('operator-notification-time').value;
+      const notifType = document.getElementById('operator-notification-type').value;
+      const briefReport = document.getElementById('operator-brief-report').value.trim();
+
+      if (!camera || !location || !notifType) {
+        alert('Por favor, completa: Cámara, Ubicación y Tipo');
+        return;
+      }
+
+      try {
+        // Crear evento en Firestore para que sea editable
+        const eventId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const eventData = {
+          id: eventId,
+          type: 'event-card',
+          cameraNumber: camera,
+          location: location,
+          notificationTime: notifTime,
+          notificationType: notifType,
+          briefReport: briefReport,
+          layer: operatorLayer,
+          operatorUid: currentOperator.uid,
+          operatorName: currentOperatorName,  // ← Usar el nombre registrado
+          operatorSessionId: currentOperatorSession,  // ← Agregar session ID
+          status: 'abierto',
+          createdAt: new Date().toISOString(),
+          operatorEmail: currentOperator.email,
+          lastSentToAdmin: new Date().toISOString(),
+          
+          // Campos adicionales para editar después
+          followStartTime: '',
+          policeTime: '',
+          policeUnit: '',
+          ambulanceTime: '',
+          ambulanceUnit: '',
+          attendingDoctor: '',
+          ambulanceReturnTime: '',
+          policeReturnTime: '',
+          closureTime: '',
+          notes: '',
+          finalNotes: ''
+        };
+
+        console.log('📝 Creando evento para operador:', currentOperatorName);
+        
+        // Guardar en Firestore
+        await db.collection('eventos').doc(eventId).set(eventData);
+        console.log('✅ Evento guardado en Firestore');
+        
+        // ⚠️ IMPORTANTE: También guardar en Realtime Database para que script.js lo escuche
+        await rtdb.ref(`operador-tarjetas/${eventId}`).set(eventData);
+        console.log('✅ Evento guardado en Realtime DB (operador-tarjetas)');
+        
+        // También enviar al chat para que admin lo vea (usar layer en lugar de uid)
+        const chatDocPath = `chats-com/${operatorLayer}`;
+        await db.doc(chatDocPath).collection('messages').add({
+          ...eventData,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          sender: 'operador'
+        });
+
+        console.log('✅ Evento creado por:', currentOperatorName);
+        alert('✅ Evento reportado. Puedes continuar editando en la sección inferior.');
+
+        // Limpiar formulario
+        document.getElementById('operator-event-form').reset();
+
+        // Cargar eventos actualizados
+        loadOperatorEvents();
+
+      } catch (error) {
+        console.error('❌ Error creando evento:', error);
+        console.error('   Stack:', error.stack);
+        alert('Error: ' + error.message);
+      }
+    });
+
+    // ===== CARGAR EVENTOS DEL OPERADOR DESDE FIRESTORE =====
+    function loadOperatorEvents() {
+      if (!currentOperator || !currentOperator.uid) {
+        console.warn('⚠️ Usuario no identificado');
+        return;
+      }
+
+      db.collection('eventos')
+        .where('operatorUid', '==', currentOperator.uid)
+        .onSnapshot((snapshot) => {
+          const eventsArea = document.getElementById('operator-events-list-area');
+          
+          if (snapshot.empty) {
+            eventsArea.innerHTML = '<div class="empty-messages"><p>No hay eventos en seguimiento</p></div>';
+            return;
+          }
+
+          // Filtrar eventos ABIERTOS y CERRADOS, pero NO archivados
+          let events = [];
+          snapshot.forEach((doc) => {
+            const event = doc.data();
+            // Mostrar eventos que NO estén archivados (independientemente de su status)
+            if (event.archived !== true) {
+              events.push({ id: doc.id, ...event });
+            }
+          });
+
+          // Ordenar por createdAt descendente
+          events.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+          });
+
+          if (events.length === 0) {
+            eventsArea.innerHTML = '<div class="empty-messages"><p>No hay eventos en seguimiento</p></div>';
+            return;
+          }
+
+          // Primero, remover tarjetas que ya no existen en Firestore
+          document.querySelectorAll('[data-card-id]').forEach(card => {
+            const cardId = card.getAttribute('data-card-id');
+            if (!events.find(e => e.id === cardId)) {
+              card.remove();
+            }
+          });
+
+          // Limpiar y recrear el container en el orden correcto
+          eventsArea.innerHTML = '';
+          events.forEach((event) => {
+            renderEventCard(event.id, event, eventsArea);
+          });
+        }, (error) => {
+          console.error('Error cargando eventos:', error);
+        });
+    }
+
+    // ===== ACTUALIZAR VALORES EN TARJETA EXISTENTE =====
+    function updateEventCardValues(eventId, event, card) {
+      // Si el evento fue archivado, remover la tarjeta
+      if (event.archived === true) {
+        card.remove();
+        return;
+      }
+
+      // Actualizar solo los valores de entrada sin recrear la tarjeta
+      const updateField = (selector, value) => {
+        const input = card.querySelector(selector);
+        if (input) {
+          input.value = value || '';
+        }
+      };
+
+      updateField('.event-police-time', event.policeTime);
+      updateField('.event-police-unit', event.policeUnit);
+      updateField('.event-ambulance-time', event.ambulanceTime);
+      updateField('.event-ambulance-unit', event.ambulanceUnit);
+      updateField('.event-police-return-time', event.policeReturnTime);
+      updateField('.event-ambulance-return-time', event.ambulanceReturnTime);
+      updateField('.event-closure-time', event.closureTime);
+      updateField('.event-doctor', event.attendingDoctor);
+      updateField('.event-notes', event.notes);
+      updateField('.event-final-notes', event.finalNotes);
+    }
+
+    // ===== RENDERIZAR TARJETA DE EVENTO PARA EDITAR =====
+    function renderEventCard(eventId, event, container) {
+      const card = document.createElement('div');
+      card.setAttribute('data-card-id', eventId);
+      card.style.cssText = `
+        border: 1px solid #ff9800;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: #fffbf0;
+      `;
+
+      // Si el evento no tiene lastSentToAdmin, asumir que fue enviado automáticamente al crearlo
+      const lastSent = event.lastSentToAdmin || event.createdAt;
+      const isSent = lastSent ? '✅ Enviado' : '⏳ Pendiente';
+      const sendBtnColor = lastSent ? '#28a745' : '#ff9800';
+      const sendBtnText = lastSent ? '📤 Actualizar al Admin' : '📤 Enviar al Admin';
+      const statusColor = (event.status || 'abierto').toLowerCase() === 'cerrado' ? '#2e7d32' : '#1976d2';
+      const statusText = (event.status || 'abierto').toLowerCase() === 'cerrado' ? '🔒 CERRADO' : '🔵 ABIERTO';
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+          <h4 style="margin: 0; color: #e65100; font-size: 22px; font-weight: bold;">Cám. ${event.cameraNumber} - ${event.location}</h4>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="background: ${sendBtnColor}; color: white; padding: 8px 16px; border-radius: 6px; font-size: 20px; font-weight: bold; min-height: 40px; display: flex; align-items: center;">${isSent}</span>
+            <span style="background: ${statusColor}; color: white; padding: 8px 16px; border-radius: 6px; font-size: 20px; font-weight: bold; min-height: 40px; display: flex; align-items: center;">${statusText}</span>
+          </div>
+        </div>
+        
+        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">
+          Tipo: <strong>${event.notificationType}</strong> | 
+          Hora: <strong>${event.notificationTime || '--:--'}</strong>
+        </div>
+
+        <!-- PASO 1: LLEGADAS -->
+        <div class="event-step-1" data-event-id="${eventId}" style="border-top: 1px solid #ddd; padding-top: 12px;">
+          <h5 style="color: #d32f2f; margin-bottom: 10px; font-size: 20px; font-weight: bold;">📍 PASO 1: Datos de Llegada</h5>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Hora de Seguimiento:</label>
+              <input type="time" class="event-follow-time" data-event-id="${eventId}" value="${event.followStartTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Policía Llegada:</label>
+              <input type="time" class="event-police-time" data-event-id="${eventId}" value="${event.policeTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Móvil Policía:</label>
+              <input type="text" class="event-police-unit" data-event-id="${eventId}" placeholder="45A" value="${event.policeUnit || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Ambulancia Llegada:</label>
+              <input type="time" class="event-ambulance-time" data-event-id="${eventId}" value="${event.ambulanceTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Móvil Ambulancia:</label>
+              <input type="text" class="event-ambulance-unit" data-event-id="${eventId}" placeholder="AM1" value="${event.ambulanceUnit || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Observaciones:</label>
+            <textarea class="event-notes" data-event-id="${eventId}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; height: 100px; resize: vertical;">${event.notes || ''}</textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button class="send-to-admin-btn" data-event-id="${eventId}" style="flex: 1; padding: 18px 20px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 20px; min-height: 56px; display: flex; align-items: center; justify-content: center;">📤 Enviar</button>
+            <button class="continue-to-paso2-btn" data-event-id="${eventId}" data-enabled="false" style="flex: 1; padding: 18px 20px; background: #9e9e9e; color: white; border: none; border-radius: 4px; cursor: not-allowed; font-weight: bold; font-size: 20px; opacity: 0.6; min-height: 56px; display: flex; align-items: center; justify-content: center;">Continuar →</button>
+          </div>
+        </div>
+
+        <!-- PASO 2: RETIROS Y CIERRE -->
+        <div class="event-step-2" data-event-id="${eventId}" style="border-top: 1px solid #ddd; padding-top: 12px; display: none;">
+          <h5 style="color: #2e7d32; margin-bottom: 10px; font-size: 20px; font-weight: bold;">✅ PASO 2: Cierre del Evento</h5>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Policía Retiro:</label>
+              <input type="time" class="event-police-return-time" data-event-id="${eventId}" value="${event.policeReturnTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Ambulancia Retiro:</label>
+              <input type="time" class="event-ambulance-return-time" data-event-id="${eventId}" value="${event.ambulanceReturnTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Cierre Evento:</label>
+              <input type="time" class="event-closure-time" data-event-id="${eventId}" value="${event.closureTime || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+            <div>
+              <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Médico Atendió:</label>
+              <input type="text" class="event-doctor" data-event-id="${eventId}" placeholder="Nombre" value="${event.attendingDoctor || ''}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Observaciones Finales:</label>
+            <textarea class="event-final-notes" data-event-id="${eventId}" style="width: 100%; padding: 16px 18px; font-size: 20px; border: 1px solid #ddd; border-radius: 4px; height: 100px; resize: vertical;">${event.finalNotes || ''}</textarea>
+          </div>
+
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="send-event-btn" data-event-id="${eventId}" style="flex: 1; min-width: 120px; padding: 18px 20px; background: ${sendBtnColor}; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 20px; min-height: 56px; display: flex; align-items: center; justify-content: center;">${sendBtnText}</button>
+            <button class="event-prev-step-btn" data-event-id="${eventId}" style="flex: 1; min-width: 100px; padding: 18px 20px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 20px; min-height: 56px; display: flex; align-items: center; justify-content: center;">← Anterior</button>
+            <button class="delete-event-btn" data-event-id="${eventId}" style="padding: 18px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 20px; min-height: 56px; display: flex; align-items: center; justify-content: center;">🗑️</button>
+          </div>
+        </div>
+      `;
+
+      // Agregar la tarjeta al container (mantiene orden del array que está DESC)
+      container.appendChild(card);
+
+      // Eventos de navegación entre pasos
+      const sendToAdminBtn = card.querySelector('.send-to-admin-btn');
+      const continueBtn = card.querySelector('.continue-to-paso2-btn');
+      const prevBtn = card.querySelector('.event-prev-step-btn');
+      const sendBtn = card.querySelector('.send-event-btn');
+      const step1 = card.querySelector('.event-step-1');
+      const step2 = card.querySelector('.event-step-2');
+
+      // Restaurar estado del botón "Continuar" si fue habilitado antes
+      if (enabledContinueButtons.get(eventId)) {
+        if (continueBtn) {
+          continueBtn.dataset.enabled = 'true';
+          continueBtn.style.background = '#4caf50';
+          continueBtn.style.opacity = '1';
+          continueBtn.style.cursor = 'pointer';
+          continueBtn.style.pointerEvents = 'auto';
+        }
+      }
+
+      // Restaurar paso visible (si estaba en PASO 2, mantenerlo)
+      const currentStep = eventStepState.get(eventId) || 1;
+      if (currentStep === 2) {
+        step1.style.display = 'none';
+        step2.style.display = 'block';
+      } else {
+        step1.style.display = 'block';
+        step2.style.display = 'none';
+      }
+
+      if (sendToAdminBtn) {
+        sendToAdminBtn.addEventListener('click', async () => {
+          console.log('Botón enviar presionado para evento:', eventId);
+          
+          // Guardar todos los cambios del paso 1
+          const inputs = step1.querySelectorAll('input[type="time"], input[type="text"], textarea');
+          console.log('Campos a actualizar:', inputs.length);
+          
+          for (const input of inputs) {
+            try {
+              await updateEventField(eventId, input);
+              console.log('✅ Campo actualizado:', input.className);
+            } catch (err) {
+              console.error('⚠️ Error actualizando campo:', input.className, err);
+              // Continuar con los siguientes campos aunque falle uno
+            }
+          }
+          
+          console.log('✅ Todos los campos se han intentado actualizar');
+
+          // Habilitar botón de continuar INMEDIATAMENTE
+          if (continueBtn) {
+            continueBtn.dataset.enabled = 'true';
+            continueBtn.style.background = '#4caf50';
+            continueBtn.style.opacity = '1';
+            continueBtn.style.cursor = 'pointer';
+            continueBtn.style.pointerEvents = 'auto';
+            enabledContinueButtons.set(eventId, true); // Guardar estado
+            console.log('Botón continuar habilitado', 'data-enabled:', continueBtn.dataset.enabled);
+          }
+
+          // Esperar un momento para que Firebase escriba todo
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Enviar al admin CON los datos ya guardados
+          sendEventToAdmin(eventId, event).catch(err => {
+            console.error('Error enviando evento:', err);
+          });
+        });
+      }
+
+      if (continueBtn) {
+        continueBtn.addEventListener('click', () => {
+          console.log('Click en continuar detectado');
+          console.log('Estado enabled:', continueBtn.dataset.enabled);
+          // Solo proceder si está habilitado
+          if (continueBtn.dataset.enabled === 'true') {
+            console.log('Cambiando a Paso 2...');
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            eventStepState.set(eventId, 2); // Guardar que estamos en PASO 2
+          } else {
+            console.log('Botón aún deshabilitado');
+          }
+        });
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          step2.style.display = 'none';
+          step1.style.display = 'block';
+          eventStepState.set(eventId, 1); // Guardar que volvimos a PASO 1
+        });
+      }
+
+      // Agregar listeners a los inputs para guardar automáticamente
+      card.querySelectorAll('input[type="time"], input[type="text"], textarea').forEach(input => {
+        // Guardar después de cambio finalizado
+        input.addEventListener('change', (e) => {
+          updateEventField(eventId, input);
+        });
+        
+        // Para textareas y texto, guardar después de escribir
+        if (input.tagName === 'TEXTAREA' || input.type === 'text') {
+          let saveTimeout;
+          input.addEventListener('input', (e) => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+              updateEventField(eventId, input);
+            }, 1000); // Guardar 1 segundo después de dejar de escribir
+          });
+        }
+      });
+
+      // Botón de envío al admin
+      if (sendBtn) {
+        sendBtn.addEventListener('click', async () => {
+          await sendEventToAdmin(eventId, event);
+        });
+      }
+
+      // Botón de delete (archivar evento)
+      const deleteBtn = card.querySelector('.delete-event-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+          try {
+            await db.collection('eventos').doc(eventId).update({ archived: true });
+            enabledContinueButtons.delete(eventId); // Limpiar estado
+            eventStepState.delete(eventId); // Limpiar paso visible
+          } catch (error) {
+            console.error('Error archivando evento:', error);
+          }
+        });
+      }
+    }
+
+    // ===== ACTUALIZAR CAMPO DE EVENTO EN FIRESTORE =====
+    function updateEventField(eventId, inputElement) {
+      return new Promise(async (resolve, reject) => {
+        const eventId2 = inputElement.dataset.eventId;
+        let fieldName = '';
+        let fieldValue = inputElement.value;
+
+        if (inputElement.classList.contains('event-follow-time')) fieldName = 'followStartTime';
+        else if (inputElement.classList.contains('event-police-time')) fieldName = 'policeTime';
+        else if (inputElement.classList.contains('event-police-unit')) fieldName = 'policeUnit';
+        else if (inputElement.classList.contains('event-police-return-time')) fieldName = 'policeReturnTime';
+        else if (inputElement.classList.contains('event-ambulance-time')) fieldName = 'ambulanceTime';
+        else if (inputElement.classList.contains('event-ambulance-unit')) fieldName = 'ambulanceUnit';
+        else if (inputElement.classList.contains('event-ambulance-return-time')) fieldName = 'ambulanceReturnTime';
+        else if (inputElement.classList.contains('event-doctor')) fieldName = 'attendingDoctor';
+        else if (inputElement.classList.contains('event-closure-time')) fieldName = 'closureTime';
+        else if (inputElement.classList.contains('event-notes')) fieldName = 'notes';
+        else if (inputElement.classList.contains('event-final-notes')) fieldName = 'finalNotes';
+
+        if (fieldName) {
+          try {
+            // Actualizar el campo en Firestore
+            const updateData = {
+              [fieldName]: fieldValue,
+              updatedAt: new Date().toISOString()
+            };
+            
+            // Actualizar lastSentToAdmin para mantener visible en el mapa (filtro de 24h)
+            updateData.lastSentToAdmin = new Date().toISOString();
+            
+            // Esperar a que se complete la actualización en Firestore
+            await db.collection('eventos').doc(eventId2).update(updateData);
+            console.log('✅ Firestore actualizado:', fieldName, '=', fieldValue);
+            
+            // ⚠️ También actualizar en Realtime Database para que Google Sheets lo vea
+            await rtdb.ref(`operador-tarjetas/${eventId2}`).update(updateData);
+            console.log('✅ RTDB actualizado:', fieldName, '=', fieldValue);
+            
+            resolve(true);
+          } catch (err) {
+            console.error('❌ Error actualizando evento:', err);
+            reject(err);
+          }
+        } else {
+          resolve(true);
+        }
+      });
+    }
+
+    // ===== ENVIAR EVENTO AL ADMIN =====
+    async function sendEventToAdmin(eventId, event) {
+      try {
+        // Obtener datos actuales de Firestore
+        const docSnap = await db.collection('eventos').doc(eventId).get();
+        const currentEventData = docSnap.data();
+
+        // Actualizar en Firestore con timestamp de envío
+        const now = new Date();
+        await db.collection('eventos').doc(eventId).update({
+          lastSentToAdmin: now.toISOString(),
+          updatedAt: now.toISOString()
+        });
+        
+        // ⚠️ También actualizar en Realtime Database
+        await rtdb.ref(`operador-tarjetas/${eventId}`).update({
+          lastSentToAdmin: now.toISOString(),
+          updatedAt: now.toISOString()
+        });
+
+        // Enviar/actualizar en el chat del admin
+        const chatDocPath = `chats-com/${currentOperator.uid}`;
+        await db.doc(chatDocPath).collection('messages').add({
+          ...currentEventData,
+          sendTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          sender: 'operador',
+          messageType: 'event-update'
+        });
+
+        console.log('✅ Evento enviado al admin:', eventId);
+      } catch (error) {
+        console.error('❌ Error enviando evento:', error);
+      }
+    }
+
+    // ===== ACTUALIZAR CAMPO DE EVENTO =====
+    async function updateEventInFirestore(eventId, fieldName, fieldValue) {
+      try {
+        await db.collection('eventos').doc(eventId).update({
+          [fieldName]: fieldValue,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error actualizando:', error);
+      }
+    }
+
+    // ===== ACTUALIZAR CAMPOS DE LA TARJETA (en tiempo real) =====
+    function updateCardField(fieldName, value) {
+      if (!window.currentCardId) {
+        console.warn('No hay tarjeta abierta');
+        return;
+      }
+
+      const updateData = {};
+      updateData[fieldName] = value;
+      updateData.updatedAt = Date.now();
+
+      rtdb.ref(`operador-tarjetas/${window.currentCardId}`).update(updateData)
+        .then(() => {
+          console.log(`✅ Tarjeta actualizada: ${fieldName}`);
+        })
+        .catch(err => {
+          console.error('Error actualizando tarjeta:', err);
+        });
+    }
+
+    // ===== LIMPIAR CHAT DEL OPERADOR =====
+    document.getElementById('operator-clear-chat-btn').addEventListener('click', async () => {
+      if (!currentOperator) {
+        alert('Error: Usuario no autenticado');
+        return;
+      }
+
+      if (confirm('¿Estás seguro de que quieres eliminar TODOS los mensajes del chat?')) {
+        try {
+          const db = firebase.firestore();
+          const rtdb = firebase.database();
+          const chatDocPath = `chats-com/${currentOperator.uid}`;
+          
+          // Generar layerKey igual que en script.js
+          let layerKey;
+          if (currentOperator.layer === 'norte') {
+            layerKey = 'capa-norte';
+          } else if (currentOperator.layer === 'sur') {
+            layerKey = 'capa-sur';
+          } else {
+            layerKey = currentOperator.layer; // mac, uppl, multiagencia, encargado-sala
+          }
+          
+          // Borrar de Firestore
+          const snapshot = await db.doc(chatDocPath).collection('messages').get();
+          const batch = db.batch();
+          
+          snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+          
+          await batch.commit();
+          console.log(`✅ Se eliminaron ${snapshot.docs.length} mensajes de Firestore`);
+          
+          // Borrar de RTDB también
+          await rtdb.ref(`chats-com/${layerKey}/messages`).remove();
+          console.log(`✅ Se eliminaron mensajes de RTDB`);
+          
+          // Guardar metadata de limpieza en el documento padre para evitar que se recarguen
+          await db.doc(chatDocPath).set({
+            lastClearedAt: new Date().toISOString(),
+            clearedBy: currentOperatorName || 'Operador'
+          }, { merge: true });
+          console.log(`✅ Se guardó metadata de limpieza`);
+          
+          // Limpiar mensajes visualmente
+          const messagesArea = document.getElementById('operator-messages-area');
+          messagesArea.innerHTML = '<div class="empty-messages"><p>Chat limpiado. Esperando mensajes...</p></div>';
+          
+          alert('✅ Chat limpiado correctamente');
+        } catch (error) {
+          console.error('❌ Error limpiando chat:', error);
+          alert(`Error: ${error.message}`);
+        }
+      }
+    });
+
+    // ===== LOGOUT =====
+    document.getElementById('operator-logout-btn').addEventListener('click', () => {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
+    });
+
+    // ===== REGISTRO DE OPERADOR =====
+    let currentOperatorName = null;
+    let currentOperatorSession = null;
+
+    function checkOperatorRegistration() {
+      // Verificar si hay un operador registrado en sessionStorage
+      const registeredName = sessionStorage.getItem(`operator-name-${currentOperator.email}`);
+      const registeredSession = sessionStorage.getItem(`operator-session-${currentOperator.email}`);
+      
+      if (registeredName && registeredSession) {
+        // Ya está registrado en esta sesión
+        currentOperatorName = registeredName;
+        currentOperatorSession = registeredSession;
+        showOperatorName();
+        loadOperatorEvents();
+      } else {
+        // Mostrar modal para que se registre
+        document.getElementById('operator-login-modal').style.display = 'flex';
+      }
+    }
+
+    function showOperatorName() {
+      document.getElementById('operator-name').textContent = `👤 ${currentOperatorName}`;
+    }
+
+    document.getElementById('operator-login-btn').addEventListener('click', async () => {
+      const nameInput = document.getElementById('operator-name-input');
+      const nameValue = nameInput.value.trim();
+      const messageDiv = document.getElementById('operator-login-message');
+      
+      if (!nameValue) {
+        messageDiv.textContent = '⚠️ Ingresa tu nombre';
+        return;
+      }
+
+      try {
+        // Generar ID único para la sesión
+        const sessionId = `${currentOperator.uid}-${Date.now()}`;
+        const now = new Date().toISOString();
+        
+        // Registrar en Firestore para auditoría
+        await db.collection('operador-sesiones').add({
+          operatorEmail: currentOperator.email,
+          operatorLayer: currentOperator.layer,
+          operatorName: nameValue,
+          sessionId: sessionId,
+          loginTime: firebase.firestore.FieldValue.serverTimestamp(),
+          loginTimeIso: now
+        });
+
+        // Guardar en sessionStorage
+        sessionStorage.setItem(`operator-name-${currentOperator.email}`, nameValue);
+        sessionStorage.setItem(`operator-session-${currentOperator.email}`, sessionId);
+        
+        // Actualizar estado
+        currentOperatorName = nameValue;
+        currentOperatorSession = sessionId;
+        
+        // Ocultar modal
+        document.getElementById('operator-login-modal').style.display = 'none';
+        
+        // Mostrar nombre en header
+        showOperatorName();
+        
+        // Cargar eventos
+        loadOperatorEvents();
+        
+        console.log(`✅ Operador ${nameValue} ha ingresado su turno`);
+      } catch (error) {
+        messageDiv.textContent = `❌ Error: ${error.message}`;
+        console.error('Error registrando operador:', error);
+      }
+    });
+
+    // Permitir Enter para enviar
+    document.getElementById('operator-name-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('operator-login-btn').click();
+      }
+    });
+  </script>
+</body>
+</html>

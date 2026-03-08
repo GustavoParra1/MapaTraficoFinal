@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Operador - CIMU</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            margin: 10px auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: auto;
+            contain: layout style paint;
+            resize: vertical;
+            min-height: 400px;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            contain: layout style paint;
+        }
+
+        .chat-header h2 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .operador-info {
+            padding: 4px 4px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-shrink: 0;
+            contain: layout style paint;
+        }
+
+        .operador-info > div:first-child {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+
+        .operador-info strong {
+            color: #333;
+            font-size: 1.65em;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .operador-info input {
+            width: 100%;
+            padding: 12px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1.45em;
+            height: 52px;
+        }
+
+        .logout-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            min-height: 42px;
+            min-width: 42px;
+            line-height: 1;
+        }
+
+        .logout-btn:hover {
+            background: #cc0000;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1px 2px;
+            background: white;
+            min-height: 5px;
+            contain: layout style paint;
+        }
+
+        .message {
+            margin-bottom: 2px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 1.5em;
+            line-height: 1.25;
+            font-weight: 500;
+        }
+
+        .message.admin {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            margin-right: auto;
+        }
+
+        .message.operador {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 12px auto;
+            text-align: center;
+            width: 100%;
+            max-width: 100%;
+            font-style: italic;
+            color: #856404;
+        }
+
+        .message-time {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 3px;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            font-size: 1.05em;
+            margin-bottom: 3px;
+        }
+
+        .input-area {
+            padding: 4px 4px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-shrink: 0;
+            align-items: stretch;
+            contain: layout style paint;
+        }
+
+        .input-area input {
+            width: 100%;
+            padding: 12px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1.4em;
+            min-height: 52px;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.4em;
+            min-height: 54px;
+            white-space: nowrap;
+            flex: 1;
+            line-height: 1;
+        }
+
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+
+        .empty-chat-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+
+        .waiting-auth {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .splash-spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .splash-text {
+            color: white;
+            font-size: 16px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+            /* ===== RESPONSIVE MOBILE ===== */
+            @media (max-width: 600px) {
+                body {
+                    font-size: 22px;
+                }
+                .chat-container {
+                    max-width: 100vw;
+                    border-radius: 0;
+                    margin: 0;
+                    min-height: 100vh;
+                    box-shadow: none;
+                }
+                .chat-header h2 {
+                    font-size: 2.2em;
+                }
+                .operador-info strong {
+                    font-size: 2em;
+                }
+                .operador-info input {
+                    font-size: 1.7em;
+                    height: 60px;
+                }
+                .logout-btn {
+                    font-size: 1.3em;
+                    min-height: 50px;
+                    min-width: 50px;
+                }
+                .messages {
+                    font-size: 1.7em;
+                    padding: 4px 4px;
+                }
+                .message {
+                    font-size: 1.7em;
+                    padding: 12px 14px;
+                }
+                .input-area input {
+                    font-size: 1.6em;
+                    min-height: 60px;
+                }
+                .send-btn {
+                    font-size: 1.6em;
+                    min-height: 60px;
+                    padding: 16px 20px;
+                }
+            }
+    </style>
+</head>
+<body>
+    <!-- Splash screen de carga -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="splash-spinner"></div>
+        <div class="splash-text">Cargando panel de chat...</div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>💬 Panel de Chat</h2>
+            <div class="status-badge online" id="status-badge">Online</div>
+        </div>
+
+        <div class="operador-info">
+            <div>
+                <strong id="operador-nombre" style="font-size:2.6em;">Patrulla</strong>
+            </div>
+            <div>
+                <span id="operador-movil" style="font-size:2.2em; font-weight:bold; color:#333;">Movil AA120JS</span>
+            </div>
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <input type="text" id="operador-nombre-input" placeholder="Tu nombre..." maxlength="30">
+                <div style="display: flex; gap: 10px;">
+                    <button class="logout-btn" id="logout-operador-btn" style="flex: 1;">🚪 Salir</button>
+                    <button class="logout-btn" id="reset-chat-btn" style="background: #ff9800; flex: 1;">🗑️ Limpiar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="empty-chat">
+                <div class="empty-chat-icon">💬</div>
+                <p>No hay mensajes aún</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="mensaje-input" placeholder="Escribe un mensaje..." disabled>
+            <div class="button-group">
+                <button class="send-btn" id="send-btn" disabled>📤 Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v8 (Compat - API Global) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        // Firebase ya está cargado por firebase-config.js
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const rtdb = firebase.database();
+        
+        let currentUser = null;
+        let userRole = null;
+        let messageListener = null;
+
+        // Obtener rol de parámetros URL
+        const urlParams = new URLSearchParams(window.location.search);
+            let urlRole = urlParams.get('role');
+            
+            // Normalizar si es necesario (por si hay caché del navegador)
+            if (urlRole === 'encargado') {
+                urlRole = 'encargado-sala';
+            }
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                // Ocultar splash screen antes de redirigir a login
+                const splashScreen = document.getElementById('splash-screen');
+                if (splashScreen) {
+                    splashScreen.style.display = 'none';
+                }
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = user;
+            
+            // Usar rol de URL si está disponible, si no, extraer del email
+            const roles = {
+                'mac': 'MAC',
+                'uppl': 'UPPL',
+                'multiagencia': 'Multiagencia',
+                'encargado-sala': 'Encargado de Sala'
+            };
+
+            userRole = urlRole || user.email.split('@')[0];
+            console.log(`🔑 URL Role: ${urlRole}, Final userRole: ${userRole}`);
+            
+            const userDisplayName = roles[userRole] || 'Operador';
+
+            // Mostrar nombre del operador (rol)
+            document.getElementById('operador-nombre').textContent = `👤 ${userDisplayName}`;
+
+            // Habilitar inputs directo (la autenticación en Firebase es suficiente)
+            document.getElementById('mensaje-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+
+            // Setup logout
+            document.getElementById('logout-operador-btn').onclick = () => {
+                auth.signOut().then(() => {
+                    window.location.href = 'login.html';
+                });
+            };
+
+            // Setup reset chat
+            document.getElementById('reset-chat-btn').onclick = async () => {
+                if (confirm('¿Estás seguro de que quieres resetear la conversación?')) {
+                    await limpiarChat(userRole);
+                }
+            };
+
+            // Setup listener para guardar nombre cuando cambia
+            const nombreInput = document.getElementById('operador-nombre-input');
+            let saveTimeout;
+            nombreInput.addEventListener('input', () => {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    const nombre = nombreInput.value.trim();
+                    if (nombre) {
+                        saveOperadorName(userRole, nombre);
+                    }
+                }, 1000);
+            });
+
+            // Setup chat listeners - usar rol como ID
+            setupChatListener(userRole);
+            setupSendButton(userRole);
+            
+            // Marcar todos los mensajes como leídos cuando abre el chat
+            markAllMessagesAsRead(userRole);
+
+            // Ocultar splash screen cuando todo está listo
+            setTimeout(() => {
+                const splashScreen = document.getElementById('splash-screen');
+                if (splashScreen) {
+                    splashScreen.style.opacity = '0';
+                    splashScreen.style.transition = 'opacity 0.3s ease-out';
+                    splashScreen.addEventListener('transitionend', () => {
+                        splashScreen.style.display = 'none';
+                    });
+                }
+            }, 500);
+        });
+
+        // ===== GUARDAR NOMBRE DEL OPERADOR =====
+        async function saveOperadorName(operadorRole, nombre) {
+            try {
+                await db.collection('operador-perfiles').doc(operadorRole).set({
+                    nombre: nombre,
+                    email: currentUser.email,
+                    role: operadorRole,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('✅ Nombre guardado:', nombre);
+            } catch (error) {
+                console.error('❌ Error guardando nombre:', error);
+            }
+        }
+
+        // ===== MARCAR TODOS LOS MENSAJES COMO LEÍDOS =====
+        async function markAllMessagesAsRead(operadorRole) {
+            try {
+                console.log(`🔍 Marcando mensajes como leídos para: ${operadorRole}`);
+                const snapshot = await db.collection('chats-com')
+                    .doc(operadorRole)
+                    .collection('messages')
+                    .where('isRead', '==', false)
+                    .get();
+                
+                console.log(`📊 Encontrados ${snapshot.size} mensajes sin leer`);
+                
+                if (snapshot.empty) {
+                    console.log('ℹ️ No hay mensajes sin leer');
+                    return;
+                }
+
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.update(doc.ref, { isRead: true });
+                });
+                
+                await batch.commit();
+                console.log(`✅ ${snapshot.docs.length} mensajes marcados como leídos`);
+            } catch (error) {
+                console.warn('⚠️ Error marcando mensajes como leídos:', error.message);
+            }
+        }
+
+        // Configurar listener de mensajes
+        function setupChatListener(operadorId) {
+            const chatPath = `chats-com/${operadorId}`;
+            const messagesDiv = document.getElementById('messages');
+            console.log(`📡 Configurando listener RTDB para: ${chatPath}`);
+            
+            if (messageListener) {
+                messageListener();
+            }
+
+            messageListener = rtdb.ref(chatPath).on('value', (snapshot) => {
+                console.log(`🔄 Actualización RTDB recibida para ${chatPath}`);
+                messagesDiv.innerHTML = '';
+                
+                if (!snapshot.exists() || !snapshot.val().messages) {
+                    console.log(`⚠️ No hay mensajes en RTDB para ${chatPath}`);
+                    messagesDiv.innerHTML = `
+                        <div class="empty-chat">
+                            <div class="empty-chat-icon">💬</div>
+                            <p>No hay mensajes aún.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const messages = snapshot.val().messages;
+                const messagesArray = Object.values(messages).sort(
+                    (a, b) => a.timestamp - b.timestamp
+                );
+
+                messagesArray.forEach(msg => {
+                    const isFromAdmin = msg.sender === 'admin';
+                    const isSystem = msg.sender === 'system';
+                    const div = document.createElement('div');
+                    div.className = `message ${isSystem ? 'system' : (isFromAdmin ? 'admin' : 'operador')}`;
+                    
+                    const date = new Date(msg.timestamp);
+                    const time = date.toLocaleTimeString('es-AR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+
+                    if (isSystem) {
+                        div.innerHTML = `
+                            <div>${msg.text}</div>
+                            <div class="message-time">${time}</div>
+                        `;
+                    } else {
+                        div.innerHTML = `
+                            <div class="message-sender">${isFromAdmin ? '👨‍💼 Administrativo' : '👤 Tú'}</div>
+                            <div>${escapeHtml(msg.text)}</div>
+                            <div class="message-time">${time}</div>
+                        `;
+                    }
+                    
+                    messagesDiv.appendChild(div);
+                });
+
+                // Scroll al final
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+        }
+
+        // Setup botón enviar
+        function setupSendButton(operadorId) {
+            const input = document.getElementById('mensaje-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !sendBtn.disabled) {
+                    sendMessage(operadorId);
+                }
+            });
+
+            sendBtn.addEventListener('click', () => sendMessage(operadorId));
+        }
+
+        // Enviar mensaje
+        async function sendMessage(operadorId) {
+            const input = document.getElementById('mensaje-input');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            try {
+                const chatPath = `chats-com/${operadorId}`;
+                console.log(`📝 Enviando mensaje a: ${chatPath}`);
+                
+                const timestamp = new Date().getTime();
+                const message = {
+                    text,
+                    sender: 'operador',
+                    timestamp: timestamp,
+                    email: currentUser.email,
+                    operadorRole: operadorId
+                };
+
+                // Guardar en RTDB
+                const ref = rtdb.ref(chatPath).child('messages').push();
+                await ref.set(message);
+                console.log(`✅ Guardado en RTDB: ${chatPath}`);
+
+                // También guardar en Firestore para historial (con timestamp de servidor)
+                try {
+                    const messageData = {
+                        text,
+                        sender: 'operador',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        email: currentUser.email,
+                        operadorRole: operadorId,
+                        isRead: false
+                    };
+                    
+                    await db.collection('chats-com').doc(operadorId).collection('messages').add(messageData);
+                    console.log(`✅ Guardado en Firestore: chats-com/${operadorId}/messages`);
+                } catch (e) {
+                    console.error('❌ Error guardando en Firestore:', e);
+                }
+
+                input.value = '';
+                input.focus();
+            } catch (error) {
+                console.error('Error enviando mensaje:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Utility: escapar HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Limpiar/resetear todo el chat
+        async function limpiarChat(operadorId) {
+            try {
+                const chatPath = `chats-com/${operadorId}`;
+                console.log('🗑️ Eliminando mensajes de:', chatPath);
+                
+                // Eliminar de RTDB
+                await rtdb.ref(chatPath).child('messages').remove();
+
+                // Actualizar metadata
+                await rtdb.ref(chatPath).update({
+                    lastClearedAt: new Date().getTime()
+                });
+
+                // Eliminar de Firestore
+                try {
+                    const snapshot = await db.collection('chats-com').doc(operadorId).collection('messages').get();
+                    const batch = db.batch();
+                    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                } catch (e) {
+                    console.warn('⚠️ No se pudo limpiar Firestore:', e);
+                }
+
+                console.log('✅ Chat limpiado');
+                alert('Chat reseteado correctamente');
+                
+                // Limpiar UI
+                const messagesDiv = document.getElementById('messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = `
+                        <div class="empty-chat">
+                            <div class="empty-chat-icon">💬</div>
+                            <p>No hay mensajes aún.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ Error limpiando chat:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

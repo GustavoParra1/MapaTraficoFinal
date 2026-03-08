@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Chat COM - Admin responde, Operadores reportan eventos
+    match /chats-com/{operadorId} {
+      match /messages/{messageId} {
+        // Admin puede escribir, leer, editar y borrar en CUALQUIER chat
+        allow read, create, delete: if request.auth.uid != null && 
+                               request.auth.token.email == 'com@seguridad-mdp.com';
+        
+        // Admin también puede actualizar
+        allow update: if request.auth.uid != null && 
+                      request.auth.token.email == 'com@seguridad-mdp.com';
+        
+        // Operadores SOLO en su propio chat - basado en su email
+        allow read, create, delete: if request.auth.uid != null && 
+                            request.auth.token.email != null &&
+                            request.auth.token.email.matches('.*@seguridad-mdp\\.com') &&
+                            request.auth.token.email != 'com@seguridad-mdp.com' && (
+                              // Capa Norte
+                              (request.auth.token.email == 'capa-norte@seguridad-mdp.com' && operadorId == 'capa-norte') ||
+                              // Capa Sur
+                              (request.auth.token.email == 'capa-sur@seguridad-mdp.com' && operadorId == 'capa-sur') ||
+                              // MAC
+                              (request.auth.token.email == 'mac@seguridad-mdp.com' && operadorId == 'mac') ||
+                              // UPPL
+                              (request.auth.token.email == 'uppl@seguridad-mdp.com' && operadorId == 'uppl') ||
+                              // Multiagencia
+                              (request.auth.token.email == 'multiagencia@seguridad-mdp.com' && operadorId == 'multiagencia') ||
+                              // Encargado de Sala
+                              (request.auth.token.email == 'encargado-sala@seguridad-mdp.com' && operadorId == 'encargado-sala')
+                            );
+        
+        // Operadores pueden actualizar (solo para marcar mensajes como leídos)
+        allow update: if request.auth.uid != null && 
+                      request.auth.token.email != null &&
+                      request.auth.token.email.matches('.*@seguridad-mdp\\.com') &&
+                      request.auth.token.email != 'com@seguridad-mdp.com' && (
+                        // Capa Norte
+                        (request.auth.token.email == 'capa-norte@seguridad-mdp.com' && operadorId == 'capa-norte') ||
+                        // Capa Sur
+                        (request.auth.token.email == 'capa-sur@seguridad-mdp.com' && operadorId == 'capa-sur') ||
+                        // MAC
+                        (request.auth.token.email == 'mac@seguridad-mdp.com' && operadorId == 'mac') ||
+                        // UPPL
+                        (request.auth.token.email == 'uppl@seguridad-mdp.com' && operadorId == 'uppl') ||
+                        // Multiagencia
+                        (request.auth.token.email == 'multiagencia@seguridad-mdp.com' && operadorId == 'multiagencia') ||
+                        // Encargado de Sala
+                        (request.auth.token.email == 'encargado-sala@seguridad-mdp.com' && operadorId == 'encargado-sala')
+                      ) &&
+                      // Solo pueden actualizar el campo isRead
+                      request.resource.data.keys().hasOnly(['isRead', 'timestamp', 'sender', 'text', 'adminEmail']);
+      }
+      
+      // Permite acceso al documento padre para operadores
+      allow get: if request.auth.uid != null && 
+                 (request.auth.token.email == 'com@seguridad-mdp.com' ||
+                  (request.auth.token.email != null &&
+                   request.auth.token.email.matches('.*@seguridad-mdp\\.com') &&
+                   request.auth.token.email != 'com@seguridad-mdp.com'));
+    }
+
+    // Perfiles de operadores - guarda nombre personalizado, teléfono, etc
+    match /operador-perfiles/{operadorRole} {
+      // Los operadores pueden leer y escribir su propio perfil
+      allow read, write: if request.auth.uid != null && 
+                            request.auth.token.email != null &&
+                            request.auth.token.email != 'com@seguridad-mdp.com';
+      
+      // Admin puede leer todos los perfiles de operadores
+      allow read: if request.auth.uid != null && 
+                     request.auth.token.email == 'com@seguridad-mdp.com';
+    }
+
+    // 🎯 EVENTOS - Sistema de reportes de Capa Norte y Sur
+    match /eventos/{eventId} {
+      // Lectura: Operadores ven sus propios eventos, Admin ve todo
+      allow read: if request.auth.uid != null && (
+        // Admin (com@seguridad-mdp.com) puede leer todo
+        request.auth.token.email == 'com@seguridad-mdp.com' ||
+        // Cualquier operador puede leer sus propios eventos
+        resource.data.operatorUid == request.auth.uid ||
+        // Capa Norte: solo lee eventos de norte (para ver eventos de otros operadores de la capa)
+        (request.auth.token.email == 'capa-norte@seguridad-mdp.com' && 
+         resource.data.layer == 'norte') ||
+        // Capa Sur: solo lee eventos de sur (para ver eventos de otros operadores de la capa)
+        (request.auth.token.email == 'capa-sur@seguridad-mdp.com' && 
+         resource.data.layer == 'sur')
+      );
+
+      // Crear: Solo operadores pueden crear eventos en su capa
+      allow create: if request.auth.uid != null && (
+        // Capa Norte crea en norte
+        (request.auth.token.email == 'capa-norte@seguridad-mdp.com' && 
+         request.resource.data.layer == 'norte') ||
+        // Capa Sur crea en sur
+        (request.auth.token.email == 'capa-sur@seguridad-mdp.com' && 
+         request.resource.data.layer == 'sur')
+      );
+
+      // Actualizar: Admin puede actualizar cualquier evento, operadores solo el suyo
+      allow update: if request.auth.uid != null && (
+        // Admin puede actualizar cualquier evento (cerrar, editar, etc)
+        request.auth.token.email == 'com@seguridad-mdp.com' ||
+        // Capa Norte: solo si es su evento
+        (request.auth.token.email == 'capa-norte@seguridad-mdp.com' && 
+         resource.data.layer == 'norte' &&
+         resource.data.operatorUid == request.auth.uid) ||
+        // Capa Sur: solo si es su evento
+        (request.auth.token.email == 'capa-sur@seguridad-mdp.com' && 
+         resource.data.layer == 'sur' &&
+         resource.data.operatorUid == request.auth.uid)
+      );
+
+      // Borrar: No permitido (eventos inmutables para auditoría)
+      allow delete: if false;
+    }
+
+    // Sesiones de operadores - registro de ingresos
+    match /operador-sesiones/{sessionId} {
+      // Los operadores autenticados pueden crear sus propias sesiones
+      allow create: if request.auth.uid != null && 
+                       request.auth.token.email != null &&
+                       request.auth.token.email.matches('.*@seguridad-mdp\\.com');
+      
+      // Admin puede leer todas las sesiones (para auditoría y nombres actuales)
+      allow read: if request.auth.uid != null && 
+                     request.auth.token.email == 'com@seguridad-mdp.com';
+      
+      // Los operadores pueden leer sus propias sesiones
+      allow read: if request.auth.uid != null && 
+                     request.auth.token.email != null &&
+                     request.auth.token.email.matches('.*@seguridad-mdp\\.com') &&
+                     resource.data.operatorEmail == request.auth.token.email;
+    }
+
+    // Deny todas las demás rutas
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

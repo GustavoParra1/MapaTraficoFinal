@@ -1,0 +1,2049 @@
+/* Estilos generales */
+body {
+  font-family: sans-serif;
+  display: flex;
+  height: 100vh;
+  margin: 0;
+}
+
+#mapid {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Asegurar que los controles de zoom de Leaflet estén sobre el mapa */
+.leaflet-bottom.leaflet-left {
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.leaflet-bottom.leaflet-left .leaflet-control {
+  z-index: 999 !important;
+}
+
+#right-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 260px !important; /* ancho fijo */
+  max-width: 260px !important; /* evita que crezca */
+  height: 100%;
+  overflow-y: auto;
+  background: #ffffffd9;
+  backdrop-filter: blur(3px);
+  border-left: 2px solid #ddd;
+  z-index: 1000;
+  padding: 10px 15px;
+}
+
+/* Estilos generales para grupos de filtros */
+.filter-group {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 15px;
+}
+
+.filter-group h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.filter-group select, .filter-group input[type="text"] {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+#traffic-legend-container {
+  padding: 10px;
+  background: white;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+}
+
+#traffic-legend-container h4 {
+  margin: 0 0 5px 0;
+}
+
+#traffic-legend-container div {
+  display: flex;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+#traffic-legend-container i {
+  width: 18px;
+  height: 18px;
+  float: left;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.camera-icon, .camera-privada-icon, .lpr-camera-icon, .lpr-selected-camera-icon {
+  background-color: rgba(0, 123, 255, 0.8);
+  border: 2px solid white;
+  border-radius: 50%;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  line-height: 26px; /* Ajustar para centrar el texto verticalmente */
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.camera-privada-icon {
+  background-color: rgba(128, 0, 128, 0.8); /* Violet color */
+}
+
+.lpr-camera-icon {
+  background-color: rgba(220, 53, 69, 0.8); /* Rojo para LPR */
+}
+
+.lpr-selected-camera-icon {
+  background-color: rgba(255, 0, 0, 1); /* Rojo mas intenso para la seleccionada */
+  border: 3px solid yellow;
+}
+
+.camera-icon-corredor {
+  background: linear-gradient(135deg, #FFD700, #FF8C00);
+  border: 3px solid red;
+  border-radius: 50%;
+  color: black;
+  text-align: center;
+  font-weight: bold;
+  line-height: 31px;
+  box-shadow: 0 0 10px rgba(255, 140, 0, 0.8), 0 0 5px rgba(255, 215, 0, 0.6);
+}
+
+.bus-route-camera {
+  background-color: rgba(23, 162, 184, 0.9); /* Color cian para cÃ¡maras de colectivo */
+}
+
+/* Estilos para el panel de Siniestros por DÃ­a de la Semana */
+#siniestros-por-dia-panel {
+  position: relative; /* Ajustar segÃºn la colocaciÃ³n final dentro de consulta-results-panel */
+  padding: 10px;
+  margin-top: 10px; /* SeparaciÃ³n del panel de consulta principal */
+  max-height: 300px; /* Limitar altura para hacer scroll si hay muchos dÃ­as */
+  overflow-y: auto;
+}
+
+#siniestros-por-dia-panel h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.siniestro-day-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-left: 5px solid; /* Para el color del dÃ­a */
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.siniestro-day-item:hover {
+  background-color: #e9e9e9;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.siniestro-day-item.highlight {
+  background-color: #e0f2f7; /* Un color de fondo para el dÃ­a seleccionado */
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+  border-color: #007bff !important; /* Resalta el borde aÃºn mÃ¡s */
+  font-weight: bold;
+}
+
+.siniestro-day-item .day-name {
+  font-weight: bold;
+}
+
+.siniestro-day-item .day-count {
+  font-size: 0.9em;
+  color: #555;
+  margin-left: 10px;
+}
+
+.siniestro-day-item .view-day-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: background-color 0.2s;
+}
+
+
+.siniestro-day-item .view-day-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Ensure zone filter labels are displayed vertically */
+.zone-label {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 5px;
+  font-weight: bold;
+  text-align: center;
+  width: 100px !important;
+}
+
+.alert-item, .top-siniestro-item, .top-robo-item {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.top-siniestro-item, .top-robo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-siniestro-item .rank, .top-robo-item .rank {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: #007bff;
+}
+
+.top-robo-item .rank {
+  color: #dc3545;
+}
+
+.top-siniestro-item .address, .top-robo-item .address {
+  flex-grow: 1;
+}
+
+.view-on-map-btn {
+  padding: 5px 10px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.view-on-map-btn:hover {
+  background-color: #0056b3;
+}
+
+.custom-ranked-icon {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.siniestro-rank-label, .robo-rank-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px black;
+}
+
+.highlight-marker .fi {
+  transform: scale(1.5);
+  transition: transform 0.2s ease-in-out;
+}
+
+.top-siniestro-item.highlight, .top-robo-item.highlight {
+  background-color: #e7f3ff; /* Un azul claro para resaltar */
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+  background: #007bff;
+  color: #fff;
+  border-radius: 5px;
+}
+
+.custom-popup .leaflet-popup-tip {
+  background: #007bff;
+}
+
+.zone-label {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 5px;
+  font-weight: bold;
+  text-align: center;
+  width: 100px !important;
+}
+
+#control-panel label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#right-panel label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Ensure zone filter labels are displayed vertically */
+.filter-group input[name="zone-filter"] + label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Estilos para botones en paneles (excluir botones overlay) */
+#left-sidebar button,
+#right-panel button,
+#control-panel button,
+#consultas-panel button:not(#btn-start-tour):not(#btn-open-consultas) {
+  background-color: #28a745; /* Green color */
+  color: white;
+  border: 1px solid #28a745;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#left-sidebar button:hover,
+#right-panel button:hover,
+#control-panel button:hover,
+#consultas-panel button:not(#btn-start-tour):not(#btn-open-consultas):hover {
+  background-color: #218838; /* Darker green on hover */
+  border-color: #1e7e34;
+}
+
+/* Specific style for LPR clear button separation */
+#clear-lpr-radius-button {
+  margin-left: 10px; /* Small separation */
+}
+
+
+
+/* Botones de panel - estilos unificados en sección "BOTONES DEL PANEL IZQUIERDO" */
+#show-lpr-radius-button {
+  margin-bottom: 10px; /* Add vertical spacing below the button */
+}
+
+/* Small vertical separation for the clear LPR button */
+
+.view-on-map-btn {
+  background-color: #28a745; /* Green color */
+  color: white;
+  border: 1px solid #28a745;
+  padding: 5px 10px; /* Adjusted padding for better fit */
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap; /* Prevent text from wrapping */
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.view-on-map-btn:hover {
+  background-color: #218838; /* Darker green on hover */
+  border-color: #1e7e34;
+}
+
+.uncovered-percentage-label {
+  background-color: rgba(247, 116, 10, 0.973);
+  color: rgb(6, 91, 250);
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  width: fit-content; /* Adjust width to content */
+}
+/* === TOUR GUIDE === */
+#tour-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9998;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Panel de bienvenida */
+#tour-welcome {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.tour-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  animation: fadeIn 0.4s ease;
+}
+
+.tour-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.tour-logo {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.tour-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tour-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  background: #f0f4ff;
+  border: 2px solid #cbd5ff;
+  border-radius: 14px;
+  padding: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.tour-option:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tour-icon {
+  font-size: 1.5rem;
+  color: white;
+  border-radius: 10px;
+  padding: 10px;
+}
+.tour-icon.blue { background: #3b82f6; }
+.tour-icon.purple { background: #8b5cf6; }
+.tour-icon.red { background: #ef4444; }
+
+.tour-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+#skip-tour {
+  border: none;
+  background: none;
+  color: #555;
+  cursor: pointer;
+}
+
+#tour-tooltip {
+  position: absolute;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  padding: 16px 20px;
+  max-width: 380px;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+
+#tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+#tour-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+#tour-nav button {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: white;
+}
+
+.tour-highlight {
+  outline: 4px solid rgba(255, 221, 0, 0.8);
+  border-radius: 6px;
+  transition: outline 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* === FIN TOUR GUIDE === */
+
+/* === PANEL DE CONSULTAS (PROFESIONAL) === */
+#consultas-panel {
+  position: absolute;
+  top: 90px;
+  right: 25px;
+  width: 420px;
+  max-height: 80vh; /* Limitar altura máxima a la ventana */
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 1100;
+  display: flex; /* Usar flexbox para la estructura interna */
+  flex-direction: column;
+}
+
+#consultas-panel:active {
+  cursor: grabbing;
+}
+
+#consultas-panel .panel-header {
+  background-color: #e0f2f7; /* Un azul muy claro */
+  color: #212529; /* Texto oscuro */
+  padding: 12px 15px;
+  font-weight: normal; /* Menos negrita */
+  cursor: move;
+  user-select: none;
+  text-align: left; /* Alineado a la izquierda para el título */
+  border-bottom: none; /* Eliminar borde inferior */
+  position: relative;
+  display: flex; /* Usar flexbox para alinear título y botón */
+  align-items: center;
+  justify-content: space-between;
+}
+
+#consultas-panel .panel-header h4 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #212529; /* Color del texto del título */
+    background-color: transparent; /* No background for h4 itself */
+    padding: 0; /* No padding for h4 itself */
+    border-radius: 0;
+}
+
+#consultas-panel .close-button {
+  position: static; /* Ajustar posición para flexbox */
+  transform: none; /* Resetear transform */
+  color: #6c757d; /* Color más sutil para el botón de cierre */
+  font-size: 1.2rem; /* Tamaño más pequeño */
+  padding: 0 8px; /* Ajustar padding */
+}
+
+#consultas-panel .close-button:hover {
+  color: #343a40; /* Color oscuro al pasar el ratón */
+}
+
+#consultas-content {
+  padding: 15px;
+  overflow-y: auto; /* Hace que solo el contenido sea desplazable */
+  flex-grow: 1; /* Ocupa el espacio restante */
+}
+
+/* Estilo para los acordeones <details> */
+#consultas-content details {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  transition: box-shadow 0.2s;
+}
+
+#consultas-content details[open] {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+#consultas-content summary {
+  padding: 12px 15px;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  list-style: none; /* Oculta el marcador por defecto */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#consultas-content summary::-webkit-details-marker {
+  display: none; /* Oculta el marcador en Chrome/Safari */
+}
+
+/* Flecha personalizada para el <summary> */
+#consultas-content summary::after {
+  content: '▶';
+  font-size: 0.8em;
+  color: #6c757d;
+  transition: transform 0.2s;
+}
+
+#consultas-content details[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+/* Contenido dentro del acordeón */
+#consultas-content details > :not(summary) {
+  margin-top: 8px; /* Espacio vertical entre elementos */
+  margin-left: 15px; /* Indent content */
+  margin-right: 15px; /* Indent content */
+  box-sizing: border-box; /* Asegurar que el padding se incluya en el ancho */
+  max-width: calc(100% - 30px); /* Evitar el scroll horizontal: ancho total del panel (420px) - (15px * 2 padding del consultas-content) - (15px * 2 margin-left/right del elemento) = 420 - 30 - 30 = 360px */
+}
+
+/* Asegurar el padding inferior para el último elemento del acordeón */
+#consultas-content details > :last-child {
+    padding-bottom: 15px;
+}
+
+/* Estilo para los títulos h3 dentro de las consultas */
+#consultas-content details > h3 {
+    font-size: 1.0em; /* Hacerlo más similar al botón */
+    font-weight: 500; /* Menos negrita */
+    color: #495057; /* Color de texto más suave */
+    margin-top: 15px; /* Un poco más de espacio arriba */
+    margin-bottom: 5px; /* Espacio debajo */
+    padding: 0; /* Padding ya está cubierto por el margin-left/right del padre */
+}
+
+/* Botones de consulta dentro de los acordeones */
+.consulta-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 5px 0;
+  padding: 10px 12px;
+  background-color: #e9ecef; /* Light background */
+  color: #212529; /* Darker text */
+  border: 1px solid #adb5bd; /* Subtle border */
+  border-radius: 6px;
+  font-size: 0.95em;
+  text-align: center; /* Center text */
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  white-space: normal; /* Allow text to wrap if too long */
+  overflow: visible; /* Ensure all text is visible */
+  text-overflow: clip; /* No ellipsis needed if text wraps */
+}
+
+.consulta-btn:hover {
+  background-color: #d1ecf1; /* Slightly darker on hover */
+  border-color: #88a7b9; /* Darker border on hover */
+  color: #212529;
+}
+
+/* Estilos para el panel de resultados de consulta (unificado aquí) */
+#consulta-results-panel {
+  position: absolute;
+  top: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  max-height: 70%;
+  z-index: 1010;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+#consulta-results-panel .panel-header {
+  background-color: #343a40;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px 8px 0 0;
+  cursor: grab;
+}
+
+#consulta-results-panel .panel-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+#consulta-results-content {
+  padding: 15px;
+  overflow-y: auto;
+  flex-grow: 1;
+  background-color: #f9f9f9;
+}
+
+#clear-consulta-results-btn {
+  margin: 15px auto;
+  display: block;
+  padding: 12px 24px !important;
+  background-color: #ff6b6b !important;
+  border: none !important;
+  border-color: #ff6b6b !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  transition: background-color 0.3s ease, transform 0.2s ease !important;
+  width: auto;
+}
+
+#clear-consulta-results-btn:hover {
+  background-color: #ff5252 !important;
+  border-color: #ff5252 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+/* Estilos para el botón de guía de navegación */
+#btn-start-tour {
+  position: fixed !important;
+  bottom: 90px !important;
+  right: 20px !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  background-color: #28a745 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  z-index: 1000 !important;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+#btn-start-tour:hover {
+  background-color: #218838 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#btn-start-tour .tour-icon {
+  font-size: 1.2em !important;
+  line-height: 1 !important;
+}
+
+#btn-start-tour .button-text {
+  font-size: 1em !important;
+  line-height: 1 !important;
+}
+
+/* Estilos para el botón de ayuda en panel derecho */
+#btn-open-consultas {
+  width: 100% !important;
+  padding: 12px 20px !important;
+  margin-bottom: 12px !important;
+  border-radius: 8px !important;
+  background-color: #007bff !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  position: static !important;
+  bottom: auto !important;
+  right: auto !important;
+  z-index: auto !important;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+#btn-open-consultas:hover {
+  background-color: #0056b3 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#btn-open-consultas .question-mark {
+  display: none !important;
+}
+
+#btn-open-consultas .button-text {
+  font-size: 1em !important;
+  line-height: 1 !important;
+}
+
+/* User info section styling */
+#user-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin-bottom: 15px !important;
+  text-align: center !important;
+  padding: 12px 0 !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+#user-info span {
+  display: block !important;
+  margin-bottom: 8px !important;
+  font-weight: bold !important;
+}
+
+/* Filter group styling for consistent spacing */
+.filter-group {
+  margin-bottom: 15px !important;
+  padding-bottom: 10px !important;
+}
+
+.filter-group button {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+/* === BOTONES DEL PANEL IZQUIERDO - ESTILO UNIFICADO === */
+#chat-panel-btn,
+#logout-btn,
+#streetview-btn,
+#search-button,
+#go-to-camera-button,
+#clear-filters-btn,
+#show-bus-route-button,
+#show-lpr-radius-button {
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 6px !important;
+  margin-bottom: 6px !important;
+}
+
+/* Colores específicos para cada botón */
+#chat-panel-btn {
+  background-color: #667eea !important;
+  display: none;
+  margin-top: 8px !important;
+}
+
+#chat-panel-btn:hover {
+  background-color: #5568d3 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#logout-btn {
+  background-color: #f44336 !important;
+}
+
+#logout-btn:hover {
+  background-color: #da190b !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#streetview-btn {
+  background-color: #4285f4 !important;
+  margin-bottom: 12px !important;
+}
+
+#streetview-btn:hover {
+  background-color: #1967d2 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#search-button,
+#go-to-camera-button,
+#clear-filters-btn,
+#show-bus-route-button,
+#show-lpr-radius-button {
+  background-color: #28a745 !important;
+}
+
+#search-button:hover,
+#go-to-camera-button:hover,
+#clear-filters-btn:hover,
+#show-bus-route-button:hover,
+#show-lpr-radius-button:hover {
+  background-color: #218838 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.colegios-cobertura-label {
+  background: none;
+  border: none;
+}
+
+.colegio-label-box {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #222;
+  min-width: 120px;
+}
+
+.colegio-label-box strong {
+  color: #333;
+  font-size: 14px;
+}
+
+.colegio-label-box span.alto {
+  color: #d9534f; /* rojo: mÃ¡s del 50% sin cobertura */
+  font-weight: bold;
+}
+
+.colegio-label-box span.medio {
+  color: #f0ad4e; /* amarillo: entre 20 y 50% */
+}
+
+.colegio-label-box span.bajo {
+  color: #5cb85c; /* verde: menos del 20% sin cobertura */
+}
+#info-cobertura-escolar {
+  position: absolute;
+  top: 70px; /* un poco debajo del header */
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #222;
+  width: 240px;
+  cursor: move; /* indica que se puede arrastrar */
+  z-index: 9999;
+  display: none; /* se muestra solo cuando se activa */
+}
+
+#info-cobertura-escolar h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+#info-cobertura-escolar .leyenda span {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+#info-cobertura-escolar .leyenda-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+#info-cobertura-escolar .alto span { background: #d9534f; } /* rojo */
+#info-cobertura-escolar .medio span { background: #f0ad4e; } /* amarillo */
+#info-cobertura-escolar .bajo span { background: #5cb85c; } /* verde */
+
+/* === ESTILOS PARA EL MODAL DE INFORMACIÃ“N === */
+.info-modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.6);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 2000; /* Muy alto para estar por encima de todo */
+}
+
+.info-modal-content {
+background: white;
+border-radius: 10px;
+box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+width: 90%;
+max-width: 600px;
+max-height: 80vh;
+display: flex;
+flex-direction: column;
+}
+
+.info-modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 10px 15px;
+border-bottom: 1px solid #ddd;
+background-color: #007bff;
+color: white;
+border-radius: 10px 10px 0 0;
+}
+
+.info-modal-header h4 {
+margin: 0;
+font-size: 1.1em;
+}
+
+.info-modal-header .close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.6em;
+  cursor: pointer;
+}
+
+#info-modal-body {
+padding: 20px;
+overflow-y: auto;
+line-height: 1.6;
+}
+
+#info-modal-body h5 {
+  color: #0056b3;
+  border-bottom: 2px solid #0056b3;
+  padding-bottom: 5px;
+  margin-top: 15px;
+}
+
+#info-modal-body code {
+  background-color: #e9ecef;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+#info-modal-body .formula {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+/* ========================================
+ PANELES: ALERTAS â€“ SINIESTROS â€“ ROBOS
+ FORMATO UNIFICADO
+ ======================================== */
+
+.panel-floating {
+position: fixed;
+top: 80px;
+right: 20px;
+width: 320px;
+max-height: 500px;
+background: white;
+border-radius: 10px;
+border: 2px solid #457b9d; /* Azul por defecto */
+box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+z-index: 1500;
+display: none;
+flex-direction: column;
+overflow: hidden;
+}
+
+/* Colores individuales por tipo */
+#alert-list-panel { border-color: #28a745; }   /* Verde */
+#top-siniestros-panel { border-color: #457b9d; }  /* Azul */
+#top-robo-panel { border-color: #dc3545; }       /* Rojo */
+
+.panel-floating .panel-header {
+background-color: inherit;
+color: white;
+padding: 10px;
+font-weight: bold;
+border-radius: 8px 8px 0 0;
+cursor: move;
+user-select: none;
+text-align: center;
+}
+
+#alert-list-panel .panel-header { background-color: #28a745; }
+#top-siniestros-panel .panel-header { background-color: #457b9d; }
+#top-robo-panel .panel-header { background-color: #dc3545; }
+
+.panel-content {
+padding: 12px;
+overflow-y: auto;
+max-height: 420px;
+}
+
+/* Estilo de Ã­tems */
+.panel-item {
+padding: 10px;
+margin-bottom: 8px;
+background: #f9f9f9;
+border-radius: 6px;
+border: 1px solid #eee;
+cursor: pointer;
+transition: 0.2s;
+}
+
+.panel-item:hover {
+background: #eef6ff;
+transform: translateY(-1px);
+box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.panel-item .rank {
+font-weight: bold;
+font-size: 1.2em;
+margin-bottom: 4px;
+}
+
+.panel-item .view-on-map-btn {
+margin-top: 6px;
+padding: 6px 12px;
+background: #457b9d;
+color: white;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+}
+
+.panel-item .view-on-map-btn:hover {
+background: #2a5a7a;
+}
+
+
+
+
+
+/* ========================================
+PANEL SINIESTROS POR DÃ A
+======================================== */
+
+
+#siniestros-por-dia-panel {
+margin-top: 10px;
+max-height: 300px;
+overflow-y: auto;
+padding: 10px;
+border-radius: 8px;
+border: 1px solid #ccc;
+background: white;
+}
+
+
+#siniestros-por-dia-panel h5 {
+margin: 0 0 10px 0;
+color: #333;
+}
+
+
+.siniestro-day-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 8px 10px;
+margin-bottom: 5px;
+background-color: #f9f9f9;
+border: 1px solid #eee;
+border-left: 5px solid;
+border-radius: 5px;
+cursor: pointer;
+transition: 0.2s;
+}
+
+
+.siniestro-day-item:hover {
+background-color: #e9e9e9;
+box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+}
+
+
+.siniestro-day-item.highlight {
+background-color: #e0f2f7;
+box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+border-color: #007bff !important;
+font-weight: bold;
+}
+
+
+.siniestro-day-item .day-name { font-weight: bold; }
+
+
+.siniestro-day-item .day-count {
+font-size: 0.9em;
+color: #555;
+margin-left: 10px;
+}
+
+
+.siniestro-day-item .view-day-btn {
+background-color: #007bff;
+color: white;
+border: none;
+padding: 5px 10px;
+border-radius: 4px;
+cursor: pointer;
+}
+
+
+.siniestro-day-item .view-day-btn:hover {
+background-color: #0056b3;
+}
+
+/* =========================================
+PANEL DE ALERTAS (VersiÃ³n Ancha)
+========================================= */
+
+/* Estilo para el contenedor principal, mÃ¡s ancho que los sidebars de 400px */
+#alertas-panel {
+/* Puedes ajustar esta anchura (por ejemplo, 600px o 700px) */
+width: 800px;
+padding: 10px;
+background-color: #f4f4f4; /* Mantiene el fondo de tus sidebars */
+overflow-y: auto;
+height: 100%;
+box-sizing: border-box;
+/* Opcional: para que se destaque si es un panel flotante */
+box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+}
+
+#alertas-panel h3 {
+margin-top: 0;
+margin-bottom: 15px;
+color: #dc3545; /* Un color que sugiera 'alerta' */
+}
+
+
+/* Estilos para cada Ã­tem de alerta, similar a .siniestro-day-item */
+.alerta-item {
+display: flex; /* Opcional: si quieres un layout interno flexible */
+flex-direction: column;
+padding: 12px 15px;
+margin-bottom: 10px;
+background-color: white;
+border-radius: 6px;
+/* Borde lateral de alerta, similar al estilo de tus paneles */
+border-left: 5px solid #ffc107; /* Amarillo/Naranja para Alerta */
+box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+transition: 0.2s;
+}
+
+.alerta-item:hover {
+box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.alerta-item.critica {
+border-left-color: #dc3545; /* Rojo para alertas crÃ­ticas */
+}
+
+.alerta-titulo {
+font-weight: 700;
+font-size: 1.1em;
+color: #343a40;
+margin-bottom: 5px;
+}
+
+.alerta-cuerpo {
+font-size: 0.95em;
+color: #6c757d;
+line-height: 1.4;
+/* ---------------------------------------------------- */
+/* PROPIEDAD CLAVE: Asegura que el texto largo se ajuste */
+white-space: normal;
+word-wrap: break-word; 
+/* ---------------------------------------------------- */
+}
+
+.alerta-fecha {
+font-size: 0.8em;
+color: #adb5bd;
+margin-top: 8px;
+text-align: right;
+}
+/* ============================================ */
+/* ESTILOS PARA EL SELECTOR DE MAPA BASE */
+/* ============================================ */
+#base-map-selector {
+width: 100%;
+padding: 10px;
+border: 2px solid #457b9d;
+border-radius: 5px;
+background-color: white;
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.3s ease;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#base-map-selector:hover {
+border-color: #1d3557;
+box-shadow: 0 4px 8px rgba(69, 123, 157, 0.3);
+transform: translateY(-1px);
+}
+
+#base-map-selector:focus {
+outline: none;
+border-color: #e63946;
+box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2);
+}
+
+/* Estilo para el tÃ­tulo del selector */
+.filter-group h4 {
+margin-bottom: 8px;
+color: #1d3557;
+}
+
+/* AnimaciÃ³n suave al cambiar de mapa */
+.leaflet-tile-container {
+transition: opacity 0.4s ease-in-out;
+}
+
+/* Icono decorativo para el selector */
+#base-map-selector {
+background-image: url('data:image/svg+xml;utf8,<svg fill="%23457b9d" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+background-repeat: no-repeat;
+background-position: right 8px center;
+background-size: 20px;
+padding-right: 35px;
+appearance: none;
+-webkit-appearance: none;
+-moz-appearance: none;
+}
+/* ============================================
+   ROSA DE LOS VIENTOS (COMPASS ROSE)
+   ============================================ */
+
+   #compass-rose {
+    position: absolute;
+    top: 35px;
+    right: calc(260px + 60px); /* Ancho del panel derecho + margen */
+    width: 120px;
+    height: 120px;
+    z-index: 1000;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Compass_rose_brown.svg/1200px-Compass_rose_brown.svg.png'); /* Imagen genérica de rosa de los vientos */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.9; /* Opacidad inicial */
+    transition: opacity 0.3s ease;
+  }
+  
+  /* El resto del CSS permanece igual... */
+  
+  .compass-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    animation: compassPulse 3s ease-in-out infinite;
+  }
+  
+  @keyframes compassPulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.05); opacity: 1; }
+  }
+  
+  .compass-cardinal {
+    position: absolute;
+    font-weight: 700;
+    font-size: 20px;
+    color: white;
+    text-shadow: 
+      0 0 4px rgba(0, 123, 255, 0.8),
+      0 0 8px rgba(0, 123, 255, 0.6),
+      2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-family: 'Arial', sans-serif;
+    letter-spacing: 1px;
+    z-index: 10;
+    transition: all 0.3s ease;
+  }
+  
+  .compass-cardinal.north {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #e63946;
+    font-size: 24px;
+    text-shadow: 
+      0 0 6px rgba(230, 57, 70, 0.8),
+      0 0 12px rgba(230, 57, 70, 0.6),
+      2px 2px 4px rgba(0, 0, 0, 0.6);
+  }
+  
+  .compass-cardinal.south {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .compass-cardinal.east {
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .compass-cardinal.west {
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .compass-star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .star-point {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    transform-origin: center;
+  }
+  
+  .star-point.north-point {
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 12px 45px 12px;
+    border-color: transparent transparent #e63946 transparent;
+    filter: drop-shadow(0 0 8px rgba(230, 57, 70, 0.7));
+  }
+  
+  .star-point.south-point {
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+    border-width: 0 10px 38px 10px;
+    border-color: transparent transparent #457b9d transparent;
+    filter: drop-shadow(0 0 6px rgba(69, 123, 157, 0.6));
+  }
+  
+  .star-point.east-point {
+    right: 10%;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+    border-width: 0 8px 32px 8px;
+    border-color: transparent transparent #ffc107 transparent;
+    filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.6));
+  }
+  
+  .star-point.west-point {
+    left: 10%;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    border-width: 0 8px 32px 8px;
+    border-color: transparent transparent #2a9d8f transparent;
+    filter: drop-shadow(0 0 6px rgba(42, 157, 143, 0.6));
+  }
+  
+  .compass-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #ffffff, #457b9d);
+    border-radius: 50%;
+    box-shadow: 
+      0 0 0 2px #e63946,
+      0 0 0 4px rgba(230, 57, 70, 0.3),
+      0 0 12px rgba(69, 123, 157, 0.6),
+      inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 15;
+  }
+  
+  #compass-rose:hover .compass-inner {
+    transform: scale(1.1);
+  }
+  
+  #compass-rose:hover .compass-cardinal {
+    text-shadow: 
+      0 0 8px currentColor,
+      0 0 16px currentColor;
+  }
+  
+  /* Responsive - ajustar posición en pantallas pequeñas */
+  @media (max-width: 1024px) {
+    #compass-rose {
+      right: 20px; /* Se mueve sobre el panel en pantallas pequeñas */
+      width: 80px;
+      height: 80px;
+    }
+    
+    .compass-cardinal {
+      font-size: 14px;
+    }
+    
+    .compass-cardinal.north {
+      font-size: 16px;
+    }
+    
+    .star-point.north-point {
+      border-width: 0 8px 30px 8px;
+    }
+    
+    .star-point.south-point {
+      border-width: 0 7px 25px 7px;
+    }
+    
+    .star-point.east-point,
+    .star-point.west-point {
+      border-width: 0 6px 22px 6px;
+    }
+    
+    .compass-center {
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    #compass-rose {
+      top: 15px;
+      right: 15px;
+      width: 70px;
+      height: 70px;
+    }
+  }
+  
+  #compass-rose::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 90%;
+    border: 2px solid rgba(69, 123, 157, 0.3);
+    border-radius: 50%;
+    box-shadow: 
+      0 0 0 1px rgba(230, 57, 70, 0.2),
+      inset 0 0 10px rgba(69, 123, 157, 0.1);
+  }
+  
+  #compass-rose::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 60%;
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+  }
+/* Estilos para el listado dentro del panel de consultas */
+.consulta-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.consulta-lista li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-left: 5px solid #007bff; /* Un color distintivo, como el azul principal */
+  border-radius: 5px;
+  transition: all 0.2s ease-in-out;
+}
+
+.consulta-lista li:hover {
+  background-color: #e9e9e9;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.consulta-lista li .nombre {
+  font-weight: bold;
+  flex-grow: 1;
+}
+
+.consulta-lista li .cantidad {
+  font-size: 0.9em;
+  color: #555;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.consulta-lista li .btn-ver-mapa {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: background-color 0.2s;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.consulta-lista li .btn-ver-mapa:hover {
+  background-color: #218838;
+}
+
+  .grafico-temporal {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .siniestro-day-item.highlight {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+  }
+
+
+@media (max-width: 900px) {
+  #left-sidebar,
+  #right-panel {
+    width: 220px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #left-sidebar,
+  #right-panel {
+    width: 180px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  #left-sidebar,
+  #right-panel {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+  #mapid {
+    margin-top: 0;
+  }
+}
+
+#left-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 280px;
+  max-width: 28vw;
+  height: 100%;
+  overflow-y: auto;
+  background: #ffffffd9;
+  backdrop-filter: blur(3px);
+  border-right: 2px solid #ddd;
+  z-index: 1000;
+
+  padding: 12px 15px; /* ⭐ AGREGADO: deja margen interno */
+}
+/* Pantallas angostas tipo 9:16 */
+@media (max-width: 1400px) {
+  #left-sidebar {
+    width: 240px !important;
+    padding: 12px 15px !important;
+  }
+
+  #right-panel {
+    width: 230px !important;
+    max-width: 230px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  #left-sidebar {
+    width: 210px !important;
+  }
+
+  #right-panel {
+    width: 200px !important;
+    max-width: 200px !important;
+  }
+
+  #consultas-panel {
+    width: 260px !important;
+  }
+}
+
+@media (max-width: 1400px) {
+  #mapid {
+    left: 240px !important;
+    right: 230px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  #mapid {
+    left: 210px !important;
+    right: 200px !important;
+  }
+}
+.patrulla-icon {
+  position: relative;
+  text-align: center;
+  font-weight: 600;
+}
+
+
+.patrulla-icon .label {
+  font-size: 11px;
+  margin-top: -4px;
+}
+
+.pulse {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.floating-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0d6efd;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  z-index: 99999;
+}
+
+/* ========================================
+		PANEL DE CHAT
+======================================== */
+
+#chat-com-mensajes,
+#chatBaseMsgs {
+  height: 15em;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+.chat-message {
+  line-height: 1.2;
+  font-size: 0.9em;
+  margin-bottom: 5px;
+}
+
+/* General panel styling for chat panels */
+#chat-com-panel,
+#chatBasePanel {
+  position: fixed;
+  width: 320px;
+  height: 300px; /* Reduced height for the entire panel */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 99999;
+  flex-direction: column;
+  overflow: hidden; /* Hide overflow to prevent scrollbars on the panel itself */
+  top: 100px; /* Default position */
+  right: 20px; /* Default position */
+}
+
+/* Explicitly hide chatBasePanel by default */
+#chatBasePanel {
+    display: none;
+}
+
+/* Specific header styles for chat-com-panel */
+#chat-com-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #0d6efd;
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+#chat-com-panel .panel-header h4 {
+  margin: 0;
+}
+
+/* Specific header styles for chatBasePanel */
+#chatBasePanel h3 {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background: #0d6efd; /* Use the same blue as chat-com-panel for consistency */
+    color: white;
+    padding:10px;
+    border-radius: 12px 12px 0 0;
+    margin: 0; /* Remove default h3 margin */
+}
+
+/* Close button general style */
+.close-button {
+    background:red;
+    color:white;
+    border:none;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* Input and button for chatBasePanel */
+#chatBasePanel > div:last-child { /* Targets the div containing input and button */
+  display: flex;
+  gap: 5px;
+  padding: 10px; /* Add padding to match the general panel padding */
+  border-top: 1px solid #eee; /* Separator for input area */
+}
+
+#chatBasePanel input#chatBaseInput {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+}
+
+#chatBasePanel button {
+  padding: 8px 14px;
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+
+/* Draggable header for panels */
+.draggable-header {
+  cursor: grab;
+}
+
+.draggable-header:active {
+  cursor: grabbing;
+}
+.new-message-notification {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  background-color: red;
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.8); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
+  100% { transform: scale(0.8); opacity: 1; }
+}
+
+/* ===============================
+   REPOSICIONAR ZOOM LEAFLET
+   =============================== */
+   #mapid .leaflet-top.leaflet-left {
+    top: 80px;
+  }
+  
+  #visor-patrulla {
+    position: fixed !important;
+    z-index: 99999 !important;
+    
+    /* Posición inicial (abajo a la derecha) */
+    bottom: 20px;
+    right: 20px;
+    
+    /* Tamaño AUMENTADO para mejor visibilidad */
+    width: 500px;
+    height: 350px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #444;
+  }
+
+/* Estilo para la zona de agarre */
+.visor-header {
+    background: #222;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: move; /* Indica que se puede arrastrar */
+    border-bottom: 1px solid #333;
+}
+
+.visor-header span {
+    color: white;
+    font-weight: bold;
+}
+
+/* Asegurar que el video ocupe su lugar */
+.visor-video-wrapper {
+    flex: 1;
+    width: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#visorVideo {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    object-fit: contain;
+    background: #000;
+    min-height: 300px;
+    min-width: 480px;
+}
+.visor-hidden {
+    display: none !important;
+}
+
+/* ============================================
+   PANEL DE TAMAÑOS ADAPTATIVOS (CONSULTAS)
+   ============================================ */
+
+/* Tamaño PEQUEÑO (500-600px) */
+#consulta-results-panel.panel-size-small {
+  width: 550px;
+  max-width: 90vw;
+}
+
+/* Tamaño MEDIANO (800-900px) */
+#consulta-results-panel.panel-size-medium {
+  width: 850px;
+  max-width: 90vw;
+}
+
+/* Tamaño GRANDE (900px+) */
+#consulta-results-panel.panel-size-large {
+  width: 950px;
+  max-width: 95vw;
+  max-height: 85%;
+}
+
+/* ============================================
+   ICONOS DE UBICACIONES PROPUESTAS (CAMARAS)
+   ============================================ */
+
+.propuesta-camara-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #28a745;
+  color: white;
+  border-radius: 50%;
+  border: 2px solid white;
+  font-weight: bold;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.propuesta-camara-icon:hover {
+  background: #218838;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ========================================
+   RESPONSIVE MOBILE - EVENTOS PANEL
+   ======================================== */
+@media (max-width: 768px) {
+  /* OCULTAR PANEL DE EVENTOS EN MÓVIL */
+  #events-container {
+    display: none !important;
+  }
+  
+  /* OCULTAR RIGHT PANEL EN MÓVIL - MOSTRAR COMO MODAL */
+  #right-panel {
+    position: fixed !important;
+    right: -100% !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    z-index: 2000 !important;
+    transition: right 0.3s ease;
+    border-left: none;
+  }
+  
+  #right-panel.active {
+    right: 0 !important;
+  }
+  
+  /* BOTÓN PARA ABRIR/CERRAR RIGHT PANEL */
+  #toggle-right-panel-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1999;
+    padding: 12px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  
+  #toggle-right-panel-btn:hover {
+    background: #0056b3;
+  }
+  
+  /* CERRAR BOTÓN EN MODAL */
+  #close-right-panel-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+  }
+}

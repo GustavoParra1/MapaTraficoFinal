@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Tráfico</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+  <!-- Flaticon (opcional) -->
+  <link href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.min.css" rel="stylesheet">
+
+  <!-- Tu CSS -->
+  <link rel="stylesheet" href="css/style.css?v=202602191300">
+
+</head>
+<body>
+
+ <!-- === PANEL IZQUIERDO === -->
+ <div id="left-sidebar">
+  <h2 style="text-align: center;">
+    CIMU<br>
+    Centro de Inteligencia y<br>Monitoreo Urbano
+  </h2>
+  <div id="user-info">
+    <span id="user-email"></span>
+    <button id="chat-panel-btn">💬 Panel de Chat</button>
+    <button id="logout-btn">Cerrar Sesión</button>
+  </div>
+    <!-- ============================================ -->
+<!-- SELECTOR DE TIPO DE MAPA -->
+<!-- ============================================ -->
+<div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+  <h4>🗺️ Tipo de Mapa Base</h4>
+  <select id="base-map-selector">
+    <option value="osm">OpenStreetMap (Gratis)</option>
+    <option value="google-streets">Google Maps - Calles</option>
+    <option value="google-satellite">Google Maps - Satélite</option>
+    <option value="google-hybrid">Google Maps - Híbrido</option>
+  </select>
+</div>
+
+<!-- ============================================ -->
+<!-- NUEVO: STREET VIEW -->
+<!-- ============================================ -->
+<div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+  <h4>🚶 Street View</h4>
+  <button id="streetview-btn">Activar Street View</button>
+  <p id="streetview-instructions" style="display: none; font-size: 0.85em; color: #666; margin-top: 8px; text-align: center;">
+    📍 Haz clic en el mapa para ver Street View
+  </p>
+</div>
+<!-- ============================================ -->
+    <div id="search-container" class="filter-group">
+      <h4>Buscador de Direcciones</h4>
+      <input type="text" id="address-input" placeholder="Ingrese una dirección...">
+      <button id="search-button">Buscar</button>
+    </div>
+
+    <div id="camera-search-container" class="filter-group">
+      <h4>Buscador de Cámaras</h4>
+      <input type="text" id="camera-input" placeholder="Ingrese número de cámara...">
+      <button id="go-to-camera-button">Ir a Cámara</button>
+    </div>
+
+    <div id="control-panel">
+      <h4>Capas</h4>
+      <label><input type="checkbox" id="semaforos-checkbox"> Semáforos</label>
+      <label><input type="checkbox" id="siniestros-checkbox"> Siniestros (<span id="total-siniestros-count">0</span>)</label>
+      <label><input type="checkbox" id="heatmap-checkbox"> Mapa de Calor</label>
+      <label><input type="checkbox" id="alertas-checkbox"> Alertas</label>
+
+      <div class="filter-group">
+        <h4>Filtrar por Barrio:</h4>
+        <select id="barrio-filter"><option value="all">Todos los Barrios</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Año:</h4>
+        <select id="year-filter"><option value="all">Todos los Años</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Participante:</h4>
+        <select id="participant-filter"><option value="all">Todos</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Causa:</h4>
+        <select id="cause-filter"><option value="all">Todas</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Hora:</h4>
+        <label for="start-hour-filter">Desde:</label>
+        <select id="start-hour-filter"><option value="all">Todas</option></select>
+        <label for="end-hour-filter">Hasta:</label>
+        <select id="end-hour-filter"><option value="all">Todas</option></select>
+      </div>
+
+      <div class="filter-group">
+        <h4>Filtrar por Calle:</h4>
+        <input type="text" id="street-filter" placeholder="Escriba el nombre de la calle...">
+      </div>
+
+      <button id="clear-filters-btn">Limpiar Filtros</button>
+
+      <h4>Estilo de Tráfico</h4>
+      <label><input type="radio" name="traffic-style" value="absolute"> Absoluto</label>
+      <label><input type="radio" name="traffic-style" value="relative"> Relativo</label>
+      <label><input type="radio" name="traffic-style" value="none" checked> Ocultar</label>
+    </div>
+
+    <div class="filter-group zone-filter-group">
+      <h4>Filtrar por Zona:</h4>
+      <label><input type="radio" name="zone-filter" value="none" checked> Ninguna</label>
+      <label><input type="radio" name="zone-filter" value="norte"> Capa Norte</label>
+      <label><input type="radio" name="zone-filter" value="sur"> Capa Sur</label>
+    </div>
+
+    <div id="traffic-legend-container"></div>
+  </div>
+
+  <!-- === MAPA CENTRAL === -->
+  <div id="mapid"></div>
+
+  <!-- ROSA DE LOS VIENTOS -->
+  <div id="compass-rose">
+    <div class="compass-inner">
+      <div class="compass-cardinal north">N</div>
+      <div class="compass-cardinal south">S</div>
+      <div class="compass-cardinal east">E</div>
+      <div class="compass-cardinal west">O</div>
+  
+      <div class="compass-star">
+        <div class="star-point north-point"></div>
+        <div class="star-point south-point"></div>
+        <div class="star-point east-point"></div>
+        <div class="star-point west-point"></div>
+      </div>
+  
+      <div class="compass-center"></div>
+    </div>
+  </div>
+  <div id="info-cobertura-escolar" style="position: fixed; top: 70px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); padding: 12px 16px; font-size: 13px; line-height: 1.4; color: #222; width: 240px; cursor: move; z-index: 9999; display: none;">
+    <h4 class="panel-header" style="margin: 0 0 6px 0; font-size: 14px; text-align: center; cursor: grab; padding: 4px; user-select: none;">📘 Cobertura Escolar</h4>
+    <p>Indica el porcentaje de colegios que tienen una cámara pública a menos de <b>100 m</b>.</p>
+    <div class="leyenda">
+      <div class="leyenda-item alto"><span></span> Cobertura baja (&lt; 50%)</div>
+      <div class="leyenda-item medio"><span></span> Cobertura media (50–80%)</div>
+      <div class="leyenda-item bajo"><span></span> Cobertura alta (&gt; 80%)</div>
+    </div>
+    <p style="margin-top:6px;font-size:11px;color:#555;">
+      Los porcentajes se calculan por barrio en función de la cantidad de colegios cubiertos por cámaras.
+    </p>
+  </div>
+  
+  <div id="info-corredores-escolares" style="display: none; position: fixed; top: 350px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); padding: 12px 16px; font-size: 13px; line-height: 1.4; color: #222; width: 240px; z-index: 9999;">
+    <h4 class="panel-header" style="margin: 0 0 6px 0; font-size: 14px; text-align: center; color: #008000; cursor: grab; padding: 4px; user-select: none;">🚦 Corredores Escolares</h4>
+    <p style="margin: 4px 0; font-size: 12px;">Información sobre cámaras de vigilancia en los <b>corredores escolares</b> de la ciudad.</p>
+    <div id="estadisticas-corredores" style="background: rgba(240, 248, 255, 0.6); border-left: 3px solid #008000; padding: 8px; border-radius: 4px;">
+      <p style="margin: 4px 0;"><strong>Cámaras en Corredores:</strong> <span id="total-camaras-corredores">--</span></p>
+      <p style="margin: 4px 0;"><strong>Corredores Monitoreados:</strong> <span id="corredores-monitoreados">--</span>%</p>
+      <p style="font-size:11px;color:#555;margin-top:6px;margin-bottom:0;">
+        Estos corredores conectan espacios educativos y zonas de alto riesgo. La cobertura de cámaras es fundamental para la seguridad de estudiantes y transeúntes.
+      </p>
+    </div>
+  </div>
+  
+
+  <!-- === PANEL DERECHO === -->
+  <div id="right-panel">
+    <!-- BOTÓN CERRAR EN MÓVIL (solo visible en pantallas pequeñas) -->
+    <button id="close-right-panel-btn" style="display: none; position: absolute; top: 10px; right: 10px; background: #f8f9fa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 2001;">✕</button>
+    
+    <h3>Cámaras</h3>
+    
+    <!-- Botón Preguntas/Ayuda en panel derecho -->
+    <button id="btn-open-consultas" class="panel-help-button">
+      <span class="button-text">PREGUNTAS / AYUDA</span>
+    </button>
+    
+    <label><input type="checkbox" id="camaras-checkbox"> Mostrar Cámaras</label>
+    <label><input type="checkbox" id="camaras-privadas-checkbox"> Mostrar Cámaras Privadas</label>
+    <label><input type="checkbox" id="zonas-sin-cobertura-checkbox"> Cobertura de Cámaras</label>
+    <label><input type="checkbox" id="zonas-sin-cobertura-negativo-checkbox"> Zonas sin Cobertura</label>
+    <label><input type="checkbox" id="corredores-escolares-checkbox"> Corredores Escolares</label>
+    <label><input type="checkbox" id="colegios-checkbox"> Colegios</label>
+  <div class="layer-option">
+           <input type="checkbox" id="colegios-cobertura-checkbox">
+    <label for="colegios-cobertura-checkbox">Cobertura Escolar (colegios + cámaras)</label>
+  </div>
+    
+
+    <h3>Líneas de Colectivo</h3>
+    <div class="filter-group">
+      <input type="text" id="bus-line-search" placeholder="Buscar línea...">
+      <select id="bus-line-select"><option value="">Seleccione una línea</option></select>
+      <button id="show-bus-route-button">Mostrar Recorrido</button>
+    </div>
+    <label><input type="checkbox" id="bus-route-checkbox"> Mostrar Recorrido</label>
+
+    <h3>Cámaras LPR</h3>
+                <div class="filter-group lpr-buttons-container">      <select id="lpr-camera-select"><option value="">Seleccione una cámara LPR</option></select>
+      <button id="show-lpr-radius-button">Mostrar Radio</button>
+    </div>
+
+    <h3>Aforos</h3>
+    <label><input type="checkbox" id="aforos-checkbox"> Mostrar Aforos</label>
+    <div id="aforos-filters" style="display: none;">
+      <h4>Filtros de Aforos</h4>
+      <div class="filter-group"><label for="aforo-year-filter">Año:</label><select id="aforo-year-filter"></select></div>
+      <div class="filter-group"><label for="aforo-start-hour-filter">Hora (desde):</label><select id="aforo-start-hour-filter"></select></div>
+      <div class="filter-group"><label for="aforo-end-hour-filter">Hora (hasta):</label><select id="aforo-end-hour-filter"></select></div>
+    </div>
+
+    <div id="flow-list"></div>
+    <div id="aforo-details-container" style="display: none;">
+      <h4 id="aforo-details-title">Detalle por día</h4>
+      <div id="aforo-day-list"></div>
+    </div>
+
+    <hr> <!-- Add a separator for better visual grouping -->
+
+    <h3>Patrullas</h3>
+    <label><input type="checkbox" id="patrullas-checkbox"> Mostrar Patrullas</label>
+
+    <h3>Robo Automotor</h3>
+    <label><input type="checkbox" id="robo-automotor-checkbox"> Mostrar Robos</label>
+    <div id="robo-automotor-filters" style="display: none;">
+      <h4>Filtros de Robo Automotor</h4>
+      <div class="filter-group"><label for="robo-automotor-year-filter">Año:</label><select id="robo-automotor-year-filter"></select></div>
+      <label><input type="checkbox" id="robo-heatmap-checkbox"> Mapa de Calor (Robos)</label>
+    </div>
+  </div>
+
+
+  
+
+
+  <!-- === PANELES SECUNDARIOS === -->
+  <div id="alert-list-panel" class="panel-floating">
+    <div class="panel-header"><h4>Alertas Recientes</h4></div>
+    <div id="alert-list-content" class="panel-content"></div>
+  </div>
+
+  <div id="top-siniestros-panel" class="panel-floating">
+    <div class="panel-header"><h4>Top 10 Siniestros</h4></div>
+    <div id="top-siniestros-content" class="panel-content"></div>
+  </div>
+
+  <div id="top-robo-panel" class="panel-floating">
+    <div class="panel-header"><h4>Top 10 Robos Automotor</h4></div>
+    <div id="top-robo-content" class="panel-content"></div>
+  </div>
+
+  <div id="consulta-results-panel" style="display: none;">
+    <div class="panel-header"><h4>Resultado de la Consulta</h4></div>
+    <div id="consulta-results-content"></div>
+    <!-- Nuevo panel para siniestros por día -->
+    <div id="siniestros-por-dia-panel" style="display: none;">
+      <h5>Siniestros por Día de la Semana</h5>
+      <div id="siniestros-dia-content"></div>
+    </div>
+    <div id="analisis-causa-container" style="display: none; padding: 0 15px 15px 15px; border-top: 1px solid #ccc; margin-top: 10px;"></div>
+    <button id="clear-consulta-results-btn">Limpiar</button>
+  </div>
+
+  <!-- === PANEL DE CONSULTAS === -->
+  <div id="consultas-panel" style="display: none;">
+    <div class="panel-header"><h4>Consultas al Sistema <button class="close-button">X</button></h4></div>
+    <div id="consultas-content">
+      <details>
+        <summary>Análisis de Siniestros y Delitos</summary>
+        <button class="consulta-btn" data-consulta="concentracion_siniestros">¿Zonas con mayor concentración de siniestros?</button>
+        <button class="consulta-btn" data-consulta="barrios_mas_robos">5 Barrios con más eventos Robo Automotor</button>
+        <!-- Botón: Evaluación de Calles Inseguras -->
+        <h3 style="margin-top:15px;">🛣️ Análisis de Calles</h3>
+        <div class="consulta-item">
+        <button class="consulta-btn" onclick="analizarCallesSeguras(event, { topN: 20 })">
+        🚨 Top 20 Calles Más Peligrosas
+       </button>
+    </div>
+        <button class="consulta-btn" data-consulta="siniestros_noche">Mostrar siniestros en horario nocturno (22-06hs)</button>
+        <button class="consulta-btn" data-consulta="robos_por_dia">
+        📅 ¿Qué día de la semana hay más robos?
+        </button>        
+        <button class="consulta-btn" data-consulta="tipos_siniestros_comunes">Listar Causas de siniestros mas comunes</button>
+        <button class="consulta-btn" data-consulta="ultimas_alertas">¿Dónde se generaron las últimas alertas?</button>
+      <details>
+        <summary>📉 Tendencias por Causa Específica</summary>
+    <button class="consulta-btn" data-consulta="tendencia_distraccion">
+        📈 ¿Están aumentando las distracciones?
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_semaforo">
+        🚦 ¿Disminuyeron las violaciones de semáforo?
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_exceso_velocidad">
+        ⚡ Tendencia: Exceso de Velocidad
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_peaton_imprudente">
+        🚶‍♂️ Tendencia: Peatón imprudente
+    </button>
+
+    <button class="consulta-btn" data-consulta="tendencia_no_prioridad">
+        🔁 Tendencia: No Respeto Prioridad de Paso
+    </button>
+      </details>
+     
+        <button class="consulta-btn" data-consulta="barrios_mas_siniestros">Los 5 Barrios que tienen más Siniestros</button>
+        <button class="consulta-btn" data-consulta="siniestros_hora_pico">Mostrar siniestros en hora pico (07-09 y 17-19hs)</button>        
+        <button class="consulta-btn" data-consulta="esquinas_mas_siniestros">¿Cuáles son las 10 esquinas con más siniestros?</button>
+        <button class="consulta-btn" data-consulta="esquinas_sin_semaforo_criticas">
+          🚦❌ Cruces Críticos SIN Semáforo
+      </button>        
+        <button class="consulta-btn" data-consulta="heatmap_robos">🔥 Mapa de calor: Robos con detención/secuestro</button>   
+        <button class="consulta-btn" data-consulta="siniestros_por_dia">¿Qué día de la semana hay más siniestros?</button>
+        <button class="consulta-btn" data-consulta="robos_zonas_sin_camaras">
+          🎯 Robos en Zonas sin Cámaras
+        </button>
+        
+        <button class="consulta-btn" data-consulta="siniestros_por_mes">
+          📊 Siniestros por Mes
+        </button>
+        
+        <button class="consulta-btn" data-consulta="robos_sin_intervencion">
+          🚨 Eventos Categoria Robos Automotor
+        </button>
+        <button class="consulta-btn" data-consulta="esquinas_peligrosas_peatones_ciclistas">
+          🚶‍♀️ Identificar las 10 esquinas más peligrosas para peatones y ciclistas 🚲
+        </button>
+        <!-- Agregar este botón en el panel de consultas, en la sección apropiada -->
+        <button class="consulta-btn" data-consulta="siniestros_corredores_escolares">
+          🎒 Siniestros en Corredores Escolares
+        </button>
+        
+      </details>
+      <details>
+
+          <summary>Optimización de Recursos</summary>
+          
+          <button class="consulta-btn" data-consulta="patrullaje_sugerido">
+            🚓 Rutas de patrullaje óptimas basadas en incidentes
+          </button>
+          
+          <!-- Controles adicionales para la consulta -->
+          <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; display: none;" id="patrullaje-controls">
+            <label for="num-rutas-input" style="display: block; margin-bottom: 5px;">Número de rutas a generar:</label>
+            <input type="number" id="num-rutas-input" min="1" max="10" value="3" style="width: 60px; padding: 5px;">
+            
+            <label for="turno-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Turno:</label>
+            <select id="turno-patrullaje" style="width: 100%; padding: 5px;">
+              <option value="all">Todos los horarios</option>
+              <option value="mañana">Mañana (6:00-14:00)</option>
+              <option value="tarde">Tarde (14:00-22:00)</option>
+              <option value="noche">Noche (22:00-6:00)</option>
+            </select>
+            
+            <label for="dias-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Días:</label>
+            <select id="dias-patrullaje" style="width: 100%; padding: 5px;">
+              <option value="all">Todos los días</option>
+              <option value="laborables">Días laborables</option>
+              <option value="finde">Fines de semana</option>
+            </select>
+          </div>
+        </details> 
+        <details>
+        <summary>Análisis de Cámaras y Cobertura</summary>
+        <button class="consulta-btn" data-consulta="barrios_menor_cobertura">¿Qué barrios tienen menor cobertura de cámaras?</button>
+        <button class="consulta-btn" data-consulta="camaras_sin_siniestros">🛡️ Cámaras sin siniestros cercanos (100m)</button>
+        <button class="consulta-btn" data-consulta="correlacion_camaras_robos">
+        📊 ¿Los barrios con más cámaras tienen menos robos?
+        </button>        
+        <button class="consulta-btn" data-consulta="comparar_camaras">🎯 Comparar cámaras públicas vs. privadas</button>        
+        <button class="consulta-btn" data-consulta="zonas_ciegas">Identificar "zonas ciegas" (siniestros sin cámaras)</button>        
+        <button class="consulta-btn" data-consulta="siniestros_en_zonas_descubiertas">🔥 Siniestros No Visualizados (NSD)</button>
+        <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px;">
+          <label for="moto-hour-input" style="display: block; margin-bottom: 5px;">Hora para análisis de motos:</label>
+          <input type="number" id="moto-hour-input" min="0" max="23" value="8" style="width: 60px; padding: 5px;">
+        </div>
+        <button class="consulta-btn" data-consulta="circulacion_motos_hora">¿Zonas con mayor circulación de motos por hora?</button>
+        <button class="consulta-btn" data-consulta="densidad_camaras_barrio">Calcular densidad de cámaras por barrio (cámaras/km²)</button>
+        <button class="consulta-btn" data-consulta="densidad_camaras_vs_siniestros">📊 Densidad: Cámaras vs Siniestros</button>
+        <button class="consulta-btn" data-consulta="proponer_ubicaciones_camaras">🎯 Proponer Ubicaciones para Nuevas Cámaras</button>
+        <button class="consulta-btn" data-consulta="mejora_predictiva_cobertura">📊 Mejora Predictiva de Cobertura por Barrio</button>
+      </details>
+      <details>
+        <summary>Análisis de Infraestructura y Transporte</summary>
+        <button class="consulta-btn" data-consulta="lineas_colectivo_siniestros">Cámaras con >20 Siniestros Cercanos (50m)</button>        
+        <button class="consulta-btn" data-consulta="siniestros_cerca_paradas_colectivo">Siniestros cerca de cámaras de colectivo (30m)</button>        
+        <button class="consulta-btn" data-consulta="visualizar_recorridos_colectivos">Visualizar todas las cámaras de recorridos de colectivos</button>
+        <button class="consulta-btn" data-consulta="semaforos_mas_siniestros">🚦 Semáforos con más siniestros viales</button>
+        <button class="consulta-btn" data-consulta="evolucion_temporal_siniestros">
+          📈 ¿Cómo evolucionaron los siniestros en los últimos 3 años?
+        </button>
+      </details>
+      <div id="consulta-resultados"></div>
+    </div>
+  </div>
+
+  <!-- === TOUR GUIDE === -->
+  <div id="tour-overlay" class="hidden"></div>
+  <div id="tour-welcome" class="hidden">
+    <div class="tour-card">
+      <div class="tour-header">
+        <div class="tour-logo">📍</div>
+        <h1>Sistema de Mapas de Tráfico</h1>
+        <p>Mar del Plata — Centro de Monitoreo</p>
+      </div>
+      <div class="tour-options">
+        <div class="tour-option" data-mode="basic">
+          <div class="tour-icon blue">▶</div>
+          <div>
+            <h3>Tour Básico (5 min)</h3>
+            <p>Navegá, activá capas y usá filtros básicos.</p>
+          </div>
+        </div>
+        <div class="tour-option" data-mode="advanced">
+          <div class="tour-icon purple">🧭</div>
+          <div>
+            <h3>Tour Avanzado (8 min)</h3>
+            <p>Herramientas de análisis, mapas de calor y cámaras LPR.</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-footer"><button id="skip-tour">Omitir tour →</button></div>
+    </div>
+  </div>
+
+  <div id="tour-tooltip" class="hidden">
+    <div id="tour-header">
+      <span id="tour-step"></span>
+      <button id="tour-close">✕</button>
+    </div>
+    <h3 id="tour-title"></h3>
+    <p id="tour-description"></p>
+    <div id="tour-nav">
+      <button id="tour-prev">◀ Anterior</button>
+      <button id="tour-next">Siguiente ▶</button>
+    </div>
+  </div>
+  <!-- === FIN TOUR GUIDE === -->
+
+  <!-- Botón para iniciar el tour manualmente -->
+  <button id="btn-start-tour" class="map-overlay-button">
+    <span class="tour-icon">▶</span>
+    <span class="button-text">GUÍA DE NAVEGACIÓN</span>
+  </button>
+
+  <!-- === MODAL DE EXPLICACIÓN === -->
+  <div id="info-modal" class="info-modal-overlay" style="display: none;">
+    <div class="info-modal-content">
+      <div class="info-modal-header">
+        <h4 id="info-modal-title">Análisis de Correlación</h4>
+        <button id="info-modal-close-btn" class="close-button">X</button>
+      </div>
+      <div id="info-modal-body">
+        <!-- El contenido se insertará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- === LIBRERÍAS Y SCRIPTS === -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
+
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E"></script>
+
+<!-- Google Mutant Plugin -->
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.4/dist/Leaflet.GoogleMutant.js"></script>
+
+<!-- ================= PANEL DE CHAT (BASE) ================= -->
+<div id="chatBasePanel">
+
+  <h3 class="draggable-header" id="chatBasePanel-header">
+    💬 Chat con <span id="chatBaseMovil"></span>
+    <button id="cerrarChatBaseBtn" class="close-button">✖</button>
+  </h3>
+
+  <div id="chatBaseMsgs"></div>
+
+  <div style="display: flex; gap: 5px;">
+    <input
+      id="chatBaseInput"
+      placeholder="Escribir mensaje..."
+      style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #aaa;"
+      disabled
+    >
+    <button id="enviarChatBaseBtn"
+      style="padding: 8px 14px; background: #1d4ed8; color: white; border: none; border-radius: 6px;"
+      disabled
+    >
+      Enviar
+    </button>
+  </div>
+
+</div>
+
+
+
+<div id="visor-patrulla" class="visor-hidden">
+  <div class="visor-header" id="visor-patrulla-header" style="cursor: move;">
+    <span>🎥 Cámara Patrulla: <span id="nombre-patrulla-visor"></span></span>
+    <button onclick="cerrarVisor(event)">✖</button>
+  </div>
+  <div class="visor-video-wrapper">
+    <video id="visorVideo" autoplay playsinline muted style="display: block;"></video>
+    <!-- Canvas fallback para renderizar frames si el video element falla -->
+    <canvas id="visorCanvas" style="display: none; width: 100%; height: 100%;"></canvas>
+  </div>
+</div>
+
+<div id="chat-com-panel" class="panel-floating" style="display:none; width:320px; height:400px;">
+  <div class="panel-header" id="chat-com-header" style="cursor: move;">
+    <h4>📣 Chat con móviles</h4>
+    <button id="close-chat-com" class="close-button">X</button>
+  </div>
+  <div id="chat-com-mensajes" class="panel-content" style="overflow-y:auto; height:330px; padding:10px;"></div>
+</div>
+
+<!-- ====== MODAL DE CHAT ADMINISTRATIVO ====== -->
+<div id="admin-chat-modal" class="admin-chat-modal" style="display: none;">
+  <!-- Botón Cerrar -->
+  <button id="admin-chat-close-btn" class="admin-chat-close" title="Cerrar">✕</button>
+  
+  <!-- PIN Modal (Aparece solo si no está validado) -->
+  <div id="pin-modal-container" class="pin-modal-admin" style="display: none;">
+    <div class="pin-box">
+      <h3>🔐 Acceso Restringido</h3>
+      <p>Ingresa el PIN para acceder al panel de operadores</p>
+      <div id="pin-error-msg" style="color: #f44336; margin-bottom: 10px; display: none;"></div>
+      <input type="text" id="admin-pin-input" class="admin-pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="pin-btn-submit" id="admin-pin-submit">Ingresar</button>
+        <button class="pin-btn-cancel" id="admin-pin-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Principal (Aparece después de validar PIN) -->
+  <div id="admin-chat-content" class="admin-chat-content" style="display: none;">
+    <div class="admin-chat-header">
+      <h2>💬 Panel de Operadores</h2>
+    </div>
+
+    <div class="admin-chat-body">
+      <!-- Lista de Operadores -->
+      <div class="operadores-sidebar">
+        <h4>📋 Operadores</h4>
+        <div id="operadores-list-modal"></div>
+      </div>
+
+      <!-- Área de Chat -->
+      <div class="chat-area-modal">
+        <div id="chat-header-modal" class="chat-header-modal" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
+            <div>
+              <h3 id="selected-operador-name">-</h3>
+              <span id="selected-operador-status" class="status-indicator">🟢 Online</span>
+            </div>
+            <button id="clear-chat-btn" style="background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">🗑️ Limpiar Chat</button>
+          </div>
+        </div>
+
+        <div id="messages-modal" class="messages-modal">
+          <div class="empty-messages">
+            <p>Selecciona un operador para ver la conversación</p>
+          </div>
+        </div>
+
+        <div id="input-area-modal" class="input-area-modal" style="display: none;">
+          <input type="text" id="message-input-modal" placeholder="Escribe un mensaje...">
+          <button id="send-message-modal" class="send-btn-modal">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos del Modal de Chat -->
+<style>
+  .admin-chat-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 850px;
+    height: 700px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    z-index: 999;
+    overflow: hidden;
+    cursor: move;
+  }
+
+  .admin-chat-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #e0e0e0;
+    color: #666;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .admin-chat-close:hover {
+    background: #d0d0d0;
+    color: #333;
+  }
+
+  .pin-modal-admin {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    border-radius: 12px;
+  }
+
+  .pin-box {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 450px;
+  }
+
+  .pin-box h3 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .pin-box p {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 0.95em;
+  }
+
+  .admin-pin-input {
+    font-size: 2.2em;
+    letter-spacing: 15px;
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    width: 100%;
+    font-weight: bold;
+    margin-bottom: 15px;
+    -webkit-text-security: disc;
+  }
+
+  .admin-pin-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .admin-pin-input.error {
+    border-color: #f44336;
+    animation: shake 0.3s;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+
+  .pin-btn-submit,
+  .pin-btn-cancel {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .pin-btn-submit {
+    background: #007bff;
+    color: white;
+  }
+
+  .pin-btn-submit:hover {
+    background: #0056b3;
+  }
+
+  .pin-btn-cancel {
+    background: #e0e0e0;
+    color: #333;
+  }
+
+  .pin-btn-cancel:hover {
+    background: #d0d0d0;
+  }
+
+  .admin-chat-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: 30px;
+  }
+
+  .admin-chat-header {
+    background: #f5f5f5;
+    color: #333;
+    padding: 12px 16px;
+    text-align: center;
+    cursor: move;
+    user-select: none;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .admin-chat-header h2 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+  }
+
+  .admin-chat-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .operadores-sidebar {
+    width: 45%;
+    background: #f5f5f5;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .operadores-sidebar h4 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.05em;
+    font-weight: 600;
+  }
+
+  .operador-btn-modal {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 6px;
+    border: none;
+    background: white;
+    border-left: 3px solid #ddd;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 3px;
+    transition: all 0.2s;
+    color: #333;
+    font-size: 0.95em;
+  }
+
+  .operador-btn-modal:hover {
+    background: #f9f9f9;
+    color: #000;
+  }
+
+  .operador-btn-modal.active {
+    background: #e3f2fd;
+    color: #0056b3;
+    border-left-color: #007bff;
+  }
+
+  .operador-btn-modal-name {
+    font-weight: 600;
+    font-size: 0.95em;
+    display: block;
+    color: inherit;
+  }
+
+  .operador-btn-modal-status {
+    font-size: 0.85em;
+    opacity: 0.7;
+    color: inherit;
+  }
+
+  .chat-area-modal {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+  }
+
+  .chat-header-modal {
+    padding: 10px 12px;
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chat-header-modal h3 {
+    margin: 0;
+    font-size: 0.95em;
+    color: #333;
+  }
+
+  .status-indicator {
+    font-size: 0.85em;
+    opacity: 0.8;
+  }
+
+  .messages-modal {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: white;
+  }
+
+  .message-modal {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    max-width: 85%;
+  }
+
+  .message-modal.admin {
+    background: #e3f2fd;
+    border-left: 3px solid #007bff;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .message-modal.operador {
+    background: #f5f5f5;
+    border-left: 3px solid #999;
+    margin-right: auto;
+  }
+
+  .message-modal.system {
+    background: #fff3cd;
+    border-left: 3px solid #ffc107;
+    margin: 10px auto;
+    text-align: center;
+    font-style: italic;
+    color: #856404;
+  }
+
+  .message-time-modal {
+    font-size: 0.9em;
+    opacity: 0.6;
+    margin-top: 8px;
+  }
+
+  .empty-messages {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+    text-align: center;
+  }
+
+  .input-area-modal {
+    padding: 12px;
+    background: #fafafa;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 8px;
+    min-height: 50px;
+  }
+
+  .input-area-modal input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95em;
+    resize: none;
+  }
+
+  .input-area-modal input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  }
+
+  .send-btn-modal {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+  }
+
+  .send-btn-modal:hover {
+    background: #0056b3;
+  }
+
+  /* ===== BADGES DE MENSAJES NO LEÍDOS ===== */
+  .unread-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75em;
+    font-weight: bold;
+    border: 2px solid white;
+  }
+
+  #chat-panel-btn {
+    position: relative;
+  }
+
+  .operador-unread-badge {
+    display: flex;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .operador-btn-modal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 1600px) {
+    .admin-chat-modal {
+      width: 800px;
+      height: 650px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .admin-chat-modal {
+      width: 700px;
+      height: 600px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .admin-chat-modal {
+      width: 95%;
+      height: 90%;
+      max-height: 90vh;
+      max-width: 95vw;
+    }
+  }
+</style>
+
+<!-- BOTÓN TOGGLE PANEL DERECHO (solo móvil) -->
+<button id="toggle-right-panel-btn" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1999; padding: 12px 16px; background: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">📋 Mostrar Filtros</button>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-config.js"></script>
+
+<!-- NOTA: Los eventos son creados por Capa Norte/Sur (operadors) en operador-interface.html -->
+<!-- El admin solo hace SEGUIMIENTO de eventos en este panel -->
+
+<!-- BOTÓN FLOTANTE PARA ABRIR PANEL DE EVENTOS -->
+<button id="toggle-events-panel-btn" style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #007bff; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,123,255,0.4); z-index: 2000; display: none; transition: all 0.3s;">
+  📋
+</button>
+
+<!-- CONTENEDOR DE EVENTOS -->
+<div id="events-container" style="display: none; position: fixed; top: 80px; left: auto; right: 280px; width: 490px; height: calc(100vh - 100px); background: white; border: 2px solid #007bff; border-radius: 8px; overflow-y: auto; z-index: 1999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+  
+  <div style="padding: 15px; border-bottom: 2px solid #007bff; background: #f0f8ff; display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+    <h3 style="margin: 0; color: #007bff; font-size: 16px;">📋 Seguimiento de Eventos</h3>
+    <button id="close-events-panel-btn" style="background: none; border: none; color: #007bff; font-size: 20px; cursor: pointer;">✕</button>
+  </div>
+  
+  <!-- FILTRO POR CAPA - Botones en lugar de select -->
+  <div style="padding: 12px 15px; border-bottom: 1px solid #ddd; background: #fff;">
+    <label style="font-size: 14px; font-weight: bold; color: #333;">Filtrar por Capa:</label>
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
+      <button id="filter-all" onclick="window.applyFilter('all')" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
+        Todas
+      </button>
+      <button id="filter-norte" onclick="window.applyFilter('norte')" style="flex: 1; padding: 8px; background: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
+        Norte
+      </button>
+      <button id="filter-sur" onclick="window.applyFilter('sur')" style="flex: 1; padding: 8px; background: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
+        Sur
+      </button>
+    </div>
+  </div>
+  
+  <div id="events-list-container" style="padding: 15px;">
+    <!-- Las tarjetas de eventos reportadas por Capa Norte y Sur se cargarán aquí -->
+  </div>
+  
+</div>
+
+<!-- TARJETA DE EVENTO (template) -->
+<template id="event-card-template">
+  <div class="event-card" style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f9f9f9;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+      <h4 style="margin: 0; color: #333; font-size: 15px;">
+        <span class="event-camera">Cám. --</span> - <span class="event-location">--</span>
+      </h4>
+      <span class="event-status" style="background: #ffc107; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">ABIERTO</span>
+    </div>
+    
+    <div style="font-size: 13px; color: #666; margin-bottom: 10px;">
+      <div>Operador: <strong class="event-operator">--</strong></div>
+      <div>Creado: <strong class="event-created">--</strong></div>
+    </div>
+    
+    <!-- FORMULARIO EDITABLE -->
+    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px;">
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Hora Notificación:</label>
+        <div style="display: flex; gap: 5px;">
+          <input type="time" class="event-notification-time" style="flex: 1; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+          <select class="event-notification-type" style="flex: 1; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+            <option value="">Tipo</option>
+            <option value="911">911</option>
+            <option value="operador">Operador</option>
+            <option value="patrulla">Patrulla</option>
+            <option value="multiagencia">Multiagencia</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Inicio Seguimiento:</label>
+        <input type="time" class="event-follow-start-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Breve Informe:</label>
+        <textarea class="event-brief-report" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Observaciones:</label>
+        <textarea class="event-notes" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Policía - Hora:</label>
+          <input type="time" class="event-police-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Policía - Móvil:</label>
+          <input type="text" class="event-police-unit" placeholder="Ej: 45A" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Ambulancia - Hora:</label>
+          <input type="time" class="event-ambulance-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Ambulancia - Móvil:</label>
+          <input type="text" class="event-ambulance-unit" placeholder="Ej: AM1" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Médico que atendió:</label>
+        <input type="text" class="event-attending-doctor" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Retiro Ambulancia:</label>
+          <input type="time" class="event-ambulance-return-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #333;">Retiro Policía:</label>
+          <input type="time" class="event-police-return-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Cierre del Evento:</label>
+        <input type="time" class="event-closure-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">Observaciones Finales:</label>
+        <textarea class="event-final-notes" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
+      </div>
+      
+    </div>
+    
+    <!-- HISTORIAL DE CAMBIOS -->
+    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: #f5f5f5; border-radius: 3px; padding: 8px;">
+      <div style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px;">📝 Historial:</div>
+      <div class="event-history" style="font-size: 12px; color: #555;"></div>
+    </div>
+    
+    <!-- RESPUESTAS DEL ADMIN -->
+    <div class="event-admin-messages" style="border-top: 1px solid #ddd; padding-top: 8px; margin-bottom: 10px; max-height: 120px; overflow-y: auto; background: #e3f2fd; border-radius: 3px; padding: 8px; display: none;">
+      <div style="font-size: 12px; font-weight: bold; color: #1976d2; margin-bottom: 5px;">💬 Admin:</div>
+      <div class="event-messages-list" style="font-size: 12px; color: #555;"></div>
+    </div>
+    
+    <!-- BOTONES DE ACCIÓN -->
+    <div style="display: flex; gap: 8px;">
+      <button class="close-event-btn" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Cerrar Evento</button>
+      <button class="remove-event-btn" style="flex: 0; width: 40px; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;" title="Limpiar evento de la vista">🗑️</button>
+      <button class="expand-event-btn" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">+</button>
+    </div>
+    
+  </div>
+</template>
+
+<script>
+  let emergenciaZoomActiva = false;
+</script>
+
+<script src="js/eventos-operadores.js?v=202602201400"></script>
+<script src="script.js"></script>
+
+</body>
+</html>

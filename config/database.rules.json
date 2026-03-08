@@ -1,0 +1,57 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": false,
+
+    "webrtc": {
+      ".read": true,
+      ".write": true
+    },
+
+    "usuarios": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "patrullas": {
+      "$patrullaID": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "chat": {
+      "$patrullaID": {
+        "$msgID": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "operador-tarjetas": {
+      ".read": true,
+      "$eventId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+
+    "chats-com": {
+      ".read": "auth != null",
+        ".write": "auth != null",
+      "$uid": {
+        ".read": "auth != null",
+          ".write": "auth != null",
+        "messages": {
+          "$msgId": {
+              ".read": "auth != null",
+              ".write": "auth != null && (auth.uid === $uid || root.child('usuarios/' + auth.uid + '/admin').val() === true)"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "evento-prueba-001": {
+    "id": "evento-prueba-001",
+    "createdAt": "2026-03-07T20:20:00Z",
+    "notificationType": "Cámara",
+    "notificationTime": "20:20",
+    "followStartTime": "20:20",
+    "briefReport": "Evento de prueba desde CAPA NORTE",
+    "cameraNumber": "CAPA-NORTE-001",
+    "zona": "Centro - Capa Norte"
+  }
+}
