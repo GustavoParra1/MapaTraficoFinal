@@ -339,19 +339,29 @@ async function iniciarWebRTC() {
       pc.addTrack(track, localStream);
     });
 
-    // ✅ FORZAR H.264 CODEC (mejor compatibilidad en navegadores)
+    // ✅ FORZAR H.264 CODEC (mejor compatibilidad en navegadores) - MÁXIMA PRIORIDAD
     if (RTCRtpSender.getCapabilities) {
       const caps = RTCRtpSender.getCapabilities('video');
       const h264Codecs = caps.codecs.filter(c => c.mimeType.includes('H264'));
+      const vp8Codecs = caps.codecs.filter(c => c.mimeType === 'video/VP8');
+      const vp9Codecs = caps.codecs.filter(c => c.mimeType === 'video/VP9');
+      
+      console.log(`[WebRTC Patrulla] H264: ${h264Codecs.length}, VP8: ${vp8Codecs.length}, VP9: ${vp9Codecs.length}`);
+      
       if (h264Codecs.length > 0) {
+        // Repetir H264 10 veces para máxima prioridad
+        let codecOrder = [];
+        for (let i = 0; i < 10; i++) codecOrder.push(...h264Codecs);
+        codecOrder.push(...vp8Codecs, ...vp9Codecs);
+        
         pc.getTransceivers()
           .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
           .forEach(t => {
-            t.setCodecPreferences(h264Codecs);
-            console.log("[WebRTC] ✅ H.264 codec forzado");
+            t.setCodecPreferences(codecOrder);
+            console.log(`[WebRTC Patrulla] ✅ H.264 FORZADO (${h264Codecs[0]?.mimeType})`);
           });
       } else {
-        console.log("[WebRTC] ⚠️ H.264 no disponible, using VP8");
+        console.log("[WebRTC Patrulla] ⚠️ H.264 no disponible en este navegador");
       }
     }
 

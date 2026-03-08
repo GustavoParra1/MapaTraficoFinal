@@ -11314,15 +11314,8 @@ function verCamaraPatrulla(movil) {
                 console.log("[DEBUG] paused:", videoEl.paused, "currentTime:", videoEl.currentTime);
             })
             .catch(err => {
-                console.error("[DEBUG] ❌ play() falló INMEDIATAMENTE:", err.message, err.name);
-                
-                // Intenta nuevamente en 200ms
-                console.log("[DEBUG] 🔁 Reintentando en 200ms...");
-                setTimeout(() => {
-                    videoEl.play()
-                        .then(() => console.log("[DEBUG] ✅ RETRY EXITOSO"))
-                        .catch(e => console.error("[DEBUG] ❌ RETRY FALLÓ:", e.message));
-                }, 200);
+                // No logging para play() errors - browser/autoplay policy puede rechazar
+                // Continuamos. El canvas fallback se activará si readyState no cambia
             });
         
         // Fuerza un frame request para ver si hay datos
@@ -11367,7 +11360,7 @@ function verCamaraPatrulla(movil) {
         }, 500);
         
         // ====== FALLBACK: Si el video element no funciona, usar canvas ======
-        // Esperar 2 segundos para ver si el video element tiene datos
+        // Esperar 2 segundos de diagnóstico
         setTimeout(() => {
             clearInterval(monitorId);
             console.log(`[Monitor] ✅ Fin del monitoreo después de ${monitorCount * 0.5}s`);
@@ -11552,8 +11545,8 @@ function verCamaraPatrulla(movil) {
           console.log("[WebRTC] Creating answer");
           const answer = await viewerPC.createAnswer();
           
-          // 🔧 CRÍTICO: Negociar codecs explícitamente
-          console.log("[Codec Negotiation] Intentando establecer codecs...");
+          // 🔧 CRÍTICO: Negociar codecs explícitamente con H264 PRIORITARIO
+          console.log("[Codec Negotiation] Intentando establecer codecs con H264 prioritario...");
           try {
             const transceivers = viewerPC.getTransceivers();
             console.log(`[Codec Negotiation] Total transceivers: ${transceivers.length}`);
@@ -11569,17 +11562,25 @@ function verCamaraPatrulla(movil) {
                     capabilities.codecs.map(c => c.mimeType).join(', ')
                   );
                   
-                  // Intentar en este orden: H264 PRIMERO, luego VP8, VP9
-                  const codecOrder = [
-                    capabilities.codecs.find(c => c.mimeType === 'video/H264'),
-                    capabilities.codecs.find(c => c.mimeType === 'video/VP8'),
-                    capabilities.codecs.find(c => c.mimeType === 'video/VP9'),
-                    ...capabilities.codecs
-                  ].filter(Boolean);
+                  // 🔴 FORZAR H264: Filtrar SOLO H264 codecs
+                  const h264Codecs = capabilities.codecs.filter(c => c.mimeType && c.mimeType.includes('H264'));
+                  const vp8Codecs = capabilities.codecs.filter(c => c.mimeType === 'video/VP8');
+                  const vp9Codecs = capabilities.codecs.filter(c => c.mimeType === 'video/VP9');
+                  
+                  console.log(`[Codec Negotiation] 🔎 H264 disponibles: ${h264Codecs.length}, VP8: ${vp8Codecs.length}, VP9: ${vp9Codecs.length}`);
+                  
+                  // Orden: H264 PRIMERO (repetido 10 veces para máxima prioridad), luego otros
+                  let codecOrder = [];
+                  for (let i = 0; i < 10 && h264Codecs.length > 0; i++) {
+                    codecOrder.push(...h264Codecs);
+                  }
+                  codecOrder.push(...vp8Codecs);
+                  codecOrder.push(...vp9Codecs);
+                  codecOrder = codecOrder.filter(Boolean);
                   
                   if (codecOrder.length > 0 && transceiver.setCodecPreferences) {
                     transceiver.setCodecPreferences(codecOrder);
-                    console.log(`[Codec Negotiation] ✅ Codecs preferidos establecidos: ${codecOrder[0]?.mimeType}`);
+                    console.log(`[Codec Negotiation] ✅ CODEC PRIMARIO FORZADO: ${codecOrder[0]?.mimeType} (${codecOrder[0]?.sdpFmtpLine || 'N/A'})`);
                   }
                 }
               }
