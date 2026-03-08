@@ -11569,14 +11569,10 @@ function verCamaraPatrulla(movil) {
                   
                   console.log(`[Codec Negotiation] 🔎 H264 disponibles: ${h264Codecs.length}, VP8: ${vp8Codecs.length}, VP9: ${vp9Codecs.length}`);
                   
-                  // Orden: H264 PRIMERO (repetido 10 veces para máxima prioridad), luego otros
-                  let codecOrder = [];
-                  for (let i = 0; i < 10 && h264Codecs.length > 0; i++) {
-                    codecOrder.push(...h264Codecs);
-                  }
-                  codecOrder.push(...vp8Codecs);
-                  codecOrder.push(...vp9Codecs);
-                  codecOrder = codecOrder.filter(Boolean);
+                  // 🔴 SOLO H264: Descartar VP8 completamente, solo H264 + VP9 si es necesario
+                  let codecOrder = h264Codecs.length > 0 ? h264Codecs : vp9Codecs;
+                  
+                  console.log(`[Codec Negotiation] 🔒 FORZANDO SOLO: ${codecOrder.map(c => c.mimeType).join(', ')}`);
                   
                   if (codecOrder.length > 0 && transceiver.setCodecPreferences) {
                     transceiver.setCodecPreferences(codecOrder);
