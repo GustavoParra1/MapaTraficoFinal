@@ -276,276 +276,111 @@ gpsBtn.onclick = () => {
 // ============================
 camaraBtn.onclick = async () => {
   try {
-    console.log("[Cámara] 🎯 Iniciando solicitud de cámara...");
+    console.log("[Cámara] 🎯 Solicitando acceso a cámara...");
     
-    // Constraints optimizados para transmisión WebRTC
-    let constraints = {
-      video: { 
-        width: { min: 640, ideal: 1280, max: 1920 }, 
-        height: { min: 480, ideal: 720, max: 1080 },
-        frameRate: { ideal: 30, max: 60 },
-        facingMode: "user"
-      },
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
-    };
-    
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("[Cámara] ✅ Stream con constraints óptimos obtenido");
-    } catch (e) {
-      console.warn("[Cámara] ⚠️ Constraints específicos fallaron, intentando versión simplificada...");
-      // Si falla, intenta con menos restricciones
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true
-        });
-        console.log("[Cámara] ✅ Stream básico obtenido");
-      } catch (e2) {
-        console.error("[Cámara] ❌ getUserMedia completamente falló:", e.message, e2.message);
-        alert("❌ No se puede acceder a la cámara.\n\nPrueba:\n1. Usa el botón 'TEST VIDEO' para probar\n2. Permite acceso a cámara en configuración del navegador\n3. Recarga la página\n\nError: " + e2.message);
-        return;
-      }
-    }
+    // ✅ Constraints SIMPLES y COMPATIBLES (funciona en cualquier dispositivo)
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
 
-    console.log("[Cámara] ✅ Stream obtenido:", localStream);
-    console.log("[Cámara] VideoTracks:", localStream.getVideoTracks().length);
-    console.log("[Cámara] AudioTracks:", localStream.getAudioTracks().length);
+    console.log("[Cámara] ✅ Stream obtenido - VideoTracks:", localStream.getVideoTracks().length, "AudioTracks:", localStream.getAudioTracks().length);
 
     localVideo.srcObject = localStream;
-    console.log("[Cámara] 📹 Video element srcObject asignado");
+    console.log("[Cámara] 📹 Video asignado al elemento");
 
     await localVideo.play();
-    console.log("[Cámara] ✅ Video reproduciendo localmente");
+    console.log("[Cámara] ✅ Video reproduciéndose");
     
-    // ⚠️ VALIDACIÓN CRÍTICA: Verificar que hay datos reales de video
-    let hasRealVideoData = false;
-    const validationTimeout = setTimeout(() => {
-      if (!hasRealVideoData) {
-        console.error("[Cámara] ❌ CRÍTICO: Video local no tiene datos después de 2s");
-        console.log("[Cámara] videoWidth:", localVideo.videoWidth, "videoHeight:", localVideo.videoHeight);
-        console.log("[Cámara] readyState:", localVideo.readyState);
-        
-        // Parar cámara
-        if (localStream) localStream.getTracks().forEach(t => t.stop());
-        
-        alert("⚠️ LA CÁMARA NO ESTÁ FUNCIONANDO O NO TIENE PERMISOS\n\nSwitchando a TEST VIDEO automáticamente...");
-        
-        // Iniciar TEST VIDEO automáticamente
-        document.getElementById('testVideoBtn').click();
-        return;
-      }
-    }, 2000);
-    
-    // Monitorear que realmente hay frames
+    // ✅ Validación SIMPLE (no invasiva - no corta la cámara)
     localVideo.onloadedmetadata = () => {
-      if (localVideo.videoWidth > 0 && localVideo.videoHeight > 0) {
-        hasRealVideoData = true;
-        clearTimeout(validationTimeout);
-        console.log(`[Cámara] ✅ VALIDADO: Video real ${localVideo.videoWidth}x${localVideo.videoHeight}`);
-      }
-    };
-    
-    localVideo.onplaying = () => {
-      if (localVideo.videoWidth > 0) {
-        hasRealVideoData = true;
-        console.log("[Cámara] ✅ Video playing con datos reales");
-      }
+      console.log(`[Cámara] ✅ Resolución: ${localVideo.videoWidth}x${localVideo.videoHeight}`);
     };
 
-    // Mostrar contenedor de cámara
+    localVideo.onplaying = () => {
+      console.log("[Cámara] ✅ Video activo y transmitiendo");
+    };
+
+    // Mostrar contenedor
     document.getElementById('cameraViewerContainer').style.display = 'block';
     console.log("[Cámara] 👁️ Contenedor visible");
 
-    // Monitorear frames cada 200ms
-    const monitorId = setInterval(() => {
-      const videoTracks = localStream.getVideoTracks();
-      if (videoTracks.length > 0) {
-        const settings = videoTracks[0].getSettings();
-        console.log(`[Cámara Monitor] width: ${settings.width}, height: ${settings.height}, frameRate: ${settings.frameRate}`);
-      }
-    }, 200);
-    
-    setTimeout(() => clearInterval(monitorId), 3000); // Monitor para 3 segundos
-
+    // Iniciar WebRTC
     await iniciarWebRTC();
     estado("🎥 Cámara activa");
 
   } catch (e) {
-    console.error("[Cámara] ❌ Error:", e.message, e.name);
-    console.error("[Cámara] ❌ Stack:", e.stack);
-    
-    // Intenta diagnosticar el problema
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter(d => d.kind === 'videoinput');
-      console.log("[Cámara] Dispositivos disponibles:", devices.length, "Cámaras:", cameras.length);
-      cameras.forEach((cam, idx) => {
-        console.log(`  [${idx}] ${cam.label || 'Cámara desconocida'}`);
-      });
-    } catch (err) {
-      console.error("[Cámara] No se pueden enumerar dispositivos");
-    }
-    
-    alert("Error cámara: " + e.message + "\n\nIntenta:\n1. Permitir acceso en Configuración de Windows\n2. Asegúrate de que tiene cámara conectada\n3. Recarga la página");
+    console.error("[Cámara] ❌ Error:", e.message);
+    alert("❌ Error cámara: " + e.message + "\n\nVerifica:\n1. Permiso de cámara en navegador\n2. Cámara conectada\n3. Recarga la página");
   }
 };
 
 async function iniciarWebRTC() {
-  // Limpiar datos de señalización anteriores para una conexión fresca
-  console.log("🧹 [WebRTC] Limpiando referencia previa de:", idPatrulla);
-  await db.ref(`webrtc/${idPatrulla}`).remove();
-
-  console.log("🎬 [WebRTC] Iniciando WebRTC desde patrulla. idPatrulla:", idPatrulla);
-  console.log("🎬 [WebRTC] localStream:", localStream, "Tracks:", localStream?.getTracks()?.length);
-
-  // ============================
-  // CÁMARA + WEBRTC (PATRULLA)
-  // ============================
-
-  pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" }
-    ]
-  });
-
-  // 1️⃣ AGREGAR PISTAS (CREA TRANSCEIVERS)
-  if (!localStream) {
-    console.error("❌ [WebRTC] localStream es null. No se pueden agregar tracks");
-    alert("Error: No hay stream de cámara disponible");
-    return;
-  }
-
-  const videoTracks = localStream.getVideoTracks();
-  const audioTracks = localStream.getAudioTracks();
-
-  console.log("🎬 [WebRTC] VideoTracks:", videoTracks.length, "AudioTracks:", audioTracks.length);
-
-  let tracksAdded = 0;
-  videoTracks.forEach(track => {
-    console.log("🎬 [WebRTC] Video track - ID:", track.id, "Enabled:", track.enabled, "ReadyState:", track.readyState);
-    if (track.readyState === 'live') {
-      pc.addTrack(track, localStream);
-      tracksAdded++;
-      console.log("✅ Pista de video añadida a RTCPeerConnection");
-    } else {
-      console.warn("⚠️ Video track no está 'live' - ReadyState:" + track.readyState);
-    }
-  });
-
-  audioTracks.forEach(track => {
-    console.log("🎬 [WebRTC] Audio track - ID:", track.id, "Enabled:", track.enabled, "ReadyState:", track.readyState);
-    if (track.readyState === 'live') {
-      pc.addTrack(track, localStream);
-      tracksAdded++;
-      console.log("✅ Pista de audio añadida a RTCPeerConnection");
-    } else {
-      console.warn("⚠️ Audio track no está 'live'");
-    }
-  });
-
-  if (tracksAdded === 0) {
-    console.error("❌ [WebRTC] NO SE AGREGARON TRACKS - El stream no tiene contenido útil");
-    alert("Error: El stream de cámara no tiene pistas de video o audio");
-    return;
-  }
-
-  console.log("🎬 [WebRTC] Total tracks agregados:", tracksAdded);
-  console.log("🎬 [WebRTC] Total transceivers:", pc.getTransceivers().length);
-  
-  // 🔍 DIAGNÓSTICO: Mostrar estado del video track siendo enviado
-  const videoSender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-  if (videoSender) {
-    console.log("[SENDER] 📊 Video sender track:", {
-      id: videoSender.track.id,
-      enabled: videoSender.track.enabled,
-      readyState: videoSender.track.readyState,
-      label: videoSender.track.label
-    });
-  }
-
-  // 3️⃣ ICE CANDIDATES
-  pc.onicecandidate = e => {
-    if (e.candidate) {
-      console.log("🧊 [WebRTC] ICE candidate generado:", e.candidate.candidate);
-      db.ref(`webrtc/${idPatrulla}/ice_patru`).push(e.candidate);
-    } else {
-      console.log("🧊 [WebRTC] icecandidate complete (null)");
-    }
-  };
-
-  pc.onconnectionstatechange = () => {
-    console.log("🔌 [WebRTC] Connection state:", pc.connectionState);
-    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-      console.error("❌ [WebRTC] Conexión fallida - reintentar en 5 segundos");
-      setTimeout(() => {
-        if (pc && (pc.connectionState === 'failed' || pc.connectionState === 'disconnected')) {
-          console.log("🔄 [WebRTC] Reiniciando conexión...");
-          iniciarWebRTC();
-        }
-      }, 5000);
-    }
-  };
-
-  pc.oniceconnectionstatechange = () => {
-    console.log("🧊 [WebRTC] ICE Connection state:", pc.iceConnectionState);
-  };
-
-  pc.onsignalingstatechange = () => {
-    console.log("🎯 [WebRTC] Signaling state:", pc.signalingState);
-  };
-
-  // 4️⃣ CREAR Y ENVIAR OFFER
-  console.log("📤 [WebRTC] Creando offer...");
   try {
-    const offer = await pc.createOffer();
-    console.log("📤 [WebRTC] Offer creado - Enviando a Firebase");
-    await pc.setLocalDescription(offer);
-    console.log("📤 [WebRTC] Local description set. Guardando offer en Firebase");
-    await db.ref(`webrtc/${idPatrulla}/offer`).set(offer);
-    console.log("✅ [WebRTC] Offer enviado a Firebase con éxito");
-  } catch (err) {
-    console.error("❌ [WebRTC] Error creando/enviando offer:", err.message);
-    alert("Error en WebRTC: " + err.message);
-    return;
-  }
+    console.log("[WebRTC] 🎬 Iniciando WebRTC desde patrulla - idPatrulla:", idPatrulla);
 
-  // 5️⃣ RECIBIR ANSWER
-  db.ref(`webrtc/${idPatrulla}/answer`).on("value", async s => {
-    if (s.val()) {
-      console.log("📥 [WebRTC] Answer recibido de COM");
-      console.log("📥 [WebRTC] PC signalingState:", pc.signalingState);
-      if (pc.signalingState === 'have-local-offer') {
-        try {
-          console.log("📥 [WebRTC] Configurando remote description con answer");
-          await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
-          console.log("✅ [WebRTC] Remote description set correctamente");
-        } catch (err) {
-          console.error("❌ [WebRTC] Error seteando remote description:", err.message);
-        }
-      } else {
-        console.log("📥 [WebRTC] Ignorando answer - signalingState no es 'have-local-offer'");
-      }
+    pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    // ✅ AGREGAR TRACKS (simple y directo)
+    if (!localStream) {
+      console.error("[WebRTC] ❌ No hay stream de cámara");
+      alert("Error: No hay stream disponible");
+      return;
     }
-  });
 
-  // 6️⃣ ICE DESDE COM
-  db.ref(`webrtc/${idPatrulla}/ice_com`)
-    .on("child_added", async s => {
-      const candidate = s.val();
-      console.log("🧊 [WebRTC] ICE candidate recibido de COM");
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("✅ [WebRTC] ICE candidate agregado");
-      } catch (err) {
-        console.error("❌ [WebRTC] Error agregando ICE candidate:", err.message);
+    localStream.getTracks().forEach(track => {
+      console.log(`[WebRTC] ✅ Agregando track: ${track.kind} (${track.id})`);
+      pc.addTrack(track, localStream);
+    });
+
+    // ✅ ICE CANDIDATES
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        console.log("[WebRTC] 🧊 ICE candidate generado");
+        db.ref(`webrtc/${idPatrulla}/ice_patru`).push(e.candidate);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("[WebRTC] 🔌 Connection state:", pc.connectionState);
+    };
+
+    // ✅ CREAR Y ENVIAR OFFER
+    console.log("[WebRTC] 📤 Creando offer...");
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await db.ref(`webrtc/${idPatrulla}/offer`).set(offer);
+    console.log("[WebRTC] ✅ Offer enviado a Firebase");
+
+    // ✅ RECIBIR ANSWER
+    db.ref(`webrtc/${idPatrulla}/answer`).on("value", async s => {
+      if (s.val() && pc.signalingState === 'have-local-offer') {
+        try {
+          console.log("[WebRTC] 📥 Answer recibido");
+          await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
+          console.log("[WebRTC] ✅ Remote description configurado");
+        } catch (err) {
+          console.error("[WebRTC] ❌ Error con answer:", err.message);
+        }
       }
     });
+
+    // ✅ ICE DESDE COM
+    db.ref(`webrtc/${idPatrulla}/ice_com`).on("child_added", async s => {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(s.val()));
+        console.log("[WebRTC] ✅ ICE candidate agregado");
+      } catch (err) {
+        console.error("[WebRTC] ❌ Error ICE:", err.message);
+      }
+    });
+
+  } catch (e) {
+    console.error("[WebRTC] ❌ Error:", e.message);
+    alert("Error WebRTC: " + e.message);
+  }
 }
 
 
