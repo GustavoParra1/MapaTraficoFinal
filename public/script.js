@@ -11181,6 +11181,20 @@ function verCamaraPatrulla(movil) {
     ]
   });
 
+  // ✅ FORZAR VP8 CODEC (más compatible que H264 en WebRTC)
+  if (RTCRtpSender.getCapabilities) {
+    const caps = RTCRtpSender.getCapabilities('video');
+    const vp8Codecs = caps.codecs.filter(c => c.mimeType.includes('VP8'));
+    if (vp8Codecs.length > 0) {
+      viewerPC.getTransceivers()
+        .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
+        .forEach(t => {
+          t.setCodecPreferences(vp8Codecs);
+          console.log("[WebRTC COM] ✅ VP8 codec forzado para mejor compatibilidad");
+        });
+    }
+  }
+
   // ++ Extensive logging ++
   viewerPC.oniceconnectionstatechange = () => {
     console.log(`[WebRTC] ICE Connection State: ${viewerPC.iceConnectionState}`);
