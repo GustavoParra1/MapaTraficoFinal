@@ -11569,10 +11569,10 @@ function verCamaraPatrulla(movil) {
                     capabilities.codecs.map(c => c.mimeType).join(', ')
                   );
                   
-                  // Intentar en este orden: VP8, H264, VP9
+                  // Intentar en este orden: H264 PRIMERO, luego VP8, VP9
                   const codecOrder = [
-                    capabilities.codecs.find(c => c.mimeType === 'video/VP8'),
                     capabilities.codecs.find(c => c.mimeType === 'video/H264'),
+                    capabilities.codecs.find(c => c.mimeType === 'video/VP8'),
                     capabilities.codecs.find(c => c.mimeType === 'video/VP9'),
                     ...capabilities.codecs
                   ].filter(Boolean);
