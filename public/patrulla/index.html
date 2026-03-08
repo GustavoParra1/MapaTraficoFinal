@@ -292,7 +292,7 @@ camaraBtn.onclick = async () => {
     await localVideo.play();
     console.log("[Cámara] ✅ Video reproduciéndose");
     
-    // ✅ Validación SIMPLE (no invasiva - no corta la cámara)
+    // ✅ Validación SIMPLE (no invasiva - NO corta la cámara)
     localVideo.onloadedmetadata = () => {
       console.log(`[Cámara] ✅ Resolución: ${localVideo.videoWidth}x${localVideo.videoHeight}`);
     };
@@ -300,6 +300,10 @@ camaraBtn.onclick = async () => {
     localVideo.onplaying = () => {
       console.log("[Cámara] ✅ Video activo y transmitiendo");
     };
+
+    // ✅ NO MATAR LA CÁMARA - Dejar que transmita aunque no decodifique
+    // El WebRTC seguirá funcionando en background
+    console.log("[Cámara] ✅ Cámara ACTIVA - transmitiendo a WebRTC");
 
     // Mostrar contenedor
     document.getElementById('cameraViewerContainer').style.display = 'block';
