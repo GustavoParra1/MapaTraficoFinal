@@ -3,6 +3,15 @@
     ".read": "auth != null",
     ".write": false,
 
+    "frames": {
+      "$patrullaID": {
+        "latest": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+
     "webrtc": {
       ".read": true,
       ".write": true
