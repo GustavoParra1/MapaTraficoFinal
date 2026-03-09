@@ -11805,15 +11805,14 @@ function iniciarVisualizacionMJPEG(patrullaId) {
     mjpegListenerRef = null;
   }
   
-  // Obtener o crear canvas
+  // Obtener o crear canvas (SIN dimensiones fijas - se adaptan al frame)
   let canvas = document.getElementById('visorMJPEG');
   if (!canvas) {
     canvas = document.createElement('canvas');
     canvas.id = 'visorMJPEG';
-    canvas.width = 1280;
-    canvas.height = 720;
     canvas.style.width = '100%';
-    canvas.style.height = '100%';
+    canvas.style.height = 'auto';
+    canvas.style.maxHeight = '100%';
     canvas.style.display = 'block';
     canvas.style.backgroundColor = '#000';
     canvas.style.objectFit = 'contain';
@@ -11833,6 +11832,7 @@ function iniciarVisualizacionMJPEG(patrullaId) {
   
   // Escuchar cambios en RTDB (frames base64)
   let frameCount = 0;
+  let firstFrameProcessed = false;
   mjpegListenerRef = rtdb.ref(`frames/${patrullaId}/latest`);
   
   mjpegListenerRef.on('value', (snapshot) => {
@@ -11851,37 +11851,22 @@ function iniciarVisualizacionMJPEG(patrullaId) {
       
       img.onload = () => {
         if (!mjpegFrameCanvas) return;
-        const ctx = mjpegFrameCanvas.getContext('2d');
-        // Limpiar canvas
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
         
-        // Dibujar manteniendo proporción (sin estirar)
-        const canvasWidth = mjpegFrameCanvas.width;
-        const canvasHeight = mjpegFrameCanvas.height;
-        const imgAspect = img.width / img.height;
-        const canvasAspect = canvasWidth / canvasHeight;
-        
-        let drawWidth, drawHeight, x, y;
-        if (imgAspect > canvasAspect) {
-          // Imagen más ancha que canvas
-          drawWidth = canvasWidth;
-          drawHeight = canvasWidth / imgAspect;
-          x = 0;
-          y = (canvasHeight - drawHeight) / 2;
-        } else {
-          // Imagen más alta que canvas
-          drawHeight = canvasHeight;
-          drawWidth = canvasHeight * imgAspect;
-          x = (canvasWidth - drawWidth) / 2;
-          y = 0;
+        // Adaptar canvas al tamaño real del frame en el PRIMER frame
+        if (!firstFrameProcessed) {
+          mjpegFrameCanvas.width = img.width;
+          mjpegFrameCanvas.height = img.height;
+          console.log(`[MJPEG Viewer] 📐 Canvas adaptado a: ${img.width}x${img.height}`);
+          firstFrameProcessed = true;
         }
         
-        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        const ctx = mjpegFrameCanvas.getContext('2d');
+        // Limpiar y dibujar directamente sin estirar
+        ctx.drawImage(img, 0, 0);
         
         frameCount++;
         if (frameCount % 10 === 0) {
-          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado (${img.width}x${img.height})`);
+          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
         }
       };
       
