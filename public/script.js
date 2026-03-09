@@ -11182,20 +11182,8 @@ function verCamaraPatrulla(movil) {
   });
 
   // ✅ FORZAR H.264 CODEC (mejor compatibilidad en navegadores)
-  if (RTCRtpSender.getCapabilities) {
-    const caps = RTCRtpSender.getCapabilities('video');
-    const h264Codecs = caps.codecs.filter(c => c.mimeType.includes('H264'));
-    if (h264Codecs.length > 0) {
-      viewerPC.getTransceivers()
-        .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
-        .forEach(t => {
-          t.setCodecPreferences(h264Codecs);
-          console.log("[WebRTC COM] ✅ H.264 codec forzado");
-        });
-    } else {
-      console.log("[WebRTC COM] ⚠️ H.264 no disponible, using VP8");
-    }
-  }
+  // NOTA: La negociación de codecs H264 ocurre en viewerPC.ontrack()
+  // NO duplicar aquí - usar solo la sección en ontrack
 
   // ++ Extensive logging ++
   viewerPC.oniceconnectionstatechange = () => {
@@ -11558,7 +11546,7 @@ function verCamaraPatrulla(movil) {
                 // Obtener codecs soportados
                 const capabilities = RTCRtpReceiver.getCapabilities('video');
                 if (capabilities && capabilities.codecs) {
-                  console.log(`[⚠️ VERSIÓN 2026-03-09 v2] [Codec Negotiation] Codecs soportados:`, 
+                  console.log(`[VERSION 2026-03-09 v2] [Codec Negotiation] Codecs soportados:`, 
                     capabilities.codecs.map(c => c.mimeType).join(', ')
                   );
                   
