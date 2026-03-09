@@ -314,9 +314,7 @@ camaraBtn.onclick = async () => {
     console.log("[Cámara] 👁️ Contenedor visible");
 
     // Iniciar WebRTC
-    console.log("[Cámara] 🎬 Antes de iniciarWebRTC");
     await iniciarWebRTC();
-    console.log("[Cámara] ✅ Después de iniciarWebRTC - INICIANDO CAPTURA MJPEG");
     
     // ✅ Iniciar captura de frames MJPEG
     startFrameCapture();
@@ -567,6 +565,11 @@ document.getElementById('testVideoBtn').onclick = async () => {
     // Iniciar WebRTC con este stream
     console.log("[TEST] Iniciando WebRTC con canvas stream...");
     await iniciarWebRTC();
+    
+    // ✅ INICIAR CAPTURA MJPEG TAMBIÉN
+    console.log("[TEST] 🎥 Iniciando captura MJPEG...");
+    startFrameCapture();
+    
     estado("🧪 TEST VIDEO activo - colores animados transmitiendo");
     
   } catch (e) {
