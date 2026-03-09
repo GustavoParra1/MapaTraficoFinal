@@ -617,7 +617,7 @@ function startFrameCapture() {
   
   let frameCount = 0;
   
-  // Cada 100ms capturar un frame
+  // Cada 50ms capturar un frame (20 fps)
   frameIntervalId = setInterval(async () => {
     if (!isCapturingFrames || !localStream) return;
     
