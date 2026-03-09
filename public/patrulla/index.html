@@ -50,6 +50,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 </head>
 
 <body>
@@ -90,6 +91,7 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
 
 // ============================
 // VARIABLES
@@ -98,6 +100,8 @@ let idPatrulla = null;
 let watchId = null;
 let emergenciaActiva = false;
 let localStream = null;
+let isCapturingFrames = false;
+let frameIntervalId = null;
 let pc = null;
 let gpsActivo = false;
 let map = null;
@@ -311,6 +315,9 @@ camaraBtn.onclick = async () => {
 
     // Iniciar WebRTC
     await iniciarWebRTC();
+    
+    // ✅ Iniciar captura de frames MJPEG
+    startFrameCapture();
     estado("🎥 Cámara activa");
 
   } catch (e) {
@@ -574,6 +581,9 @@ detenerBtn.onclick = () => {
   if (localStream) localStream.getTracks().forEach(t => t.stop());
   if (pc) pc.close();
   
+  // ✅ Detener captura de frames
+  stopFrameCapture();
+  
   // Limpiar test video si está activo
   if (window.testAnimId) {
     clearInterval(window.testAnimId);
@@ -590,6 +600,70 @@ detenerBtn.onclick = () => {
 
   estado("⛔ Sistema detenido");
 };
+
+// ============================
+// 📹 CAPTURA MJPEG (FRAMES)
+// ============================
+function startFrameCapture() {
+  if (isCapturingFrames) return;
+  
+  isCapturingFrames = true;
+  console.log("[Captura MJPEG] ✅ Iniciando captura de frames...");
+  
+  let frameCount = 0;
+  
+  // Cada 100ms capturar un frame
+  frameIntervalId = setInterval(async () => {
+    if (!isCapturingFrames || !localStream) return;
+    
+    try {
+      // Crear canvas temporal para extraer frame
+      const canvas = document.createElement('canvas');
+      canvas.width = localVideo.videoWidth || 640;
+      canvas.height = localVideo.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      
+      // Dibujar el frame actual del video
+      ctx.drawImage(localVideo, 0, 0);
+      
+      // Convertir a JPEG blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        
+        try {
+          // Subir a Firebase Storage
+          const fileRef = storage.ref(`frames/${idPatrulla}/latest.jpg`);
+          await fileRef.put(blob, { contentType: 'image/jpeg' });
+          
+          // Notificar en RTDB que hay nuevo frame (para que COM lo sepa)
+          db.ref(`frame_notifications/${idPatrulla}`).set({
+            timestamp: Date.now(),
+            frameCount: frameCount
+          });
+          
+          frameCount++;
+          if (frameCount % 10 === 0) {
+            console.log(`[Captura MJPEG] Frame ${frameCount} enviado`);
+          }
+        } catch (err) {
+          console.error("[Captura MJPEG] Error subiendo frame:", err.message);
+        }
+      }, 'image/jpeg', 0.7); // 70% de calidad para reducir tamaño
+      
+    } catch (err) {
+      console.error("[Captura MJPEG] Error capturando frame:", err.message);
+    }
+  }, 100); // Cada 100ms = ~10 fps
+}
+
+function stopFrameCapture() {
+  isCapturingFrames = false;
+  if (frameIntervalId) {
+    clearInterval(frameIntervalId);
+    frameIntervalId = null;
+  }
+  console.log("[Captura MJPEG] ⛔ Captura detenida");
+}
 
 
 function forzarH264(pc) {

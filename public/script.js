@@ -74,8 +74,9 @@ if (!firebase.apps.length) {
 const rtdb = firebase.database();
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
-console.log("✅ Firebase inicializado (RTDB + AUTH)");
+console.log("✅ Firebase inicializado (RTDB + AUTH + Storage)");
 console.log("📱 script.js CARGA COMPLETADA - Esperando onAuthStateChanged...");
 
 // Debug inmediato
@@ -11125,6 +11126,7 @@ function cerrarChatBase() {
 // ===============================
 let viewerPC = null;
 let visorCerradoManual = false;
+let patrullaActualVisor = null; // ID de la patrulla siendo visualizada
 
 
 
@@ -11134,6 +11136,12 @@ function verCamaraPatrulla(movil) {
   estaCerrandoVisor = false;
 
   console.log("🎥 Abriendo cámara patrulla:", movil);
+  
+  // Guardar ID actual
+  patrullaActualVisor = movil;
+  
+  // Iniciar visualización MJPEG en paralelo
+  iniciarVisualizacionMJPEG(movil);
 
   const visor = document.getElementById("visor-patrulla");
   const video = document.getElementById("visorVideo");
@@ -11781,7 +11789,102 @@ function limpiarWebRTC() {
 }
 
 // ============================================================
-// 📊 MEJORA PREDICTIVA DE COBERTURA - FUNCIONES AUXILIARES
+// � VISUALIZACIÓN MJPEG (FRAMES DESDE FIREBASE STORAGE)
+// ============================================================
+let mjpegFrameCanvas = null;
+let mjpegPollingId = null;
+let lastMjpegUrl = null;
+
+function iniciarVisualizacionMJPEG(patrullaId) {
+  console.log("[MJPEG Viewer] 🎬 Iniciando visualización de frames para patrulla:", patrullaId);
+  
+  // Detener polling anterior si existe
+  if (mjpegPollingId) {
+    clearInterval(mjpegPollingId);
+    mjpegPollingId = null;
+  }
+  
+  // Obtener o crear canvas
+  let canvas = document.getElementById('visorMJPEG');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'visorMJPEG';
+    canvas.width = 1280;
+    canvas.height = 720;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    canvas.style.backgroundColor = '#000';
+    canvas.style.objectFit = 'contain';
+  }
+  mjpegFrameCanvas = canvas;
+  
+  // Mostrar canvas en lugar del video element
+  const videoElement = document.getElementById('visorVideo');
+  if (videoElement) {
+    videoElement.style.display = 'none';
+    
+    // Insertar canvas después del video element
+    videoElement.parentElement.insertBefore(canvas, videoElement.nextSibling);
+  }
+  
+  // Iniciar polling para obtener frames cada 100ms
+  let frameCount = 0;
+  mjpegPollingId = setInterval(async () => {
+    try {
+      const fileRef = storage.ref(`frames/${patrullaId}/latest.jpg`);
+      
+      // Obtener URL de descarga (incluye parámetro de timestamp para evitar caché)
+      const url = await fileRef.getDownloadURL();
+      const urlConTimestamp = url + '&t=' + Date.now();
+      
+      // Solo actualizar si la URL cambió (o cada 100ms para refresh)
+      if (url !== lastMjpegUrl || true) {
+        lastMjpegUrl = url;
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+          if (!mjpegFrameCanvas) return;
+          const ctx = mjpegFrameCanvas.getContext('2d');
+          // Limpiar canvas
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
+          // Dibujar imagen centrada
+          ctx.drawImage(img, 0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
+          
+          frameCount++;
+          if (frameCount % 10 === 0) {
+            console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
+          }
+        };
+        
+        img.onerror = (err) => {
+          console.warn("[MJPEG Viewer] ⚠️ Error cargando frame:", err);
+        };
+        
+        img.src = urlConTimestamp;
+      }
+    } catch (err) {
+      // Archivo no existe aún, esperar siguiente polling
+      console.log("[MJPEG Viewer] ⏳ Esperando primer frame...");
+    }
+  }, 100); // Polling cada 100ms = ~10 fps
+  
+  console.log("[MJPEG Viewer] ✅ Visualización iniciada");
+}
+
+function detenerVisualizacionMJPEG() {
+  if (mjpegPollingId) {
+    clearInterval(mjpegPollingId);
+    mjpegPollingId = null;
+  }
+  console.log("[MJPEG Viewer] ⛔ Visualización detenida");
+}
+
+// ============================================================
+// �📊 MEJORA PREDICTIVA DE COBERTURA - FUNCIONES AUXILIARES
 // ============================================================
 
 function calcularMejoraPredictivaCobertura(camaras, siniestros, robos, barrios) {
