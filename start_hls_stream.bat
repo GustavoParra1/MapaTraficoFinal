@@ -38,8 +38,8 @@ ffmpeg -re -i "C:\video.mp4" ^
   -b:a 128k ^
   -ar 44100 ^
   -ac 2 ^
-  -hls_time 2 ^
-  -hls_list_size 5 ^
+  -hls_time 1 ^
+  -hls_list_size 3 ^
   -hls_flags delete_segments ^
   "%STREAM_DIR%\stream.m3u8"
 
