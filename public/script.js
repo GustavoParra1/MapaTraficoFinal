@@ -11431,48 +11431,49 @@ function verCamaraPatrulla(movil) {
                         
                         frameCount++;
                         
-                        // Si está recibiendo frames del WebRTC, mostrar patrón colorido
-                        if (isReceivingFrames) {
-                            const hue = (frameCount % 360);
-                            canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-                            
-                            // Rectángulo interior
-                            canvasCtx.fillStyle = `hsl(${(hue + 180) % 360}, 100%, 50%)`;
-                            canvasCtx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
-                            
-                            // Texto
-                            canvasCtx.fillStyle = 'white';
-                            canvasCtx.font = 'bold 50px Arial';
-                            canvasCtx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                            canvasCtx.shadowBlur = 15;
-                            canvasCtx.textAlign = 'center';
-                            canvasCtx.fillText('WEBRTC STREAM', canvas.width / 2, canvas.height / 2);
-                            
-                            canvasCtx.font = '40px Arial';
-                            canvasCtx.fillText(`Frame: ${frameCount}`, canvas.width / 2, canvas.height / 2 + 60);
-                            
-                            if (frameCount % 100 === 0) {
-                                console.log(`[Canvas WebRTC] Frame ${frameCount} - Colores activos (datos llegando)`);
+                        // Intentar extraer frames REALES del video element
+                        try {
+                            if (videoEl && videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+                                // El video element tiene resolución - tiene datos
+                                canvasCtx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                                
+                                // Mostrar overlay con info
+                                canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                                canvasCtx.fillRect(0, 0, canvas.width, canvas.height / 5);
+                                canvasCtx.fillStyle = '#00FF00';
+                                canvasCtx.font = 'bold 16px Arial';
+                                canvasCtx.textAlign = 'left';
+                                canvasCtx.fillText(`🎥 LIVE CAMERA - Frame: ${frameCount} | ${videoEl.videoWidth}x${videoEl.videoHeight}`, 10, 25);
+                                
+                                if (frameCount % 100 === 0) {
+                                    console.log(`[Canvas Live] Frame ${frameCount} - VIDEO ELEMENT DECODIFICANDO`);
+                                }
+                            } else {
+                                throw new Error('Video element sin datos');
                             }
-                        } else {
-                            // No hay datos, mostrar estado de espera
-                            canvasCtx.fillStyle = '#111111';
-                            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-                            
-                            canvasCtx.fillStyle = '#00FF00';
-                            canvasCtx.font = 'bold 40px Arial';
-                            canvasCtx.textAlign = 'center';
-                            canvasCtx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                            canvasCtx.shadowBlur = 10;
-                            canvasCtx.fillText('CANVAS ACTIVE', canvas.width / 2, canvas.height / 2 - 20);
-                            canvasCtx.font = '30px Arial';
-                            canvasCtx.fillText(`Frame: ${frameCount}`, canvas.width / 2, canvas.height / 2 + 40);
-                            canvasCtx.font = '20px Arial';
-                            canvasCtx.fillText('Esperando datos WebRTC...', canvas.width / 2, canvas.height / 2 + 80);
-                            
-                            if (frameCount % 100 === 0) {
-                                console.log(`[Canvas Wait] Frame ${frameCount} - Todavía sin framesReceived`);
+                        } catch (error) {
+                            // Video element no tiene datos - mostrar patrón colorido
+                            if (isReceivingFrames) {
+                                const hue = (frameCount % 360);
+                                canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                                
+                                canvasCtx.fillStyle = `hsl(${(hue + 180) % 360}, 100%, 50%)`;
+                                canvasCtx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
+                                
+                                canvasCtx.fillStyle = 'white';
+                                canvasCtx.font = 'bold 50px Arial';
+                                canvasCtx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                                canvasCtx.shadowBlur = 15;
+                                canvasCtx.textAlign = 'center';
+                                canvasCtx.fillText('WEBRTC STREAM', canvas.width / 2, canvas.height / 2);
+                                
+                                canvasCtx.font = '40px Arial';
+                                canvasCtx.fillText(`Frame: ${frameCount}`, canvas.width / 2, canvas.height / 2 + 60);
+                                
+                                if (frameCount % 100 === 0) {
+                                    console.log(`[Canvas Pattern] Frame ${frameCount} - Colores (video element sin datos)`);
+                                }
                             }
                         }
                         
