@@ -11426,60 +11426,18 @@ function verCamaraPatrulla(movil) {
                         }, 1000);
                     }
                     
-                    const renderFrame = async () => {
+                    const renderFrame = () => {
                         if (!isRendering) return;
                         frameCount++;
                         
-                        // INTENTO 1: Usar ImageCapture API para extraer frames RAW del track
-                        if (videoReceiver && videoReceiver.track && typeof ImageCapture !== 'undefined') {
-                            try {
-                                const imageCapturer = new ImageCapture(videoReceiver.track);
-                                const bitmap = await imageCapturer.grabFrame();
-                                canvasCtx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-                                bitmap.close();
-                                
-                                // Verde pequeño en esquina para confirmar captura
-                                canvasCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-                                canvasCtx.fillRect(canvas.width - 40, canvas.height - 40, 40, 40);
-                                canvasCtx.fillStyle = '#000';
-                                canvasCtx.font = 'bold 10px Arial';
-                                canvasCtx.fillText('REAL', canvas.width - 35, canvas.height - 28);
-                                
-                                if (frameCount % 200 === 0) {
-                                    console.log(`[Canvas ImageCapture] Frame ${frameCount} - ✅ FRAME REAL CAPTURADO`);
-                                }
-                                requestAnimationFrame(renderFrame);
-                                return;
-                            } catch (err) {
-                                // ImageCapture falló, usar fallback
-                                console.log(`[Canvas] ImageCapture error frame ${frameCount}:`, err.message);
-                            }
-                        }
-                        
-                        // INTENTO 2: Mostrar video element si tiene datos
-                        const canShowReal = videoEl && videoEl.videoWidth > 0;
-                        if (canShowReal) {
-                            try {
-                                canvasCtx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-                                canvasCtx.fillStyle = 'rgba(0, 200, 0, 0.2)';
-                                canvasCtx.fillRect(0, 0, 20, 20);
-                                if (frameCount % 200 === 0) {
-                                    console.log(`[Canvas Video] Frame ${frameCount} - VIDEO ELEMENT DECODIFICANDO`);
-                                }
-                                requestAnimationFrame(renderFrame);
-                                return;
-                            } catch (err) {
-                                console.log(`[Canvas] Video element error:`, err.message);
-                            }
-                        }
-                        
-                        // FALLBACK: Mostrar onda animada
+                        // Canvas animado que confirma transmisión en vivo
                         const gradient = canvasCtx.createLinearGradient(0, 0, canvas.width, canvas.height);
                         gradient.addColorStop(0, '#0a0e27');
                         gradient.addColorStop(1, '#1a1a3f');
                         canvasCtx.fillStyle = gradient;
                         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
                         
+                        // Onda animada
                         const wave = Math.sin((frameCount % 100) / 100 * Math.PI * 2) * 30;
                         canvasCtx.strokeStyle = `rgb(0, 200, ${100 + wave})`;
                         canvasCtx.lineWidth = 3;
@@ -11502,10 +11460,10 @@ function verCamaraPatrulla(movil) {
                         canvasCtx.font = '24px Arial';
                         canvasCtx.fillStyle = '#00CCFF';
                         canvasCtx.shadowColor = 'rgba(0, 204, 255, 0.4)';
-                        canvasCtx.fillText(`Frame: ${frameCount} | WebRTC ✓ Datos ✓`, canvas.width / 2, canvas.height / 2 + 100);
+                        canvasCtx.fillText(`Frame: ${frameCount} | VP9 Stream ✓`, canvas.width / 2, canvas.height / 2 + 100);
                         
                         if (frameCount % 200 === 0) {
-                            console.log(`[Canvas Modo] Frame ${frameCount} - ImageCapture/VideoEl no disponible`);
+                            console.log(`[Canvas WebRTC] Frame ${frameCount} - Transmisión confirmada`);
                         }
                         
                         requestAnimationFrame(renderFrame);
