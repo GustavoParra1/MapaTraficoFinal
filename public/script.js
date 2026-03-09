@@ -11792,16 +11792,15 @@ function limpiarWebRTC() {
 // � VISUALIZACIÓN MJPEG (FRAMES DESDE FIREBASE STORAGE)
 // ============================================================
 let mjpegFrameCanvas = null;
-let mjpegPollingId = null;
-let lastMjpegUrl = null;
+let mjpegListenerRef = null;
 
 function iniciarVisualizacionMJPEG(patrullaId) {
   console.log("[MJPEG Viewer] 🎬 Iniciando visualización de frames para patrulla:", patrullaId);
   
-  // Detener polling anterior si existe
-  if (mjpegPollingId) {
-    clearInterval(mjpegPollingId);
-    mjpegPollingId = null;
+  // Detener listener anterior si existe
+  if (mjpegListenerRef) {
+    mjpegListenerRef.off();
+    mjpegListenerRef = null;
   }
   
   // Obtener o crear canvas
@@ -11825,60 +11824,65 @@ function iniciarVisualizacionMJPEG(patrullaId) {
     videoElement.style.display = 'none';
     
     // Insertar canvas después del video element
-    videoElement.parentElement.insertBefore(canvas, videoElement.nextSibling);
+    if (!videoElement.parentElement.querySelector('#visorMJPEG')) {
+      videoElement.parentElement.insertBefore(canvas, videoElement.nextSibling);
+    }
   }
   
-  // Iniciar polling para obtener frames cada 100ms
+  // Escuchar cambios en RTDB (frames base64)
   let frameCount = 0;
-  mjpegPollingId = setInterval(async () => {
-    try {
-      const fileRef = storage.ref(`frames/${patrullaId}/latest.jpg`);
-      
-      // Obtener URL de descarga (incluye parámetro de timestamp para evitar caché)
-      const url = await fileRef.getDownloadURL();
-      const urlConTimestamp = url + '&t=' + Date.now();
-      
-      // Solo actualizar si la URL cambió (o cada 100ms para refresh)
-      if (url !== lastMjpegUrl || true) {
-        lastMjpegUrl = url;
-        
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        img.onload = () => {
-          if (!mjpegFrameCanvas) return;
-          const ctx = mjpegFrameCanvas.getContext('2d');
-          // Limpiar canvas
-          ctx.fillStyle = '#000';
-          ctx.fillRect(0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
-          // Dibujar imagen centrada
-          ctx.drawImage(img, 0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
-          
-          frameCount++;
-          if (frameCount % 10 === 0) {
-            console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
-          }
-        };
-        
-        img.onerror = (err) => {
-          console.warn("[MJPEG Viewer] ⚠️ Error cargando frame:", err);
-        };
-        
-        img.src = urlConTimestamp;
-      }
-    } catch (err) {
-      // Archivo no existe aún, esperar siguiente polling
+  mjpegListenerRef = rtdb.ref(`frames/${patrullaId}/latest`);
+  
+  mjpegListenerRef.on('value', (snapshot) => {
+    if (!snapshot.exists()) {
       console.log("[MJPEG Viewer] ⏳ Esperando primer frame...");
+      return;
     }
-  }, 100); // Polling cada 100ms = ~10 fps
+    
+    try {
+      const frameData = snapshot.val();
+      if (!frameData || !frameData.data) return;
+      
+      // frameData.data es base64 string (data:image/jpeg;base64,...)
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = () => {
+        if (!mjpegFrameCanvas) return;
+        const ctx = mjpegFrameCanvas.getContext('2d');
+        // Limpiar canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
+        // Dibujar imagen
+        ctx.drawImage(img, 0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
+        
+        frameCount++;
+        if (frameCount % 10 === 0) {
+          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
+        }
+      };
+      
+      img.onerror = (err) => {
+        console.warn("[MJPEG Viewer] ⚠️ Error decodificando frame:", err);
+      };
+      
+      // Asignar directamente el base64
+      img.src = frameData.data;
+      
+    } catch (err) {
+      console.error("[MJPEG Viewer] ❌ Error procesando frame:", err.message);
+    }
+  }, (err) => {
+    console.error("[MJPEG Viewer] ❌ Error de listener RTDB:", err.message);
+  });
   
   console.log("[MJPEG Viewer] ✅ Visualización iniciada");
 }
 
 function detenerVisualizacionMJPEG() {
-  if (mjpegPollingId) {
-    clearInterval(mjpegPollingId);
-    mjpegPollingId = null;
+  if (mjpegListenerRef) {
+    mjpegListenerRef.off();
+    mjpegListenerRef = null;
   }
   console.log("[MJPEG Viewer] ⛔ Visualización detenida");
 }

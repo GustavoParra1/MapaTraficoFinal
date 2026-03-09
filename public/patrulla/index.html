@@ -626,29 +626,23 @@ function startFrameCapture() {
       // Dibujar el frame actual del video
       ctx.drawImage(localVideo, 0, 0);
       
-      // Convertir a JPEG blob
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
+      // Convertir a base64 directamente (sin pasar por blob)
+      const base64 = canvas.toDataURL('image/jpeg', 0.7); // 70% calidad
+      
+      try {
+        // Guardar en RTDB en lugar de Storage
+        await db.ref(`frames/${idPatrulla}/latest`).set({
+          data: base64, // base64 string
+          timestamp: Date.now()
+        });
         
-        try {
-          // Subir a Firebase Storage
-          const fileRef = storage.ref(`frames/${idPatrulla}/latest.jpg`);
-          await fileRef.put(blob, { contentType: 'image/jpeg' });
-          
-          // Notificar en RTDB que hay nuevo frame (para que COM lo sepa)
-          db.ref(`frame_notifications/${idPatrulla}`).set({
-            timestamp: Date.now(),
-            frameCount: frameCount
-          });
-          
-          frameCount++;
-          if (frameCount % 10 === 0) {
-            console.log(`[Captura MJPEG] Frame ${frameCount} enviado`);
-          }
-        } catch (err) {
-          console.error("[Captura MJPEG] Error subiendo frame:", err.message);
+        frameCount++;
+        if (frameCount % 10 === 0) {
+          console.log(`[Captura MJPEG] Frame ${frameCount} enviado`);
         }
-      }, 'image/jpeg', 0.7); // 70% de calidad para reducir tamaño
+      } catch (err) {
+        console.error("[Captura MJPEG] Error escribiendo a RTDB:", err.message);
+      }
       
     } catch (err) {
       console.error("[Captura MJPEG] Error capturando frame:", err.message);
