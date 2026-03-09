@@ -11558,7 +11558,7 @@ function verCamaraPatrulla(movil) {
                 // Obtener codecs soportados
                 const capabilities = RTCRtpReceiver.getCapabilities('video');
                 if (capabilities && capabilities.codecs) {
-                  console.log(`[Codec Negotiation] Codecs soportados:`, 
+                  console.log(`[⚠️ VERSIÓN 2026-03-09 v2] [Codec Negotiation] Codecs soportados:`, 
                     capabilities.codecs.map(c => c.mimeType).join(', ')
                   );
                   
