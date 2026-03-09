@@ -314,7 +314,9 @@ camaraBtn.onclick = async () => {
     console.log("[Cámara] 👁️ Contenedor visible");
 
     // Iniciar WebRTC
+    console.log("[Cámara] 🎬 Antes de iniciarWebRTC");
     await iniciarWebRTC();
+    console.log("[Cámara] ✅ Después de iniciarWebRTC - INICIANDO CAPTURA MJPEG");
     
     // ✅ Iniciar captura de frames MJPEG
     startFrameCapture();

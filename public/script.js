@@ -11140,8 +11140,10 @@ function verCamaraPatrulla(movil) {
   // Guardar ID actual
   patrullaActualVisor = movil;
   
+  console.log("[DEBUG] 🎬 LLAMANDO iniciarVisualizacionMJPEG para:", movil);
   // Iniciar visualización MJPEG en paralelo
   iniciarVisualizacionMJPEG(movil);
+  console.log("[DEBUG] ✅ iniciarVisualizacionMJPEG COMPLETADA");
 
   const visor = document.getElementById("visor-patrulla");
   const video = document.getElementById("visorVideo");
