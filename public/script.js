@@ -11557,8 +11557,8 @@ function verCamaraPatrulla(movil) {
                   
                   console.log(`[Codec Negotiation] 🔎 H264 disponibles: ${h264Codecs.length}, VP8: ${vp8Codecs.length}, VP9: ${vp9Codecs.length}`);
                   
-                  // 🔴 SOLO H264: Descartar VP8 completamente, solo H264 + VP9 si es necesario
-                  let codecOrder = h264Codecs.length > 0 ? h264Codecs : vp9Codecs;
+                  // 🔴 FORZAR VP9: Si H264 falla, VP9 tiene mejor soporte en navegadores
+                  let codecOrder = vp9Codecs.length > 0 ? vp9Codecs : h264Codecs;
                   
                   console.log(`[Codec Negotiation] 🔒 FORZANDO SOLO: ${codecOrder.map(c => c.mimeType).join(', ')}`);
                   

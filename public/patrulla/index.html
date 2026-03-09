@@ -348,23 +348,23 @@ async function iniciarWebRTC() {
       
       console.log(`[WebRTC Patrulla] H264: ${h264Codecs.length}, VP8: ${vp8Codecs.length}, VP9: ${vp9Codecs.length}`);
       
-      if (h264Codecs.length > 0) {
-        // SOLO H264 - Descartar VP8 completamente
-        pc.getTransceivers()
-          .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
-          .forEach(t => {
-            t.setCodecPreferences(h264Codecs);
-            console.log(`[WebRTC Patrulla] 🔒 FORZANDO SOLO H264: ${h264Codecs.map(c => c.mimeType).join(', ')}`);
-          });
-      } else if (vp9Codecs.length > 0) {
-        console.log("[WebRTC Patrulla] ⚠️ H264 no disponible, usando VP9");
+      if (vp9Codecs.length > 0) {
+        // FORZAR VP9 - mejor soporte en navegadores
         pc.getTransceivers()
           .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
           .forEach(t => {
             t.setCodecPreferences(vp9Codecs);
+            console.log(`[WebRTC Patrulla] 🔒 FORZANDO SOLO VP9: ${vp9Codecs.map(c => c.mimeType).join(', ')}`);
+          });
+      } else if (h264Codecs.length > 0) {
+        console.log("[WebRTC Patrulla] ⚠️ VP9 no disponible, usando H264");
+        pc.getTransceivers()
+          .filter(t => t.sender && t.sender.track && t.sender.track.kind === 'video')
+          .forEach(t => {
+            t.setCodecPreferences(h264Codecs);
           });
       } else {
-        console.log("[WebRTC Patrulla] ⚠️ H264/VP9 no disponibles, permitiendo negociación automática");
+        console.log("[WebRTC Patrulla] ⚠️ VP9/H264 no disponibles, permitiendo negociación automática");
       }
     }
 
