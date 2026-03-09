@@ -11805,34 +11805,53 @@ function iniciarVisualizacionMJPEG(patrullaId) {
     mjpegListenerRef = null;
   }
   
-  // Obtener o crear canvas (SIN dimensiones fijas - se adaptan al frame)
+  // OCULTAR PERMANENTEMENTE el canvas de fallback de WebRTC (onda verde)
+  const fallbackCanvas = document.getElementById('visorCanvas');
+  if (fallbackCanvas) {
+    fallbackCanvas.style.display = 'none !important';
+    fallbackCanvas.style.zIndex = '0';
+    console.log("[MJPEG Viewer] 🚫 Canvas fallback (onda verde) ocultado");
+  }
+  
+  // Ocultar video element
+  const videoElement = document.getElementById('visorVideo');
+  if (videoElement) {
+    videoElement.style.display = 'none';
+  }
+  
+  // Obtener o crear canvas para MJPEG
   let canvas = document.getElementById('visorMJPEG');
   if (!canvas) {
     canvas = document.createElement('canvas');
     canvas.id = 'visorMJPEG';
+    // Posicionar absolutamente sobre los demás elementos
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
     canvas.style.width = '100%';
-    canvas.style.height = 'auto';
-    canvas.style.maxHeight = '100%';
-    canvas.style.display = 'block';
+    canvas.style.height = '100%';
     canvas.style.backgroundColor = '#000';
+    canvas.style.zIndex = '10'; // ENCIMA del fallback canvas
     canvas.style.objectFit = 'contain';
+    canvas.style.display = 'block';
+    
+    // Insertar en el contenedor visor-video-wrapper
+    const wrapper = document.querySelector('.visor-video-wrapper');
+    if (wrapper) {
+      wrapper.style.position = 'relative'; // Necesario para absolute positioning de hijos
+      wrapper.appendChild(canvas);
+      console.log("[MJPEG Viewer] ✅ Canvas MJPEG insertado en wrapper");
+    } else {
+      console.warn("[MJPEG Viewer] ⚠️ wrapper no encontrado, insertando después de visorVideo");
+      if (videoElement && videoElement.parentElement) {
+        videoElement.parentElement.appendChild(canvas);
+      }
+    }
   }
   mjpegFrameCanvas = canvas;
   
-  // Mostrar canvas en lugar del video element
-  const videoElement = document.getElementById('visorVideo');
-  if (videoElement) {
-    videoElement.style.display = 'none';
-    
-    // Insertar canvas después del video element
-    if (!videoElement.parentElement.querySelector('#visorMJPEG')) {
-      videoElement.parentElement.insertBefore(canvas, videoElement.nextSibling);
-    }
-  }
-  
   // Escuchar cambios en RTDB (frames base64)
   let frameCount = 0;
-  let firstFrameProcessed = false;
   mjpegListenerRef = rtdb.ref(`frames/${patrullaId}/latest`);
   
   mjpegListenerRef.on('value', (snapshot) => {
@@ -11852,21 +11871,44 @@ function iniciarVisualizacionMJPEG(patrullaId) {
       img.onload = () => {
         if (!mjpegFrameCanvas) return;
         
-        // Adaptar canvas al tamaño real del frame en el PRIMER frame
-        if (!firstFrameProcessed) {
-          mjpegFrameCanvas.width = img.width;
-          mjpegFrameCanvas.height = img.height;
-          console.log(`[MJPEG Viewer] 📐 Canvas adaptado a: ${img.width}x${img.height}`);
-          firstFrameProcessed = true;
-        }
+        // Configurar canvas para llenar el contenedor manteniendo aspect ratio
+        const wrapper = mjpegFrameCanvas.parentElement;
+        const wrapperWidth = wrapper ? wrapper.clientWidth : 800;
+        const wrapperHeight = wrapper ? wrapper.clientHeight : 600;
+        
+        // Establecer las dimensiones internas del canvas (para dibujo)
+        mjpegFrameCanvas.width = wrapperWidth;
+        mjpegFrameCanvas.height = wrapperHeight;
         
         const ctx = mjpegFrameCanvas.getContext('2d');
-        // Limpiar y dibujar directamente sin estirar
-        ctx.drawImage(img, 0, 0);
+        
+        // Calcular posición y tamaño manteniendo aspect ratio
+        const imgAspectRatio = img.width / img.height;
+        const wrapperAspectRatio = wrapperWidth / wrapperHeight;
+        
+        let drawX = 0, drawY = 0, drawWidth = wrapperWidth, drawHeight = wrapperHeight;
+        
+        if (imgAspectRatio > wrapperAspectRatio) {
+          // Frame es más ancho (horizontalmente) - centerear verticalmente
+          drawHeight = wrapperWidth / imgAspectRatio;
+          drawY = (wrapperHeight - drawHeight) / 2;
+        } else {
+          // Frame es más alto (verticalmente) - centerear horizontalmente
+          drawWidth = wrapperHeight * imgAspectRatio;
+          drawX = (wrapperWidth - drawWidth) / 2;
+        }
+        
+        // Limpiar fondo negro
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, wrapperWidth, wrapperHeight);
+        
+        // Dibujar imagen escalada y centr
+ada
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
         
         frameCount++;
         if (frameCount % 10 === 0) {
-          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
+          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado (${Math.round(drawWidth)}x${Math.round(drawHeight)})`);
         }
       };
       
