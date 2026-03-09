@@ -11902,8 +11902,7 @@ function iniciarVisualizacionMJPEG(patrullaId) {
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, wrapperWidth, wrapperHeight);
         
-        // Dibujar imagen escalada y centr
-ada
+        // Dibujar imagen escalada y centrada
         ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
         
         frameCount++;
