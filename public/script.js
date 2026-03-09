@@ -11855,12 +11855,33 @@ function iniciarVisualizacionMJPEG(patrullaId) {
         // Limpiar canvas
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
-        // Dibujar imagen
-        ctx.drawImage(img, 0, 0, mjpegFrameCanvas.width, mjpegFrameCanvas.height);
+        
+        // Dibujar manteniendo proporción (sin estirar)
+        const canvasWidth = mjpegFrameCanvas.width;
+        const canvasHeight = mjpegFrameCanvas.height;
+        const imgAspect = img.width / img.height;
+        const canvasAspect = canvasWidth / canvasHeight;
+        
+        let drawWidth, drawHeight, x, y;
+        if (imgAspect > canvasAspect) {
+          // Imagen más ancha que canvas
+          drawWidth = canvasWidth;
+          drawHeight = canvasWidth / imgAspect;
+          x = 0;
+          y = (canvasHeight - drawHeight) / 2;
+        } else {
+          // Imagen más alta que canvas
+          drawHeight = canvasHeight;
+          drawWidth = canvasHeight * imgAspect;
+          x = (canvasWidth - drawWidth) / 2;
+          y = 0;
+        }
+        
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
         
         frameCount++;
         if (frameCount % 10 === 0) {
-          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado`);
+          console.log(`[MJPEG Viewer] 📸 Frame ${frameCount} mostrado (${img.width}x${img.height})`);
         }
       };
       
