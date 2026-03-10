@@ -1883,32 +1883,95 @@ appearance: none;
     position: fixed !important;
     z-index: 99999 !important;
     
-    /* Posición inicial (abajo a la derecha) */
-    bottom: 20px;
+    /* Posición inicial (centro-derecha) */
+    bottom: 80px;
     right: 20px;
     
-    /* Tamaño AUMENTADO para mejor visibilidad */
-    width: 500px;
-    height: 350px;
-    background: #000;
-    border-radius: 8px;
+    /* Tamaño más grande */
+    width: 520px;
+    max-height: 90vh;
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 20px rgba(0, 150, 255, 0.3);
     
     display: flex;
     flex-direction: column;
-    border: 2px solid #444;
+    border: 2px solid #0088ff;
   }
 
-/* Estilo para la zona de agarre */
+/* Header del visor - estilo dron */
 .visor-header {
-    background: #222;
+    background: linear-gradient(90deg, #0a1628 0%, #1a3a5c 100%);
     padding: 10px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: move; /* Indica que se puede arrastrar */
-    border-bottom: 1px solid #333;
+    cursor: move;
+    border-bottom: 1px solid #0088ff;
+}
+
+.visor-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.visor-icon {
+    font-size: 1.2em;
+}
+
+.visor-name {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1em;
+    letter-spacing: 1px;
+}
+
+.visor-close-btn {
+    background: #ff4444;
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.visor-close-btn:hover {
+    background: #ff0000;
+    transform: scale(1.1);
+}
+
+/* Barra de información */
+.visor-info-bar {
+    background: rgba(0, 20, 40, 0.9);
+    padding: 6px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #aaccff;
+    border-bottom: 1px solid #1a3a5c;
+}
+
+.visor-info-bar span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-live {
+    color: #00ff88;
+    font-weight: bold;
+    animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .visor-header span {
@@ -1925,6 +1988,125 @@ appearance: none;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    min-height: 280px;
+}
+
+/* Controles inferiores - estilo dron */
+.visor-controls {
+    background: linear-gradient(90deg, #0a1628 0%, #1a3a5c 100%);
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #0088ff;
+}
+
+.visor-label {
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.visor-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.visor-ctrl-btn {
+    background: rgba(0, 136, 255, 0.3);
+    border: 1px solid #0088ff;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.visor-ctrl-btn:hover {
+    background: rgba(0, 136, 255, 0.6);
+    transform: scale(1.05);
+}
+
+/* Contenedor de miniaturas integrado */
+#visor-miniaturas-container {
+    background: linear-gradient(180deg, #0a1628 0%, #0f2744 100%);
+    padding: 10px;
+    border-top: 1px solid #1a3a5c;
+}
+
+#visor-miniaturas {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+#visor-miniaturas:empty::after {
+    content: "No hay otras cámaras transmitiendo";
+    color: #667788;
+    font-size: 12px;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+}
+
+/* Miniatura individual - estilo dron */
+.miniatura-cam {
+    flex-shrink: 0;
+    width: 180px;
+    background: #0a1628;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #1a3a5c;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.miniatura-cam:hover {
+    border-color: #0088ff;
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(0, 136, 255, 0.4);
+}
+
+.miniatura-cam canvas {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    background: #000;
+}
+
+.miniatura-info {
+    background: linear-gradient(90deg, #0a1628 0%, #1a3a5c 100%);
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.miniatura-label {
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.miniatura-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.miniatura-btn {
+    background: none;
+    border: none;
+    color: #aaccff;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+}
+
+.miniatura-btn:hover {
+    color: #fff;
 }
 
 #visorVideo {

@@ -11152,6 +11152,7 @@ function verCamaraPatrulla(movil) {
   const visor = document.getElementById("visor-patrulla");
   const video = document.getElementById("visorVideo");
   const nombreVisor = document.getElementById("nombre-patrulla-visor");
+  const labelVisor = document.getElementById("visor-label-name");
 
   // Mostrar visor y actualizar nombre si el elemento existe
   if (visor) {
@@ -11160,6 +11161,7 @@ function verCamaraPatrulla(movil) {
     console.log("✅ [Visor] Display CSS:", window.getComputedStyle(visor).display);
   }
   if (nombreVisor) nombreVisor.textContent = movil;
+  if (labelVisor) labelVisor.textContent = movil;
   
   // Forzar reflow para asegurar que el DOM responda
   if (visor) {
@@ -11948,7 +11950,56 @@ function detenerVisualizacionMJPEG() {
 }
 
 // ============================================================
-// 📹 SISTEMA DE MULTI-CÁMARAS (Panel Flotante Separado)
+// 🎛️ CONTROLES DEL VISOR (Pantalla completa, Audio)
+// ============================================================
+
+// Inicializar controles del visor
+document.addEventListener('DOMContentLoaded', () => {
+  const fullscreenBtn = document.getElementById('visor-fullscreen-btn');
+  const audioBtn = document.getElementById('visor-audio-btn');
+  const visor = document.getElementById('visor-patrulla');
+  
+  if (fullscreenBtn && visor) {
+    fullscreenBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleVisorFullscreen(visor);
+    });
+  }
+  
+  if (audioBtn) {
+    audioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleVisorAudio();
+    });
+  }
+});
+
+function toggleVisorFullscreen(visor) {
+  if (!document.fullscreenElement) {
+    visor.requestFullscreen().catch(err => {
+      console.log('Error al entrar en pantalla completa:', err);
+    });
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+let visorAudioMuted = true;
+function toggleVisorAudio() {
+  const video = document.getElementById('visorVideo');
+  const audioBtn = document.getElementById('visor-audio-btn');
+  
+  if (video) {
+    visorAudioMuted = !visorAudioMuted;
+    video.muted = visorAudioMuted;
+    if (audioBtn) {
+      audioBtn.textContent = visorAudioMuted ? '🔇' : '🔊';
+    }
+  }
+}
+
+// ============================================================
+// 📹 SISTEMA DE MULTI-CÁMARAS (Miniaturas Integradas)
 // ============================================================
 let multicamListeners = {};
 let patrullaPrincipal = null;
@@ -11965,21 +12016,10 @@ function iniciarMultiCamaras(patrullaIdPrincipal) {
   // Limpiar listeners anteriores
   detenerMiniaturas();
   
-  // Configurar botón de cerrar
-  const closeBtn = document.getElementById('close-multicamaras');
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      const panel = document.getElementById('panel-multicamaras');
-      if (panel) panel.style.display = 'none';
-      multicamPanelVisible = false;
-    };
-  }
-  
-  // Hacer el panel arrastrable
-  inicializarArrastreUniversal('panel-multicamaras', 'panel-multicamaras-header');
+  // Las miniaturas ahora están integradas en el visor principal
+  // No necesitamos configurar panel flotante separado
   
   // Escuchar lista de patrullas activas - OPTIMIZADO con throttle
-  // Solo escuchamos cambios en timestamps para reducir tráfico
   multicamMainListener = rtdb.ref('frames');
   multicamMainListener.on('value', (snapshot) => {
     // Throttle: no procesar más de una vez cada N segundos
@@ -12016,60 +12056,56 @@ function iniciarMultiCamaras(patrullaIdPrincipal) {
 }
 
 function actualizarPanelMulticam(patrullasActivas) {
-  const panel = document.getElementById('panel-multicamaras');
-  const container = document.getElementById('multicamaras-container');
-  if (!panel || !container) return;
-  
-  // Filtrar: mostrar todas EXCEPTO la principal
-  const patrullasSecundarias = patrullasActivas.filter(id => id !== patrullaPrincipal);
-  
-  // Si no hay otras patrullas, mostrar mensaje vacío
-  if (patrullasSecundarias.length === 0) {
-    container.innerHTML = '<div class="multicam-empty">No hay otras patrullas transmitiendo</div>';
-    // Ocultar panel si no hay cámaras secundarias
-    if (multicamPanelVisible) {
-      panel.style.display = 'none';
-      multicamPanelVisible = false;
-    }
+  // Usar el contenedor de miniaturas integrado en el visor
+  const container = document.getElementById('visor-miniaturas');
+  console.log("[Multi-Cámaras] 🎯 Container visor-miniaturas:", container ? "encontrado" : "NO ENCONTRADO");
+  if (!container) {
+    console.warn("[Multi-Cámaras] ⚠️ No se encontró #visor-miniaturas");
     return;
   }
   
-  // Mostrar panel
-  panel.style.display = 'block';
-  multicamPanelVisible = true;
+  // Filtrar: mostrar todas EXCEPTO la principal
+  const patrullasSecundarias = patrullasActivas.filter(id => id !== patrullaPrincipal);
+  console.log("[Multi-Cámaras] 📷 Patrullas secundarias a mostrar:", patrullasSecundarias);
   
-  // Limpiar mensaje vacío si existe
-  const emptyMsg = container.querySelector('.multicam-empty');
-  if (emptyMsg) emptyMsg.remove();
+  // Si no hay otras patrullas, limpiar contenedor
+  if (patrullasSecundarias.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
   
-  // Crear/actualizar cards de cámaras
+  // Crear/actualizar miniaturas de cámaras
   patrullasSecundarias.forEach(patrullaId => {
-    let card = document.getElementById(`multicam-${patrullaId}`);
+    let card = document.getElementById(`miniatura-${patrullaId}`);
     
     if (!card) {
+      console.log("[Multi-Cámaras] ➕ Creando miniatura para:", patrullaId);
       card = document.createElement('div');
-      card.id = `multicam-${patrullaId}`;
-      card.className = 'multicam-card';
+      card.id = `miniatura-${patrullaId}`;
+      card.className = 'miniatura-cam';
       card.innerHTML = `
-        <canvas id="canvas-multicam-${patrullaId}"></canvas>
-        <div class="multicam-overlay">
-          <span class="multicam-label">🚔 ${patrullaId}</span>
-          <span class="multicam-live">● LIVE</span>
+        <canvas id="canvas-miniatura-${patrullaId}"></canvas>
+        <div class="miniatura-info">
+          <span class="miniatura-label">🚔 ${patrullaId}</span>
+          <div class="miniatura-controls">
+            <button class="miniatura-btn" title="Audio">🔊</button>
+            <button class="miniatura-btn" title="Expandir">⛶</button>
+          </div>
         </div>
-        <button class="multicam-btn">Ver Principal</button>
       `;
       card.onclick = () => cambiarCamaraPrincipal(patrullaId);
       container.appendChild(card);
+      console.log("[Multi-Cámaras] ✅ Miniatura agregada al container");
       
       // Iniciar listener de frames
       iniciarListenerMulticam(patrullaId);
     }
   });
   
-  // Eliminar cards de patrullas inactivas
-  const cardsActuales = container.querySelectorAll('.multicam-card');
+  // Eliminar miniaturas de patrullas inactivas
+  const cardsActuales = container.querySelectorAll('.miniatura-cam');
   cardsActuales.forEach(card => {
-    const id = card.id.replace('multicam-', '');
+    const id = card.id.replace('miniatura-', '');
     if (!patrullasSecundarias.includes(id)) {
       if (multicamListeners[id]) {
         multicamListeners[id].off();
@@ -12100,14 +12136,14 @@ function iniciarListenerMulticam(patrullaId) {
     const frameData = snapshot.val();
     if (!frameData || !frameData.data) return;
     
-    const canvas = document.getElementById(`canvas-multicam-${patrullaId}`);
+    const canvas = document.getElementById(`canvas-miniatura-${patrullaId}`);
     if (!canvas) return;
     
     const img = new Image();
     img.onload = () => {
-      // Canvas más grande para mejor calidad
-      canvas.width = 400;
-      canvas.height = 220;
+      // Canvas para miniatura
+      canvas.width = 180;
+      canvas.height = 100;
       const ctx = canvas.getContext('2d');
       
       // Dibujar centrado y cubriendo
@@ -12126,11 +12162,11 @@ function cambiarCamaraPrincipal(nuevaPatrullaId) {
   const anteriorPrincipal = patrullaPrincipal;
   patrullaPrincipal = nuevaPatrullaId;
   
-  // Actualizar título del visor
+  // Actualizar títulos del visor
   const nombreVisor = document.getElementById('nombre-patrulla-visor');
-  if (nombreVisor) {
-    nombreVisor.textContent = nuevaPatrullaId;
-  }
+  const labelVisor = document.getElementById('visor-label-name');
+  if (nombreVisor) nombreVisor.textContent = nuevaPatrullaId;
+  if (labelVisor) labelVisor.textContent = nuevaPatrullaId;
   
   // IMPORTANTE: Detener el listener multicam de la nueva principal para evitar conflictos
   if (multicamListeners[nuevaPatrullaId]) {
@@ -12139,8 +12175,8 @@ function cambiarCamaraPrincipal(nuevaPatrullaId) {
     delete multicamListeners[nuevaPatrullaId];
   }
   
-  // Eliminar la card de la nueva principal
-  const cardNueva = document.getElementById(`multicam-${nuevaPatrullaId}`);
+  // Eliminar la miniatura de la nueva principal
+  const cardNueva = document.getElementById(`miniatura-${nuevaPatrullaId}`);
   if (cardNueva) cardNueva.remove();
   
   // Detener y reiniciar visualización principal
@@ -12182,17 +12218,12 @@ function detenerMiniaturas() {
   });
   multicamListeners = {};
   
-  // Limpiar contenedor
-  const container = document.getElementById('multicamaras-container');
+  // Limpiar contenedor de miniaturas integrado
+  const container = document.getElementById('visor-miniaturas');
   if (container) {
-    container.innerHTML = '<div class="multicam-empty">No hay otras patrullas transmitiendo</div>';
+    container.innerHTML = '';
   }
   
-  // Ocultar panel
-  const panel = document.getElementById('panel-multicamaras');
-  if (panel) {
-    panel.style.display = 'none';
-  }
   multicamPanelVisible = false;
 }
 

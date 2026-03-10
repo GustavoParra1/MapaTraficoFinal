@@ -513,28 +513,46 @@
 
 
 <div id="visor-patrulla" class="visor-hidden">
+  <!-- Header con info -->
   <div class="visor-header" id="visor-patrulla-header" style="cursor: move;">
-    <span>🎥 Cámara Patrulla: <span id="nombre-patrulla-visor"></span></span>
-    <button onclick="cerrarVisor(event)">✖</button>
+    <div class="visor-title">
+      <span class="visor-icon">🚔</span>
+      <span class="visor-name">CÁMARA <span id="nombre-patrulla-visor"></span></span>
+    </div>
+    <button class="visor-close-btn" onclick="cerrarVisor(event)">✖</button>
   </div>
+  
+  <!-- Info bar con coordenadas y velocidad -->
+  <div class="visor-info-bar">
+    <span id="visor-coords">📍 -38.0055, -57.5426</span>
+    <span id="visor-speed">🚗 0 km/h</span>
+    <span id="visor-status" class="status-live">● EN VIVO</span>
+  </div>
+  
+  <!-- Video principal -->
   <div class="visor-video-wrapper">
     <video id="visorVideo" autoplay playsinline muted style="display: block;"></video>
-    <!-- Canvas fallback para renderizar frames si el video element falla -->
     <canvas id="visorCanvas" style="display: none; width: 100%; height: 100%;"></canvas>
+  </div>
+  
+  <!-- Controles -->
+  <div class="visor-controls">
+    <span class="visor-label">🚔 CÁMARA <span id="visor-label-name"></span></span>
+    <div class="visor-buttons">
+      <button id="visor-audio-btn" class="visor-ctrl-btn" title="Audio">🔊</button>
+      <button id="visor-fullscreen-btn" class="visor-ctrl-btn" title="Pantalla completa">⛶</button>
+    </div>
+  </div>
+  
+  <!-- Miniaturas de otras cámaras (integradas) -->
+  <div id="visor-miniaturas-container">
+    <div id="visor-miniaturas">
+      <!-- Las miniaturas se insertan dinámicamente -->
+    </div>
   </div>
 </div>
 
-<!-- Panel flotante de Multi-Cámaras -->
-<div id="panel-multicamaras" class="panel-floating" style="display: none;">
-  <div class="panel-header" id="panel-multicamaras-header" style="cursor: move;">
-    <h4>📹 Cámaras en Vivo</h4>
-    <button id="close-multicamaras" class="close-button">✖</button>
-  </div>
-  <div id="multicamaras-container" class="panel-content">
-    <!-- Las cámaras se insertan dinámicamente -->
-    <div class="multicam-empty">No hay otras patrullas transmitiendo</div>
-  </div>
-</div>
+<!-- Panel multicamaras ahora está integrado en el visor -->
 
 <div id="chat-com-panel" class="panel-floating" style="display:none; width:320px; height:400px;">
   <div class="panel-header" id="chat-com-header" style="cursor: move;">
