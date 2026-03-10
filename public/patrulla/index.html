@@ -632,17 +632,18 @@ function startFrameCapture() {
       ctx.drawImage(localVideo, 0, 0);
       
       // Convertir a base64 directamente (sin pasar por blob)
-      const base64 = canvas.toDataURL('image/jpeg', 0.7); // 70% calidad
+      // Calidad 50% = menor tamaño = más rápido
+      const base64 = canvas.toDataURL('image/jpeg', 0.5);
       
       try {
         // Guardar en RTDB en lugar de Storage
         await db.ref(`frames/${idPatrulla}/latest`).set({
-          data: base64, // base64 string
+          data: base64,
           timestamp: Date.now()
         });
         
         frameCount++;
-        if (frameCount % 10 === 0) {
+        if (frameCount % 20 === 0) {
           console.log(`[Captura MJPEG] Frame ${frameCount} enviado`);
         }
       } catch (err) {
@@ -652,7 +653,7 @@ function startFrameCapture() {
     } catch (err) {
       console.error("[Captura MJPEG] Error capturando frame:", err.message);
     }
-  }, 100); // Cada 100ms = ~10 fps
+  }, 50); // Cada 50ms = ~20 fps
 }
 
 function stopFrameCapture() {
