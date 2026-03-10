@@ -1951,6 +1951,129 @@ appearance: none;
     border-top: 1px solid #333;
 }
 
+/* Panel flotante de Multi-Cámaras */
+#panel-multicamaras {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 280px;
+    max-height: 500px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid #333;
+    z-index: 1002;
+    overflow: hidden;
+}
+
+#panel-multicamaras .panel-header {
+    background: linear-gradient(90deg, #0f3460 0%, #16213e 100%);
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #00ff88;
+}
+
+#panel-multicamaras .panel-header h4 {
+    margin: 0;
+    color: #00ff88;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#multicamaras-container {
+    padding: 10px;
+    max-height: 420px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.multicam-empty {
+    color: #666;
+    text-align: center;
+    padding: 30px 10px;
+    font-size: 13px;
+}
+
+.multicam-card {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #333;
+    transition: all 0.3s ease;
+}
+
+.multicam-card:hover {
+    border-color: #00ff88;
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+}
+
+.multicam-card canvas {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+}
+
+.multicam-card .multicam-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    padding: 20px 10px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.multicam-card .multicam-label {
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.multicam-card .multicam-live {
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+.multicam-card .multicam-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 255, 136, 0.9);
+    color: #000;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.multicam-card:hover .multicam-btn {
+    opacity: 1;
+}
+
 .miniatura-patrulla {
     position: relative;
     width: 120px;

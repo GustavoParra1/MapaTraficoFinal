@@ -522,9 +522,17 @@
     <!-- Canvas fallback para renderizar frames si el video element falla -->
     <canvas id="visorCanvas" style="display: none; width: 100%; height: 100%;"></canvas>
   </div>
-  <!-- Miniaturas de otras patrullas activas -->
-  <div id="visor-miniaturas" style="display: flex; gap: 5px; padding: 5px; background: #1a1a2e; overflow-x: auto;">
-    <!-- Las miniaturas se insertan dinámicamente -->
+</div>
+
+<!-- Panel flotante de Multi-Cámaras -->
+<div id="panel-multicamaras" class="panel-floating" style="display: none;">
+  <div class="panel-header" id="panel-multicamaras-header" style="cursor: move;">
+    <h4>📹 Cámaras en Vivo</h4>
+    <button id="close-multicamaras" class="close-button">✖</button>
+  </div>
+  <div id="multicamaras-container" class="panel-content">
+    <!-- Las cámaras se insertan dinámicamente -->
+    <div class="multicam-empty">No hay otras patrullas transmitiendo</div>
   </div>
 </div>
 
