@@ -158,15 +158,29 @@ auth.onAuthStateChanged(async user => {
   // 🔍 BUSCAR patrullaId en RTDB por email del usuario actual
   let patrullaIdBuscado = null;
   try {
-    const usuariosSnap = await db.ref("usuarios").once("value");
-    const usuarios = usuariosSnap.val() || {};
+    // Primero buscar en "patrullas" (nueva estructura)
+    const patrullasSnap = await db.ref("patrullas").once("value");
+    const patrullas = patrullasSnap.val() || {};
     
-    // Buscar el usuario que coincida con el email actual
-    for (const uid in usuarios) {
-      if (usuarios[uid].email === user.email && usuarios[uid].patrullaId) {
-        patrullaIdBuscado = usuarios[uid].patrullaId;
-        console.log("✅ Patrulla encontrada en RTDB:", patrullaIdBuscado);
+    for (const patente in patrullas) {
+      if (patrullas[patente].email === user.email) {
+        patrullaIdBuscado = patente;
+        console.log("✅ Patrulla encontrada en patrullas/:", patrullaIdBuscado);
         break;
+      }
+    }
+    
+    // Si no encontró, buscar en "usuarios" (estructura vieja)
+    if (!patrullaIdBuscado) {
+      const usuariosSnap = await db.ref("usuarios").once("value");
+      const usuarios = usuariosSnap.val() || {};
+      
+      for (const uid in usuarios) {
+        if (usuarios[uid].email === user.email && usuarios[uid].patrullaId) {
+          patrullaIdBuscado = usuarios[uid].patrullaId;
+          console.log("✅ Patrulla encontrada en usuarios/:", patrullaIdBuscado);
+          break;
+        }
       }
     }
   } catch (err) {
