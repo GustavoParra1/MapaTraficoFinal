@@ -637,17 +637,18 @@ function startFrameCapture() {
     
     try {
       // Crear canvas temporal para extraer frame
+      // Tamaño reducido para menor latencia
       const canvas = document.createElement('canvas');
-      canvas.width = localVideo.videoWidth || 640;
-      canvas.height = localVideo.videoHeight || 480;
+      canvas.width = 480;  // Reducido de 640 para menor delay
+      canvas.height = 360; // Reducido de 480 para menor delay
       const ctx = canvas.getContext('2d');
       
       // Dibujar el frame actual del video
-      ctx.drawImage(localVideo, 0, 0);
+      ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
       
       // Convertir a base64 directamente (sin pasar por blob)
-      // Calidad 50% = menor tamaño = más rápido
-      const base64 = canvas.toDataURL('image/jpeg', 0.5);
+      // Calidad 40% = menor tamaño = más rápido
+      const base64 = canvas.toDataURL('image/jpeg', 0.4);
       
       try {
         // Guardar en RTDB en lugar de Storage

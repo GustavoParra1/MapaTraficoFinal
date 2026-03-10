@@ -11953,6 +11953,9 @@ function detenerVisualizacionMJPEG() {
 let multicamListeners = {};
 let patrullaPrincipal = null;
 let multicamPanelVisible = false;
+let multicamMainListener = null;
+let ultimaActualizacionMulticam = 0;
+const THROTTLE_MULTICAM_MS = 3000; // Actualizar lista cada 3 segundos máximo
 
 function iniciarMultiCamaras(patrullaIdPrincipal) {
   console.log("[Multi-Cámaras] 🎬 Iniciando sistema multi-cámaras");
@@ -11975,15 +11978,24 @@ function iniciarMultiCamaras(patrullaIdPrincipal) {
   // Hacer el panel arrastrable
   inicializarArrastreUniversal('panel-multicamaras', 'panel-multicamaras-header');
   
-  // Escuchar lista de patrullas activas
-  rtdb.ref('frames').on('value', (snapshot) => {
+  // Escuchar lista de patrullas activas - OPTIMIZADO con throttle
+  // Solo escuchamos cambios en timestamps para reducir tráfico
+  multicamMainListener = rtdb.ref('frames');
+  multicamMainListener.on('value', (snapshot) => {
+    // Throttle: no procesar más de una vez cada N segundos
+    const ahora = Date.now();
+    if (ahora - ultimaActualizacionMulticam < THROTTLE_MULTICAM_MS) {
+      return; // Ignorar actualización, muy pronto
+    }
+    ultimaActualizacionMulticam = ahora;
+    
     if (!snapshot.exists()) {
       actualizarPanelMulticam([]);
       return;
     }
     
     const patrullasActivas = [];
-    const ahora = Date.now();
+    // ahora ya fue declarado arriba para el throttle
     const TIMEOUT_ACTIVA = 30000; // 30 segundos sin frames = inactiva
     
     snapshot.forEach((child) => {
@@ -12074,7 +12086,15 @@ function iniciarListenerMulticam(patrullaId) {
   const ref = rtdb.ref(`frames/${patrullaId}/latest`);
   multicamListeners[patrullaId] = ref;
   
+  let ultimoFrameTime = 0;
+  const THROTTLE_FRAME_MS = 200; // Máximo 5 FPS por miniatura para ahorrar batería
+  
   ref.on('value', (snapshot) => {
+    // Throttle frames individuales
+    const ahora = Date.now();
+    if (ahora - ultimoFrameTime < THROTTLE_FRAME_MS) return;
+    ultimoFrameTime = ahora;
+    
     if (!snapshot.exists()) return;
     
     const frameData = snapshot.val();
@@ -12086,8 +12106,8 @@ function iniciarListenerMulticam(patrullaId) {
     const img = new Image();
     img.onload = () => {
       // Canvas más grande para mejor calidad
-      canvas.width = 260;
-      canvas.height = 140;
+      canvas.width = 400;
+      canvas.height = 220;
       const ctx = canvas.getContext('2d');
       
       // Dibujar centrado y cubriendo
@@ -12103,6 +12123,7 @@ function iniciarListenerMulticam(patrullaId) {
 function cambiarCamaraPrincipal(nuevaPatrullaId) {
   console.log(`[Multi-Cámaras] 🔄 Cambiando cámara principal a: ${nuevaPatrullaId}`);
   
+  const anteriorPrincipal = patrullaPrincipal;
   patrullaPrincipal = nuevaPatrullaId;
   
   // Actualizar título del visor
@@ -12111,11 +12132,22 @@ function cambiarCamaraPrincipal(nuevaPatrullaId) {
     nombreVisor.textContent = nuevaPatrullaId;
   }
   
+  // IMPORTANTE: Detener el listener multicam de la nueva principal para evitar conflictos
+  if (multicamListeners[nuevaPatrullaId]) {
+    console.log(`[Multi-Cámaras] 🛑 Deteniendo listener multicam de ${nuevaPatrullaId}`);
+    multicamListeners[nuevaPatrullaId].off();
+    delete multicamListeners[nuevaPatrullaId];
+  }
+  
+  // Eliminar la card de la nueva principal
+  const cardNueva = document.getElementById(`multicam-${nuevaPatrullaId}`);
+  if (cardNueva) cardNueva.remove();
+  
   // Detener y reiniciar visualización principal
   detenerVisualizacionMJPEG();
   iniciarVisualizacionMJPEG(nuevaPatrullaId);
   
-  // Actualizar panel después de un momento
+  // Si la anterior principal sigue activa, crear su card en el panel
   setTimeout(() => {
     rtdb.ref('frames').once('value', (snapshot) => {
       if (!snapshot.exists()) return;
@@ -12136,7 +12168,13 @@ function cambiarCamaraPrincipal(nuevaPatrullaId) {
 }
 
 function detenerMiniaturas() {
-  // Detener todos los listeners
+  // Detener listener principal de patrullas
+  if (multicamMainListener) {
+    multicamMainListener.off();
+    multicamMainListener = null;
+  }
+  
+  // Detener todos los listeners de frames individuales
   Object.keys(multicamListeners).forEach(patrullaId => {
     if (multicamListeners[patrullaId]) {
       multicamListeners[patrullaId].off();
