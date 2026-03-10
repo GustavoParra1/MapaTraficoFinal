@@ -11144,6 +11144,10 @@ function verCamaraPatrulla(movil) {
   // Iniciar visualización MJPEG en paralelo
   iniciarVisualizacionMJPEG(movil);
   console.log("[DEBUG] ✅ iniciarVisualizacionMJPEG COMPLETADA");
+  
+  // Iniciar sistema de multi-cámaras (miniaturas de otras patrullas)
+  iniciarMultiCamaras(movil);
+  console.log("[DEBUG] ✅ Multi-cámaras iniciado");
 
   const visor = document.getElementById("visor-patrulla");
   const video = document.getElementById("visorVideo");
@@ -11678,7 +11682,14 @@ function cerrarVisor(e) {
       }
   }
 
-  // 5. Liberar el seguro después de un breve delay
+  // 5. Detener visualización MJPEG y sistema de multi-cámaras
+  detenerVisualizacionMJPEG();
+  detenerMiniaturas();
+  
+  // Detener listener de patrullas activas
+  rtdb.ref('frames').off();
+
+  // 6. Liberar el seguro después de un breve delay
   setTimeout(() => {
     estaCerrandoVisor = false;
   }, 500);
@@ -11937,7 +11948,186 @@ function detenerVisualizacionMJPEG() {
 }
 
 // ============================================================
-// �📊 MEJORA PREDICTIVA DE COBERTURA - FUNCIONES AUXILIARES
+// 📹 SISTEMA DE MULTI-CÁMARAS (Principal + Miniaturas)
+// ============================================================
+let miniaturasListeners = {};
+let patrullaPrincipal = null;
+
+function iniciarMultiCamaras(patrullaIdPrincipal) {
+  console.log("[Multi-Cámaras] 🎬 Iniciando sistema multi-cámaras");
+  
+  patrullaPrincipal = patrullaIdPrincipal;
+  
+  // Limpiar listeners anteriores de miniaturas
+  detenerMiniaturas();
+  
+  // Escuchar lista de patrullas activas (nodos con frames recientes)
+  rtdb.ref('frames').on('value', (snapshot) => {
+    if (!snapshot.exists()) return;
+    
+    const patrullasActivas = [];
+    const ahora = Date.now();
+    const TIMEOUT_ACTIVA = 30000; // 30 segundos sin frames = inactiva
+    
+    snapshot.forEach((child) => {
+      const patrullaId = child.key;
+      const data = child.val();
+      
+      // Verificar si tiene frames recientes
+      if (data.latest && data.latest.timestamp) {
+        const edad = ahora - data.latest.timestamp;
+        if (edad < TIMEOUT_ACTIVA) {
+          patrullasActivas.push(patrullaId);
+        }
+      }
+    });
+    
+    console.log(`[Multi-Cámaras] 📡 Patrullas activas: ${patrullasActivas.join(', ') || 'ninguna'}`);
+    
+    // Actualizar miniaturas
+    actualizarMiniaturas(patrullasActivas);
+  });
+}
+
+function actualizarMiniaturas(patrullasActivas) {
+  const container = document.getElementById('visor-miniaturas');
+  if (!container) return;
+  
+  // Filtrar miniaturas: mostrar todas EXCEPTO la principal
+  const patrullasParaMiniaturas = patrullasActivas.filter(id => id !== patrullaPrincipal);
+  
+  // Si no hay otras patrullas, ocultar contenedor
+  if (patrullasParaMiniaturas.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = 'flex';
+  
+  // Crear/actualizar miniaturas
+  patrullasParaMiniaturas.forEach(patrullaId => {
+    let miniatura = document.getElementById(`miniatura-${patrullaId}`);
+    
+    if (!miniatura) {
+      // Crear nueva miniatura
+      miniatura = document.createElement('div');
+      miniatura.id = `miniatura-${patrullaId}`;
+      miniatura.className = 'miniatura-patrulla';
+      miniatura.innerHTML = `
+        <canvas id="canvas-mini-${patrullaId}"></canvas>
+        <span class="miniatura-live">LIVE</span>
+        <span class="miniatura-label">${patrullaId}</span>
+      `;
+      miniatura.onclick = () => cambiarCamaraPrincipal(patrullaId);
+      container.appendChild(miniatura);
+      
+      // Iniciar listener de frames para esta miniatura
+      iniciarListenerMiniatura(patrullaId);
+    }
+  });
+  
+  // Eliminar miniaturas de patrullas que ya no están activas
+  const miniaturasActuales = container.querySelectorAll('.miniatura-patrulla');
+  miniaturasActuales.forEach(mini => {
+    const id = mini.id.replace('miniatura-', '');
+    if (!patrullasParaMiniaturas.includes(id)) {
+      // Detener listener
+      if (miniaturasListeners[id]) {
+        miniaturasListeners[id].off();
+        delete miniaturasListeners[id];
+      }
+      mini.remove();
+    }
+  });
+}
+
+function iniciarListenerMiniatura(patrullaId) {
+  if (miniaturasListeners[patrullaId]) return; // Ya existe
+  
+  const ref = rtdb.ref(`frames/${patrullaId}/latest`);
+  miniaturasListeners[patrullaId] = ref;
+  
+  ref.on('value', (snapshot) => {
+    if (!snapshot.exists()) return;
+    
+    const frameData = snapshot.val();
+    if (!frameData || !frameData.data) return;
+    
+    const canvas = document.getElementById(`canvas-mini-${patrullaId}`);
+    if (!canvas) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 120;
+      canvas.height = 70;
+      const ctx = canvas.getContext('2d');
+      
+      // Dibujar centrado y recortado para cubrir
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const x = (canvas.width - img.width * scale) / 2;
+      const y = (canvas.height - img.height * scale) / 2;
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    };
+    img.src = frameData.data;
+  });
+}
+
+function cambiarCamaraPrincipal(nuevaPatrullaId) {
+  console.log(`[Multi-Cámaras] 🔄 Cambiando cámara principal a: ${nuevaPatrullaId}`);
+  
+  // Actualizar variable principal
+  const anteriorPrincipal = patrullaPrincipal;
+  patrullaPrincipal = nuevaPatrullaId;
+  
+  // Actualizar título del visor
+  const nombreVisor = document.getElementById('nombre-patrulla-visor');
+  if (nombreVisor) {
+    nombreVisor.textContent = nuevaPatrullaId;
+  }
+  
+  // Detener y reiniciar visualización principal
+  detenerVisualizacionMJPEG();
+  iniciarVisualizacionMJPEG(nuevaPatrullaId);
+  
+  // Actualizar miniaturas: la anterior principal se vuelve miniatura
+  // y la nueva principal se quita de miniaturas
+  setTimeout(() => {
+    rtdb.ref('frames').once('value', (snapshot) => {
+      if (!snapshot.exists()) return;
+      
+      const patrullasActivas = [];
+      const ahora = Date.now();
+      
+      snapshot.forEach((child) => {
+        const data = child.val();
+        if (data.latest && data.latest.timestamp && (ahora - data.latest.timestamp) < 30000) {
+          patrullasActivas.push(child.key);
+        }
+      });
+      
+      actualizarMiniaturas(patrullasActivas);
+    });
+  }, 100);
+}
+
+function detenerMiniaturas() {
+  // Detener todos los listeners de miniaturas
+  Object.keys(miniaturasListeners).forEach(patrullaId => {
+    if (miniaturasListeners[patrullaId]) {
+      miniaturasListeners[patrullaId].off();
+    }
+  });
+  miniaturasListeners = {};
+  
+  // Limpiar contenedor
+  const container = document.getElementById('visor-miniaturas');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
+
+// ============================================================
+// 📊 MEJORA PREDICTIVA DE COBERTURA - FUNCIONES AUXILIARES
 // ============================================================
 
 function calcularMejoraPredictivaCobertura(camaras, siniestros, robos, barrios) {

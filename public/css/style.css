@@ -1940,6 +1940,76 @@ appearance: none;
     display: none !important;
 }
 
+/* Miniaturas de cámaras múltiples */
+#visor-miniaturas {
+    display: flex;
+    gap: 5px;
+    padding: 8px;
+    background: #1a1a2e;
+    overflow-x: auto;
+    min-height: 80px;
+    border-top: 1px solid #333;
+}
+
+.miniatura-patrulla {
+    position: relative;
+    width: 120px;
+    min-width: 120px;
+    height: 70px;
+    background: #000;
+    border-radius: 5px;
+    cursor: pointer;
+    overflow: hidden;
+    border: 2px solid #333;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.miniatura-patrulla:hover {
+    border-color: #00ff88;
+    transform: scale(1.05);
+}
+
+.miniatura-patrulla.activa {
+    border-color: #00ff88;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.miniatura-patrulla canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.miniatura-patrulla .miniatura-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: #00ff88;
+    font-size: 10px;
+    padding: 2px 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.miniatura-patrulla .miniatura-live {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    background: #dc2626;
+    color: white;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.5; }
+}
+
 /* ============================================
    PANEL DE TAMAÑOS ADAPTATIVOS (CONSULTAS)
    ============================================ */
