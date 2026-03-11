@@ -1034,6 +1034,29 @@
       const biasLat = -38.00042;
       const biasLon = -57.5562;
       
+      // 🔧 FIX ESPECIAL PARA BUENOS AIRES: Buscar DIRECTAMENTE en datos de siniestros
+      // (porque TomTom no reconoce bien esta calle)
+      if (/buenos\s*aires/i.test(address)) {
+        console.log('🔍 FIX ESPECIAL: Detectada calle "Buenos Aires", buscando en base de datos...');
+        
+        if (window.allSiniestrosData && window.allSiniestrosData.features) {
+          // Buscar TODOS los siniestros que contengan "Buenos Aires"
+          const buenosAiresMatches = window.allSiniestrosData.features.filter(f => {
+            if (!f.properties || !f.properties.direccion) return false;
+            return f.properties.direccion.toLowerCase().includes("buenos aires");
+          });
+          
+          if (buenosAiresMatches.length > 0) {
+            // Calcular el promedio de coordenadas reales
+            const avgLat = buenosAiresMatches.reduce((sum, f) => sum + f.geometry.coordinates[1], 0) / buenosAiresMatches.length;
+            const avgLon = buenosAiresMatches.reduce((sum, f) => sum + f.geometry.coordinates[0], 0) / buenosAiresMatches.length;
+            
+            console.log(`✅ Encontrados ${buenosAiresMatches.length} registros reales en Buenos Aires`);
+            return { lat: avgLat, lon: avgLon };
+          }
+        }
+      }
+      
       // Detectar si es una intersección ("y")
       const isIntersection = / y /i.test(address);
       
