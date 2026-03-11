@@ -302,6 +302,47 @@
       align-items: center;
       justify-content: center;
     }
+
+    /* Input con micrófono */
+    .input-with-mic {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-with-mic input {
+      flex: 1;
+    }
+
+    .mic-button {
+      width: 45px;
+      padding: 11px !important;
+      background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%) !important;
+      border: none !important;
+      border-radius: 8px !important;
+      color: white !important;
+      font-size: 20px !important;
+      cursor: pointer !important;
+      transition: transform 0.1s !important;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-button:active {
+      transform: scale(0.95);
+    }
+
+    .mic-button.listening {
+      background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
   </style>
 </head>
 <body>
@@ -326,14 +367,20 @@
     <!-- Buscador de direcciones -->
     <div class="panel-section">
       <h3>🔍 Buscar Dirección</h3>
-      <input type="text" id="address-input" placeholder="Ej: Av. Colón 1234">
+      <div class="input-with-mic">
+        <input type="text" id="address-input" placeholder="Ej: Av. Colón 1234">
+        <button type="button" class="mic-button" id="address-mic-button" title="Reconocimiento de voz">🎤</button>
+      </div>
       <button type="button" id="search-button">Buscar</button>
     </div>
 
     <!-- Buscador de cámaras -->
     <div class="panel-section">
       <h3>📹 Buscar Cámara</h3>
-      <input type="text" id="camera-input" placeholder="Número de cámara...">
+      <div class="input-with-mic">
+        <input type="text" id="camera-input" placeholder="Número de cámara...">
+        <button type="button" class="mic-button" id="camera-mic-button" title="Reconocimiento de voz">🎤</button>
+      </div>
       <button type="button" id="go-to-camera-button">Ir a Cámara</button>
     </div>
 
@@ -702,6 +749,10 @@
       // Mi ubicación
       document.getElementById('my-location-btn').addEventListener('click', irAMiUbicacion);
 
+      // Reconocimiento de voz
+      document.getElementById('address-mic-button').addEventListener('click', () => startVoiceRecognition('address-input'));
+      document.getElementById('camera-mic-button').addEventListener('click', () => startVoiceRecognition('camera-input'));
+
       // Resetear búsquedas - usar touchend para mejor respuesta en móvil
       const resetBtn = document.getElementById('reset-button');
       
@@ -717,6 +768,75 @@
         e.preventDefault();
         handleReset(e);
       });
+    }
+
+    // ========================================
+    // RECONOCIMIENTO DE VOZ
+    // ========================================
+    function startVoiceRecognition(inputId) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        showToast('❌ Reconocimiento de voz no disponible en este navegador');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      const button = document.getElementById(inputId === 'address-input' ? 'address-mic-button' : 'camera-mic-button');
+      const input = document.getElementById(inputId);
+
+      // Configurar reconocimiento
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'es-AR'; // Español de Argentina
+      
+      // Cambiar botón a estado "escuchando"
+      button.classList.add('listening');
+      button.textContent = '⏺️';
+
+      recognition.onstart = () => {
+        console.log('🎤 Escuchando...');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        
+        if (transcript) {
+          input.value = transcript.trim();
+          console.log('🎤 Reconocido:', transcript);
+          showToast('✅ ' + transcript);
+          
+          // Auto trigger search si es dirección
+          if (inputId === 'address-input') {
+            setTimeout(buscarDireccion, 300);
+          }
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Error en reconocimiento:', event.error);
+        let errorMsg = 'Error en reconocimiento de voz';
+        
+        if (event.error === 'no-speech') {
+          errorMsg = '⚠️ No se detectó voz. Intenta de nuevo.';
+        } else if (event.error === 'network') {
+          errorMsg = '⚠️ Error de conexión';
+        }
+        
+        showToast(errorMsg);
+      };
+
+      recognition.onend = () => {
+        button.classList.remove('listening');
+        button.textContent = '🎤';
+        console.log('🎤 Reconocimiento finalizado');
+      };
+
+      recognition.start();
     }
 
     // ========================================
