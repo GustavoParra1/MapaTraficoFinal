@@ -1358,25 +1358,21 @@ async function geocodeAddress(address) {
   const biasLat = -38.00042;
   const biasLon = -57.5562;
   
-  // 🔧 FIX ESPECIAL PARA BUENOS AIRES: Usar Google Maps (más preciso que TomTom)
+  // 🔧 FIX ESPECIAL PARA BUENOS AIRES: Usar Google Maps vía servidor backend
   if (/buenos\s*aires/i.test(address)) {
-    console.log('🔍 FIX ESPECIAL: Detectada calle "Buenos Aires", usando Google Maps...');
+    console.log('🔍 FIX ESPECIAL: Detectada calle "Buenos Aires", usando Google Maps (via servidor)...');
     
     try {
-      // Google Maps Geocoding API (con bounds para Mar del Plata)
-      const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address + ", Mar del Plata, Argentina")}&bounds=-38.05,-57.62|-37.95,-57.52&key=AIzaSyC9Zl70EdPvHxgZCQVxbvCp8cJvEOsH9-0`;
-      
-      const response = await fetch(googleUrl);
+      // Llamar al endpoint del servidor que maneja Google Maps
+      const response = await fetch(`http://localhost:3003/api/geocode?address=${encodeURIComponent(address)}`);
       const data = await response.json();
       
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        const { lat, lng } = result.geometry.location;
-        console.log(`✅ Google Maps encontró Buenos Aires en:`, result.formatted_address);
-        return { lat, lon: lng };
+      if (data.success && data.lat && data.lng) {
+        console.log(`✅ Google Maps encontró Buenos Aires en:`, data.address);
+        return { lat: data.lat, lon: data.lng };
       }
     } catch (error) {
-      console.error("⚠️ Error con Google Maps:", error);
+      console.error("⚠️ Error con servidor geocoding:", error);
     }
     
     // Si Google falla, fallback a siniestros

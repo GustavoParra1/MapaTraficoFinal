@@ -217,6 +217,108 @@ function runNewsWorker() {
     });
 }
 
+// --- ENDPOINT GEOCODING ---
+// Estrategia: Para Buenos Aires, buscar con TomTom varias variaciones
+app.get('/api/geocode', async (req, res) => {
+  try {
+    const { address } = req.query;
+    
+    if (!address) {
+      return res.status(400).json({ error: 'Address parameter is required' });
+    }
+    
+    console.log(`[Geocode] Buscando: "${address}"`);
+    
+    // Variables para Mar del Plata center
+    const mdpLat = -38.00042;
+    const mdpLon = -57.5562;
+    const mdpBounds = 'bbox=-38.05,-57.62,-37.95,-57.52'; // bound box
+    
+    // Si contiene "Buenos Aires", usar estrategia especial
+    if (/buenos\s*aires/i.test(address)) {
+      console.log(`[Geocode] Detectada Buenos Aires - usando estrategia especial...`);
+      
+      // Variación 1: Buscar como calle normal en MDP
+      const variations = [
+        `${address}, Mar del Plata`, // Sin provincia
+        address.replace(/buenos\s*aires/i, 'Calle Buenos Aires') + ', Mar del Plata',
+        address.replace(/buenos\s*aires/i, 'BA') + ', Mar del Plata'
+      ];
+      
+      for (const variant of variations) {
+        try {
+          const tomtomKey = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
+          const tomtomUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(variant)}.json?key=${tomtomKey}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=3`;
+          
+          console.log(`[Geocode] Intentando: "${variant}"`);
+          
+          const response = await fetch(tomtomUrl);
+          const data = await response.json();
+          
+          if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            const lat = result.position?.lat;
+            const lng = result.position?.lon;
+            const addr = result.address?.freeformAddress;
+            
+            // Validar que es realmente en MDP y que coincide con Buenos Aires
+            if (lat && lng && Math.abs(lat - mdpLat) < 0.1 && Math.abs(lng - mdpLon) < 0.1) {
+              if (!addr || addr.toLowerCase().includes('buenos aires')) {
+                console.log(`✅ [Geocode] Encontrado: ${addr} (${lat}, ${lng})`);
+                return res.json({
+                  success: true,
+                  address: addr,
+                  lat: lat,
+                  lng: lng,
+                  source: 'tomtom-buscar-aires'
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`[Geocode] Error con variante "${variant}":`, err.message);
+        }
+      }
+    }
+    
+    // Fallback: búsqueda normal con TomTom
+    const tomtomKey = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
+    const fullAddress = address.includes('Mar del Plata') ? address : `${address}, Mar del Plata`;
+    const tomtomUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(fullAddress)}.json?key=${tomtomKey}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=3`;
+    
+    console.log(`[Geocode] Fallback TomTom: "${fullAddress}"`);
+    
+    const response = await fetch(tomtomUrl);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      const result = data.results[0];
+      const lat = result.position?.lat;
+      const lng = result.position?.lon;
+      const addr = result.address?.freeformAddress;
+      
+      console.log(`✅ [Geocode] Encontrado: ${addr} (${lat}, ${lng})`);
+      
+      res.json({
+        success: true,
+        address: addr,
+        lat: lat,
+        lng: lng,
+        source: 'tomtom'
+      });
+    } else {
+      console.log(`❌ [Geocode] TomTom no encontró nada`);
+      res.status(404).json({
+        success: false,
+        message: `No se encontró la dirección: ${address}`
+      });
+    }
+  } catch (error) {
+    console.error('[Geocode] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- INICIO ---
 // Ejecuta el worker al inicio y luego cada 5 minutos.
 setTimeout(runNewsWorker, 1000); // Espera 1 seg antes de la primera ejecución
