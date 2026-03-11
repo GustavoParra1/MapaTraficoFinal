@@ -1033,9 +1033,14 @@
     async function geocodeAddress(address) {
       const biasLat = -38.00042;
       const biasLon = -57.5562;
-      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+      
+      // Mejorar formato de intersecciones: "Buenos Aires y Juan B. Justo" → "Buenos Aires, Juan B. Justo"
+      let formattedAddress = address.replace(/ y /gi, ', ');
+      
+      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(formattedAddress)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
       
       console.log('Buscando en TomTom:', url);
+      console.log('Dirección formateada:', formattedAddress);
       
       try {
         const response = await fetch(url);
@@ -1046,6 +1051,8 @@
           const position = data.results[0].position;
           console.log(`✅ Geocoded '${address}' to:`, position);
           return { lat: position.lat, lon: position.lon };
+        } else {
+          console.warn(`⚠️ TomTom no encontró resultado para: ${formattedAddress}`);
         }
       } catch (error) {
         console.error("Error geocoding address:", error);
