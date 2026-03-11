@@ -41,7 +41,7 @@ ffmpeg -f dshow -i video="USB Video Device" ^
   -ar 44100 ^
   -ac 2 ^
   -hls_time 1 ^
-  -hls_list_size 3 ^
+  -hls_list_size 4 ^
   -hls_flags delete_segments ^
   "%STREAM_DIR%\stream.m3u8"
 
