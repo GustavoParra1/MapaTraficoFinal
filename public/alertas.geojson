@@ -6,214 +6,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -57.56849,
-          -37.980485
-        ]
-      },
-      "properties": {
-        "titulo": "Tenían un arma, la descartaron detrás de un paredón e intentaron escapar: uno era menor de edad",
-        "direccion": "Marconi y Libertad",
-        "link": "https://www.infobrisas.com/noticias/2026/01/06/88998-tenian-un-arma-la-descartaron-detras-de-un-paredon-e-intentaron-escapar-uno-era-menor-de-edad",
-        "timestamp": 1767737924033
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5792465,
-          -37.9762524
-        ]
-      },
-      "properties": {
-        "titulo": "Un choque terminó con una discusión, golpes y una policía herida",
-        "direccion": "Champagnat y Balcarce",
-        "link": "https://quedigital.com.ar/policiales/un-choque-termino-con-una-discusion-golpes-y-una-policia-herida/",
-        "timestamp": 1767737929051
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "Murió un hombre tras un despiste en la Ruta 2 camino a Mar del Plata",
-        "direccion": "Ruta 2",
-        "link": "https://quedigital.com.ar/policiales/murio-un-hombre-tras-un-despiste-en-la-ruta-2-camino-a-mar-del-plata/",
-        "timestamp": 1768698331159
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5602854,
-          -37.9914601
-        ]
-      },
-      "properties": {
-        "titulo": "Hombre en situación de calle fue detenido por estar armado",
-        "direccion": "Funes y Luro",
-        "link": "https://www.lacapitalmdp.com/hombre-en-situacion-de-calle-fue-detenido-por-estar-armado/",
-        "timestamp": 1768745993839
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5465568,
-          -37.9972688
-        ]
-      },
-      "properties": {
-        "titulo": "Desalojo de “trapitos” en Diagonal Alberdi y San Luis: uno fue aprehendido tras dañar un comercio",
-        "direccion": "Diagonal Alberdi y San Luis",
-        "link": "https://ahoramardelplata.com.ar/policiales/desalojo-de-trapitos-en-diagonal-alberdi-y-san-luis-uno-fue-aprehendido-tras-danar-un-comercio",
-        "timestamp": 1768754095608
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.556308,
-          -37.993471
-        ]
-      },
-      "properties": {
-        "titulo": "Un violento asalto en el centro y un departamento alquilado a una cuadra de una comisaría",
-        "direccion": "Luro y 20",
-        "link": "https://quedigital.com.ar/policiales/un-violento-asalto-en-el-centro-y-un-departamento-alquilado-a-una-cuadra-de-una-comisaria/",
-        "timestamp": 1768907739946
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.590388,
-          -37.976219
-        ]
-      },
-      "properties": {
-        "titulo": "Mendocinos vivieron una noche de terror: les robaron la camioneta con casilla y dejaron a dos chiquitos abandonados en la ruta",
-        "direccion": "Ruta 226",
-        "link": "https://www.infobrisas.com/noticias/2026/01/20/89447-mendocinos-vivieron-una-noche-de-terror-les-robaron-la-camioneta-con-casilla-y-dejaron-a-dos-chiquitos-abandonados-en-la-ruta",
-        "timestamp": 1768915775464
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.590388,
-          -37.976219
-        ]
-      },
-      "properties": {
-        "titulo": "Mendocinos vivieron una noche de terror: les roban la camioneta con casilla y dejan a dos chiquitos abandonados en la ruta",
-        "direccion": "Ruta 226",
-        "link": "https://www.infobrisas.com/noticias/2026/01/20/89447-mendocinos-vivieron-una-noche-de-terror-les-roban-la-camioneta-con-casilla-y-dejan-a-dos-chiquitos-abandonados-en-la-ruta",
-        "timestamp": 1768916076022
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5476901,
-          -38.0126238
-        ]
-      },
-      "properties": {
-        "titulo": "Caso Johana Stanley: detuvieron al último de los prófugos por el violento asalto",
-        "direccion": "Arenales y Castelli",
-        "link": "https://quedigital.com.ar/policiales/caso-johana-stanley-detuvieron-al-ultimo-de-los-profugos-por-el-violento-asalto/",
-        "timestamp": 1769072644340
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5497922,
-          -38.0204494
-        ]
-      },
-      "properties": {
-        "titulo": "Se pelearon por el tránsito y uno amenazó al otro con un arma en el barrio Los Troncos",
-        "direccion": "Sarmiento y Quintana",
-        "link": "https://www.lacapitalmdp.com/se-pelearon-por-el-transito-y-uno-amenazo-al-otro-con-un-arma-en-el-barrio-los-troncos/",
-        "timestamp": 1769090674659
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5497922,
-          -38.0204494
-        ]
-      },
-      "properties": {
-        "titulo": "Una discusión de tránsito terminó con un joven amenazando a otro con una pistola",
-        "direccion": "Sarmiento y Quintana",
-        "link": "https://quedigital.com.ar/policiales/una-discusion-de-transito-termino-con-un-joven-amenazando-a-otro-con-una-pistola/",
-        "timestamp": 1769108200176
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843568,
-          -38.1116209
-        ]
-      },
-      "properties": {
-        "titulo": "Pareja de pungas robó más de diez teléfonos en una fiesta",
-        "direccion": "Ruta 11",
-        "link": "https://www.lacapitalmdp.com/pareja-de-pungas-robo-mas-de-diez-telefonos-en-una-fiesta/",
-        "timestamp": 1769265620232
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.590388,
-          -37.976219
-        ]
-      },
-      "properties": {
-        "titulo": "Robaron una casa rodante con parte de una familia adentro: detuvieron a un adolescente",
-        "direccion": "Ruta 226",
-        "link": "https://quedigital.com.ar/policiales/robaron-una-casa-rodante-con-parte-de-una-familia-adentro-detuvieron-a-un-adolescente/",
-        "timestamp": 1769272526548
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           -57.5843013,
           -37.9827793
         ]
@@ -607,6 +399,54 @@
         "direccion": "Vieytes y Catamarca y terminó en",
         "link": "https://quedigital.com.ar/policiales/robo-persecucion-y-vuelco-detuvieron-a-un-joven/",
         "timestamp": 1771525073200
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5504,
+          -37.98962
+        ]
+      },
+      "properties": {
+        "titulo": "Choque entre un Audi y una bicicleta dejó a una mujer hospitalizada",
+        "direccion": "Libertad y Jujuy",
+        "link": "https://www.infobrisas.com/noticias/2026/03/10/91035-choque-entre-un-audi-y-una-bicicleta-dejo-a-una-mujer-hospitalizada",
+        "timestamp": 1773220722457
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5904048,
+          -37.9762537
+        ]
+      },
+      "properties": {
+        "titulo": "Bomberos combaten incendios forestales en Chapadmalal y en Sierra de los Difuntos",
+        "direccion": "Ruta 226",
+        "link": "https://quedigital.com.ar/policiales/bomberos-combaten-incendio-forestal-chapadmalal-y-en-sierra-de-los-difuntos/",
+        "timestamp": 1773220731007
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.58043,
+          -37.988235
+        ]
+      },
+      "properties": {
+        "titulo": "Argenfer resurge de las cenizas: la emblemática ferretería marplatense reabre sus puertas este jueves",
+        "direccion": "Avenida Colón y Perú hace menos de",
+        "link": "https://noticiasmdq.com/argenfer-resurge-de-las-cenizas-la-emblematica-ferreteria-marplatense-reabre-sus-puertas-este-jueves/",
+        "timestamp": 1773221012510
       }
     }
   ]

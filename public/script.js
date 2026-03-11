@@ -1358,31 +1358,50 @@ async function geocodeAddress(address) {
   const biasLat = -38.00042;
   const biasLon = -57.5562;
   
-  // Mejorar búsqueda de intersecciones
-  let query = address;
+  // Limpiar y normalizar la entrada
+  let query = address.trim();
   
   // Si contiene " y " probablemente es una intersección
   if (query.includes(' y ')) {
-    // Reemplazar " y " con ", " para intersecciones
-    query = query.replace(/ y /g, ', ') + ', Mar del Plata, Argentina';
-  } else {
-    query = query + ', Mar del Plata, Argentina';
+    // Convertir "Calle A y Calle B" a "Calle A, Calle B, Mar del Plata"
+    query = query.replace(/ y /g, ', ');
   }
   
-  // Usar fuzzySearch que es mejor para intersecciones
-  const url = `https://api.tomtom.com/search/2/fuzzySearch/${encodeURIComponent(query)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000&limit=1`;
+  // Agregar ciudad siempre
+  if (!query.toLowerCase().includes('mar del plata')) {
+    query = query + ', Mar del Plata';
+  }
+  
+  console.log(`🔍 Buscando: ${query}`);
+  
+  // Usar endpoint search/2/search (fuzzy search correcto)
+  const params = new URLSearchParams({
+    key: TOMTOM_API_KEY,
+    query: query,
+    countrySet: 'AR',
+    lat: biasLat,
+    lon: biasLon,
+    radius: 50000,
+    limit: 1
+  });
+  
+  const url = `https://api.tomtom.com/search/2/search.json?${params.toString()}`;
   
   try {
+      console.log(`📡 Llamando a: ${url.substring(0, 100)}...`);
       const response = await fetch(url);
       const data = await response.json();
+      
+      console.log(`📊 Respuesta TomTom:`, data);
       
       if (data.results && data.results.length > 0) {
           const position = data.results[0].position;
           console.log(`✅ Geocoded '${address}' to:`, position);
-          console.log(`📍 Resultado: ${data.results[0].address.freeformAddress}`);
+          console.log(`📍 Resultado: ${data.results[0].address?.freeformAddress || 'Sin descripción'}`);
           return { lat: position.lat, lon: position.lon };
       } else {
-          console.warn(`⚠️ No se encontró: ${address}`);
+          console.warn(`⚠️ No se encontró: ${query}`);
+          console.warn(`📊 Respuesta completa:`, data);
       }
   } catch (error) {
       console.error("❌ Error geocoding address:", error);
