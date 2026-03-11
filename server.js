@@ -218,7 +218,7 @@ function runNewsWorker() {
 }
 
 // --- ENDPOINT GEOCODING ---
-// Estrategia: Para Buenos Aires, buscar con TomTom varias variaciones
+// Replica la lógica original de intersecciones
 app.get('/api/geocode', async (req, res) => {
   try {
     const { address } = req.query;
@@ -229,92 +229,103 @@ app.get('/api/geocode', async (req, res) => {
     
     console.log(`[Geocode] Buscando: "${address}"`);
     
-    // Variables para Mar del Plata center
+    const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
     const mdpLat = -38.00042;
     const mdpLon = -57.5562;
-    const mdpBounds = 'bbox=-38.05,-57.62,-37.95,-57.52'; // bound box
     
-    // Si contiene "Buenos Aires", usar estrategia especial
-    if (/buenos\s*aires/i.test(address)) {
-      console.log(`[Geocode] Detectada Buenos Aires - usando estrategia especial...`);
+    // ============================================
+    // ESTRATEGIA: Para intersecciones, IR DIRECTO al Intento 2
+    // ============================================
+    if (/ y /i.test(address)) {
+      console.log(`[Geocode] Intersección detectada: "${address}"`);
+      console.log(`[Geocode] → Buscando CADA CALLE por separado...`);
       
-      // Variación 1: Buscar como calle normal en MDP
-      const variations = [
-        `${address}, Mar del Plata`, // Sin provincia
-        address.replace(/buenos\s*aires/i, 'Calle Buenos Aires') + ', Mar del Plata',
-        address.replace(/buenos\s*aires/i, 'BA') + ', Mar del Plata'
-      ];
-      
-      for (const variant of variations) {
-        try {
-          const tomtomKey = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
-          const tomtomUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(variant)}.json?key=${tomtomKey}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=3`;
+      try {
+        const streets = address.split(/ y /i).map(s => s.trim());
+        const coords = [];
+        const names = [];
+        
+        for (let street of streets) {
+          console.log(`  [Calle] Buscando: "${street}"`);
+          const streetUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(street)}.json?key=${TOMTOM_API_KEY}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=1`;
           
-          console.log(`[Geocode] Intentando: "${variant}"`);
-          
-          const response = await fetch(tomtomUrl);
+          const response = await fetch(streetUrl);
           const data = await response.json();
           
           if (data.results && data.results.length > 0) {
-            const result = data.results[0];
-            const lat = result.position?.lat;
-            const lng = result.position?.lon;
-            const addr = result.address?.freeformAddress;
-            
-            // Validar que es realmente en MDP y que coincide con Buenos Aires
-            if (lat && lng && Math.abs(lat - mdpLat) < 0.1 && Math.abs(lng - mdpLon) < 0.1) {
-              if (!addr || addr.toLowerCase().includes('buenos aires')) {
-                console.log(`✅ [Geocode] Encontrado: ${addr} (${lat}, ${lng})`);
-                return res.json({
-                  success: true,
-                  address: addr,
-                  lat: lat,
-                  lng: lng,
-                  source: 'tomtom-buscar-aires'
-                });
-              }
-            }
+            const pos = data.results[0].position;
+            const name = data.results[0].address.freeformAddress;
+            coords.push(pos);
+            names.push(name);
+            console.log(`    ✅ Encontrada: ${name}`);
+            console.log(`       Coordenadas: (${pos.lat}, ${pos.lon})`);
+          } else {
+            console.log(`    ❌ No encontrada`);
           }
-        } catch (err) {
-          console.error(`[Geocode] Error con variante "${variant}":`, err.message);
         }
+        
+        // Si encontramos ambas calles, calcular punto medio
+        if (coords.length === 2) {
+          const midLat = (coords[0].lat + coords[1].lat) / 2;
+          const midLon = (coords[0].lon + coords[1].lon) / 2;
+          console.log(`✅ [Geocode] Intersección calculada (punto medio):`);
+          console.log(`   Cruce: (${midLat}, ${midLon})`);
+          
+          return res.json({
+            success: true,
+            address: `${names[0]} y ${names[1]}`,
+            lat: midLat,
+            lng: midLon,
+            source: 'intersection-midpoint',
+            street1: names[0],
+            street2: names[1]
+          });
+        }
+      } catch (error) {
+        console.error("[Geocode] Error calculando intersección:", error.message);
       }
     }
     
-    // Fallback: búsqueda normal con TomTom
-    const tomtomKey = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
-    const fullAddress = address.includes('Mar del Plata') ? address : `${address}, Mar del Plata`;
-    const tomtomUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(fullAddress)}.json?key=${tomtomKey}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=3`;
-    
-    console.log(`[Geocode] Fallback TomTom: "${fullAddress}"`);
-    
-    const response = await fetch(tomtomUrl);
-    const data = await response.json();
-    
-    if (data.results && data.results.length > 0) {
-      const result = data.results[0];
-      const lat = result.position?.lat;
-      const lng = result.position?.lon;
-      const addr = result.address?.freeformAddress;
-      
-      console.log(`✅ [Geocode] Encontrado: ${addr} (${lat}, ${lng})`);
-      
-      res.json({
-        success: true,
-        address: addr,
-        lat: lat,
-        lng: lng,
-        source: 'tomtom'
-      });
-    } else {
-      console.log(`❌ [Geocode] TomTom no encontró nada`);
-      res.status(404).json({
-        success: false,
-        message: `No se encontró la dirección: ${address}`
-      });
+    // ============================================
+    // BÚSQUEDA SIMPLE (para direcciones sin intersección)
+    // ============================================
+    console.log(`[Geocode] Intento 3 - Búsqueda simple...`);
+    let formattedAddress = address.replace(/ y /gi, ', ');
+    if (!formattedAddress.includes('Mar del Plata')) {
+      formattedAddress = formattedAddress + ', Mar del Plata, Buenos Aires, Argentina';
     }
+    
+    const searchUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(formattedAddress)}.json?key=${TOMTOM_API_KEY}&lat=${mdpLat}&lon=${mdpLon}&radius=50000&limit=1`;
+    
+    try {
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        console.log(`✅ [Geocode] Geocodificado (Intento 3):`, result.address.freeformAddress);
+        
+        return res.json({
+          success: true,
+          address: result.address.freeformAddress,
+          lat: result.position.lat,
+          lng: result.position.lon,
+          source: 'tomtom-simple'
+        });
+      }
+    } catch (error) {
+      console.error("[Geocode] Error en Intento 3:", error.message);
+    }
+    
+    // Si llegamos aquí, no encontró nada
+    console.log(`❌ [Geocode] No se encontró: "${address}"`);
+    res.status(404).json({
+      success: false,
+      message: `No se encontró la dirección: ${address}`
+    });
+    
   } catch (error) {
-    console.error('[Geocode] Error:', error);
+    console.error('[Geocode] Error general:', error);
     res.status(500).json({ error: error.message });
   }
 });
