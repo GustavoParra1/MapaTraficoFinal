@@ -1033,121 +1033,23 @@
     async function geocodeAddress(address) {
       const biasLat = -38.00042;
       const biasLon = -57.5562;
+      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
       
-      // 🔧 FIX ESPECIAL PARA BUENOS AIRES: Buscar DIRECTAMENTE en datos de siniestros
-      // (porque TomTom no reconoce bien esta calle)
-      if (/buenos\s*aires/i.test(address)) {
-        console.log('🔍 FIX ESPECIAL: Detectada calle "Buenos Aires", buscando en base de datos...');
-        
-        if (window.allSiniestrosData && window.allSiniestrosData.features) {
-          // Buscar TODOS los siniestros que contengan "Buenos Aires"
-          const buenosAiresMatches = window.allSiniestrosData.features.filter(f => {
-            if (!f.properties || !f.properties.direccion) return false;
-            return f.properties.direccion.toLowerCase().includes("buenos aires");
-          });
-          
-          if (buenosAiresMatches.length > 0) {
-            // Calcular el promedio de coordenadas reales
-            const avgLat = buenosAiresMatches.reduce((sum, f) => sum + f.geometry.coordinates[1], 0) / buenosAiresMatches.length;
-            const avgLon = buenosAiresMatches.reduce((sum, f) => sum + f.geometry.coordinates[0], 0) / buenosAiresMatches.length;
-            
-            console.log(`✅ Encontrados ${buenosAiresMatches.length} registros reales en Buenos Aires`);
-            return { lat: avgLat, lon: avgLon };
-          }
-        }
-      }
-      
-      // Detectar si es una intersección ("y")
-      const isIntersection = / y /i.test(address);
-      
-      if (isIntersection) {
-        // Intentar geocodificar como intersección completa primero
-        let formattedAddress = address.replace(/ y /gi, ', ');
-        formattedAddress = formattedAddress + ', Mar del Plata, Buenos Aires, Argentina';
-        
-        const searchUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(formattedAddress)}.json?key=${TOMTOM_API_KEY}&lat=${biasLat}&lon=${biasLon}&radius=50000&limit=3`;
-        
-        console.log('🔍 Intento 1 - Búsqueda de intersección:', formattedAddress);
-        
-        try {
-          const response = await fetch(searchUrl);
-          const data = await response.json();
-          
-          // Verificar si el resultado es realmente la intersección correcta
-          if (data.results && data.results.length > 0) {
-            const result = data.results[0];
-            const addressStr = result.address?.freeformAddress || '';
-            
-            // Validar que contiene ambas calles
-            const parts = address.split(/ y /i);
-            const street1 = parts[0].toLowerCase().replace(/^calle |^avenida /i, '').trim();
-            const street2 = parts[1].toLowerCase().replace(/^calle |^avenida /i, '').trim();
-            const resultAddr = addressStr.toLowerCase();
-            
-            if ((resultAddr.includes(street1) && resultAddr.includes(street2)) ||
-                (resultAddr.includes('&') && parts.length === 2)) {
-              console.log(`✅ Intersección encontrada (intento 1):`, result.address.freeformAddress);
-              return { lat: result.position.lat, lon: result.position.lon };
-            }
-          }
-        } catch (error) {
-          console.error("⚠️ Error en intento 1:", error);
-        }
-        
-        // Intento 2: Geocodificar cada calle por separado y calcular punto medio
-        console.log('🔍 Intento 2 - Geocodificando calles por separado...');
-        try {
-          const streets = address.split(/ y /i).map(s => s.trim());
-          const coords = [];
-          
-          for (let street of streets) {
-            const streetUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(street)}.json?key=${TOMTOM_API_KEY}&lat=${biasLat}&lon=${biasLon}&radius=50000&limit=1`;
-            const response = await fetch(streetUrl);
-            const data = await response.json();
-            
-            if (data.results && data.results.length > 0) {
-              const pos = data.results[0].position;
-              coords.push(pos);
-              console.log(`  ✅ ${street} encontrada en:`, pos);
-            } else {
-              console.log(`  ❌ ${street} no encontrada`);
-            }
-          }
-          
-          // Si encontramos ambas calles, calcular punto medio
-          if (coords.length === 2) {
-            const midLat = (coords[0].lat + coords[1].lat) / 2;
-            const midLon = (coords[0].lon + coords[1].lon) / 2;
-            console.log(`✅ Intersección calculada (punto medio):`, { lat: midLat, lon: midLon });
-            return { lat: midLat, lon: midLon };
-          }
-        } catch (error) {
-          console.error("⚠️ Error en intento 2:", error);
-        }
-      }
-      
-      // Para direcciones simples o si los intentos de intersección fallan
-      console.log('🔍 Intento 3 - Búsqueda simple...');
-      let formattedAddress = address.replace(/ y /gi, ', ');
-      formattedAddress = formattedAddress + ', Mar del Plata, Buenos Aires, Argentina';
-      
-      const searchUrl = `https://api.tomtom.com/search/2/search/${encodeURIComponent(formattedAddress)}.json?key=${TOMTOM_API_KEY}&lat=${biasLat}&lon=${biasLon}&radius=50000&limit=1`;
+      console.log('Buscando en TomTom:', url);
       
       try {
-        const response = await fetch(searchUrl);
+        const response = await fetch(url);
         const data = await response.json();
+        console.log('Respuesta TomTom:', data);
         
         if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          console.log(`✅ Geocodificado '${address}' a:`, result.address.freeformAddress);
-          return { lat: result.position.lat, lon: result.position.lon };
-        } else {
-          console.warn(`⚠️ TomTom no encontró resultado para: ${address}`);
+          const position = data.results[0].position;
+          console.log(`✅ Geocoded '${address}' to:`, position);
+          return { lat: position.lat, lon: position.lon };
         }
       } catch (error) {
-        console.error("❌ Error geocodificando dirección:", error);
+        console.error("Error geocoding address:", error);
       }
-      
       return null;
     }
 
