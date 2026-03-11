@@ -1031,6 +1031,12 @@
     }
 
     async function geocodeAddress(address) {
+      // 🔧 CORRECCIÓN ESPECIAL: Si contiene "Buenos Aires y", reformatear para forzar contexto
+      if (address.toLowerCase().includes('buenos aires y')) {
+        address = address.replace(/^Buenos Aires\s+y\s+/i, 'Avenida Buenos Aires y ') + ', La Costa, Mar del Plata';
+        console.log('[Buenos Aires Fix] 📍 Reformateado a:', address);
+      }
+
       const biasLat = -38.00042;
       const biasLon = -57.5562;
       const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
