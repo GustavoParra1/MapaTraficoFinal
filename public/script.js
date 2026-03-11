@@ -1357,55 +1357,26 @@ const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 async function geocodeAddress(address) {
   const biasLat = -38.00042;
   const biasLon = -57.5562;
+  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
   
-  // Limpiar y normalizar la entrada
-  let query = address.trim();
-  
-  // Si contiene " y " probablemente es una intersección
-  if (query.includes(' y ')) {
-    // Convertir "Calle A y Calle B" a "Calle A, Calle B, Mar del Plata"
-    query = query.replace(/ y /g, ', ');
-  }
-  
-  // Agregar ciudad siempre
-  if (!query.toLowerCase().includes('mar del plata')) {
-    query = query + ', Mar del Plata';
-  }
-  
-  console.log(`🔍 Buscando: ${query}`);
-  
-  // Usar endpoint search/2/search (fuzzy search correcto)
-  const params = new URLSearchParams({
-    key: TOMTOM_API_KEY,
-    query: query,
-    countrySet: 'AR',
-    lat: biasLat,
-    lon: biasLon,
-    radius: 50000,
-    limit: 1
-  });
-  
-  const url = `https://api.tomtom.com/search/2/search.json?${params.toString()}`;
+  console.log('🔍 Buscando en TomTom:', url);
   
   try {
-      console.log(`📡 Llamando a: ${url.substring(0, 100)}...`);
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      console.log(`📊 Respuesta TomTom:`, data);
-      
-      if (data.results && data.results.length > 0) {
-          const position = data.results[0].position;
-          console.log(`✅ Geocoded '${address}' to:`, position);
-          console.log(`📍 Resultado: ${data.results[0].address?.freeformAddress || 'Sin descripción'}`);
-          return { lat: position.lat, lon: position.lon };
-      } else {
-          console.warn(`⚠️ No se encontró: ${query}`);
-          console.warn(`📊 Respuesta completa:`, data);
-      }
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log('📊 Respuesta TomTom:', data);
+    
+    if (data.results && data.results.length > 0) {
+      const position = data.results[0].position;
+      console.log(`✅ Geocoded '${address}' to:`, position);
+      return { lat: position.lat, lon: position.lon };
+    } else {
+      console.warn(`⚠️ No se encontró: ${address}`);
+    }
   } catch (error) {
-      console.error("❌ Error geocoding address:", error);
+    console.error("❌ Error geocoding address:", error);
   }
+  
   return null;
 }
 
