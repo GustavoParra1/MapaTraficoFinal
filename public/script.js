@@ -1357,9 +1357,20 @@ const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 async function geocodeAddress(address) {
   const biasLat = -38.00042;
   const biasLon = -57.5562;
-  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+  
+  // Mejorar formato de intersecciones: "Buenos Aires y Juan B. Justo" → "Buenos Aires, Juan B. Justo"
+  let formattedAddress = address.replace(/ y /gi, ', ');
+  
+  // Agregar contexto geográfico si no está presente
+  if (!formattedAddress.toLowerCase().includes('mar del plata') && 
+      !formattedAddress.toLowerCase().includes('buenos aires, buenos aires')) {
+    formattedAddress = formattedAddress + ', Mar del Plata, Buenos Aires';
+  }
+  
+  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(formattedAddress)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
   
   console.log('🔍 Buscando en TomTom:', url);
+  console.log('📍 Dirección formateada:', formattedAddress);
   
   try {
     const response = await fetch(url);
@@ -1368,13 +1379,13 @@ async function geocodeAddress(address) {
     
     if (data.results && data.results.length > 0) {
       const position = data.results[0].position;
-      console.log(`✅ Geocoded '${address}' to:`, position);
+      console.log(`✅ Geocodificado '${address}' a:`, position);
       return { lat: position.lat, lon: position.lon };
     } else {
-      console.warn(`⚠️ No se encontró: ${address}`);
+      console.warn(`⚠️ No se encontró: ${formattedAddress}`);
     }
   } catch (error) {
-    console.error("❌ Error geocoding address:", error);
+    console.error("❌ Error geocodificando dirección:", error);
   }
   
   return null;
