@@ -1357,17 +1357,35 @@ const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 async function geocodeAddress(address) {
   const biasLat = -38.00042;
   const biasLon = -57.5562;
-  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+  
+  // Mejorar búsqueda de intersecciones
+  let query = address;
+  
+  // Si contiene " y " probablemente es una intersección
+  if (query.includes(' y ')) {
+    // Reemplazar " y " con ", " para intersecciones
+    query = query.replace(/ y /g, ', ') + ', Mar del Plata, Argentina';
+  } else {
+    query = query + ', Mar del Plata, Argentina';
+  }
+  
+  // Usar fuzzySearch que es mejor para intersecciones
+  const url = `https://api.tomtom.com/search/2/fuzzySearch/${encodeURIComponent(query)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000&limit=1`;
+  
   try {
       const response = await fetch(url);
       const data = await response.json();
+      
       if (data.results && data.results.length > 0) {
           const position = data.results[0].position;
-          console.log(`Geocoded '${address}' to:`, position);
+          console.log(`✅ Geocoded '${address}' to:`, position);
+          console.log(`📍 Resultado: ${data.results[0].address.freeformAddress}`);
           return { lat: position.lat, lon: position.lon };
+      } else {
+          console.warn(`⚠️ No se encontró: ${address}`);
       }
   } catch (error) {
-      console.error("Error geocoding address:", error);
+      console.error("❌ Error geocoding address:", error);
   }
   return null;
 }
