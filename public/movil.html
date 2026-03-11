@@ -1034,52 +1034,13 @@
       const biasLat = -38.00042;
       const biasLon = -57.5562;
       
-      // 🔧 CORRECCIÓN ESPECIAL: "Buenos Aires y [calle]" - buscar cada una por separado
+      // 🔧 CORRECCIÓN ESPECIAL: "Buenos Aires y [calle]" - mutar a "BA" para evitar confusión con provincia
       if (address.toLowerCase().includes('buenos aires y')) {
-        const match = address.match(/^Buenos Aires\s+y\s+(.+)$/i);
-        if (match) {
-          const otraCalle = match[1].trim();
-          console.log('[Buenos Aires Fix] 🔍 Detectado intersección - Buscando por separado');
-          console.log('  - Calle 1: Buenos Aires');
-          console.log('  - Calle 2:', otraCalle);
-          
-          try {
-            // Búsqueda 1: Buenos Aires
-            const url1 = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent('Buenos Aires, La Costa, Mar del Plata')}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
-            const res1 = await fetch(url1);
-            const data1 = await res1.json();
-            
-            // Búsqueda 2: Otra calle
-            const url2 = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(otraCalle + ', La Costa, Mar del Plata')}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
-            const res2 = await fetch(url2);
-            const data2 = await res2.json();
-            
-            if (data1.results?.length > 0 && data2.results?.length > 0) {
-              const pos1 = data1.results[0].position;
-              const pos2 = data2.results[0].position;
-              
-              // Calcular punto medio
-              const midLat = (pos1.lat + pos2.lat) / 2;
-              const midLon = (pos1.lon + pos2.lon) / 2;
-              
-              console.log('[Buenos Aires Fix] ✅ Punto 1:', pos1);
-              console.log('[Buenos Aires Fix] ✅ Punto 2:', pos2);
-              console.log('[Buenos Aires Fix] ✅ Punto MEDIO (intersección):', { lat: midLat, lon: midLon });
-              
-              return { lat: midLat, lon: midLon };
-            } else {
-              console.warn('[Buenos Aires Fix] ⚠️ No se encontraron ambas calles. Intentando búsqueda simple...');
-              // Fallback a búsqueda simple
-              throw new Error('No se encontraron ambas calles');
-            }
-          } catch (err) {
-            console.error('[Buenos Aires Fix] ❌ Error en búsqueda dual:', err.message);
-            // Fallback: búsqueda simple de la intersección original
-          }
-        }
+        address = address.replace(/Buenos Aires\s+y/i, 'BA y');
+        console.log('[Buenos Aires Fix] 🔄 Mutado a:', address);
       }
       
-      // Búsqueda simple (para direcciones normales o fallback)
+      // Búsqueda simple
       const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
       
       console.log('Buscando en TomTom:', url);
