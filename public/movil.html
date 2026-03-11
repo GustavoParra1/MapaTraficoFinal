@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CIMU Móvil</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Mapa pantalla completa */
+    #mapid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Botón de menú flotante */
+    #menu-toggle {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+      border: 2px solid #0088ff;
+      border-radius: 12px;
+      color: white;
+      font-size: 24px;
+      z-index: 1000;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #menu-toggle:active {
+      transform: scale(0.95);
+    }
+
+    /* Panel de búsqueda */
+    #search-panel {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 85%;
+      max-width: 350px;
+      height: 100%;
+      background: linear-gradient(180deg, #0f2744 0%, #1e3a5f 100%);
+      z-index: 999;
+      transition: left 0.3s ease;
+      overflow-y: auto;
+      padding: 20px;
+      padding-top: 80px;
+    }
+
+    #search-panel.open {
+      left: 0;
+    }
+
+    /* Overlay cuando el menú está abierto */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 998;
+      display: none;
+    }
+
+    #overlay.visible {
+      display: block;
+    }
+
+    /* Secciones del panel */
+    .panel-section {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(0,136,255,0.3);
+    }
+
+    .panel-section h3 {
+      color: #00ccff;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-section input,
+    .panel-section select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0,136,255,0.5);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.95);
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .panel-section button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #0088ff 0%, #00ccff 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+      z-index: 10;
+    }
+
+    .panel-section button:active {
+      transform: scale(0.98);
+    }
+
+    /* Checkboxes para cámaras */
+    .camera-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .camera-toggle input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin: 0;
+    }
+
+    .camera-toggle label {
+      font-size: 15px;
+      flex: 1;
+    }
+
+    /* Título del panel */
+    .panel-title {
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #0088ff;
+    }
+
+    /* Botón cerrar panel */
+    #close-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: #ff4444;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    /* Controles de zoom personalizados */
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    }
+
+    .leaflet-control-zoom a {
+      width: 44px !important;
+      height: 44px !important;
+      line-height: 44px !important;
+      font-size: 22px !important;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%) !important;
+      color: white !important;
+      border: 2px solid #0088ff !important;
+    }
+
+    .leaflet-control-zoom a:first-child {
+      border-radius: 10px 10px 0 0 !important;
+    }
+
+    .leaflet-control-zoom a:last-child {
+      border-radius: 0 0 10px 10px !important;
+    }
+
+    /* Popup personalizado */
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .leaflet-popup-content {
+      margin: 12px;
+      font-size: 14px;
+    }
+
+    /* Indicador de carga */
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15,39,68,0.95);
+      padding: 30px;
+      border-radius: 15px;
+      color: white;
+      text-align: center;
+      z-index: 2000;
+      border: 2px solid #0088ff;
+    }
+
+    #loading.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0,136,255,0.3);
+      border-top-color: #00ccff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast de notificaciones */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15,39,68,0.95);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: 1px solid #0088ff;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 14px;
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+
+    /* Mi ubicación */
+    #my-location-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 15px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+      border: 2px solid #0088ff;
+      border-radius: 50%;
+      color: white;
+      font-size: 22px;
+      z-index: 1000;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mapa -->
+  <div id="mapid"></div>
+
+  <!-- Botón de menú -->
+  <button type="button" id="menu-toggle">☰</button>
+
+  <!-- Botón mi ubicación -->
+  <button type="button" id="my-location-btn">📍</button>
+
+  <!-- Overlay -->
+  <div id="overlay"></div>
+
+  <!-- Panel de búsqueda -->
+  <div id="search-panel">
+    <button type="button" id="close-panel">✕</button>
+    <div class="panel-title">🗺️ CIMU Móvil</div>
+
+    <!-- Buscador de direcciones -->
+    <div class="panel-section">
+      <h3>🔍 Buscar Dirección</h3>
+      <input type="text" id="address-input" placeholder="Ej: Av. Colón 1234">
+      <button type="button" id="search-button">Buscar</button>
+    </div>
+
+    <!-- Buscador de cámaras -->
+    <div class="panel-section">
+      <h3>📹 Buscar Cámara</h3>
+      <input type="text" id="camera-input" placeholder="Número de cámara...">
+      <button type="button" id="go-to-camera-button">Ir a Cámara</button>
+    </div>
+
+    <!-- Líneas de colectivo -->
+    <div class="panel-section">
+      <h3>🚌 Líneas de Colectivo</h3>
+      <input type="text" id="bus-line-search" placeholder="Buscar línea...">
+      <select id="bus-line-select">
+        <option value="">Seleccione una línea</option>
+      </select>
+      <button type="button" id="show-bus-route-button">Mostrar Recorrido</button>
+    </div>
+
+    <!-- Cámaras LPR -->
+    <div class="panel-section">
+      <h3>🚗 Cámaras LPR</h3>
+      <select id="lpr-camera-select">
+        <option value="">Seleccione cámara LPR</option>
+      </select>
+      <button type="button" id="show-lpr-radius-button">Mostrar Radio</button>
+    </div>
+
+    <!-- Toggles de capas -->
+    <div class="panel-section">
+      <h3>📷 Capas</h3>
+      <div class="camera-toggle">
+        <input type="checkbox" id="camaras-checkbox">
+        <label for="camaras-checkbox">Cámaras Públicas</label>
+      </div>
+      <div class="camera-toggle">
+        <input type="checkbox" id="camaras-privadas-checkbox">
+        <label for="camaras-privadas-checkbox">Cámaras Privadas</label>
+      </div>
+    </div>
+
+    <!-- Botón Resetear -->
+    <div class="panel-section" style="position: relative; z-index: 20;">
+      <button type="button" id="reset-button" style="background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);">
+        🗑️ Limpiar Búsquedas
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Cargando mapa...</div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <script>
+    // ========================================
+    // VARIABLES GLOBALES
+    // ========================================
+    let map;
+    let camarasData = [];
+    let camarasPrivadasData = [];
+    let camarasLayer = null;
+    let camarasPrivadasLayer = null;
+    let busRouteLayer = null;
+    let lprRadiusLayer = null;
+    let searchMarker = null;
+    let myLocationMarker = null;
+    let addressSearchLayer = null; // Capa para cámaras cercanas a dirección
+    let addressCircleLayer = null; // Círculo de radio
+    let cameraSearchMarker = null; // Marcador de búsqueda por número de cámara
+
+    // ========================================
+    // INICIALIZACIÓN
+    // ========================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      initMap();
+      await cargarDatos();
+      initEventListeners();
+      hideLoading();
+    });
+
+    function initMap() {
+      map = L.map('mapid', {
+        center: [-38.0055, -57.5426],
+        zoom: 13,
+        zoomControl: true
+      });
+
+      // Mover controles de zoom
+      map.zoomControl.setPosition('bottomleft');
+
+      // Capa base
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+    }
+
+    async function cargarDatos() {
+      try {
+        // Cargar cámaras públicas
+        const resCamaras = await fetch('Camaras.CSV1.csv');
+        const textCamaras = await resCamaras.text();
+        camarasData = parseCSV(textCamaras);
+        console.log(`✅ Cámaras cargadas: ${camarasData.length}`);
+
+        // Cargar cámaras privadas (formato WKT diferente)
+        const resPrivadas = await fetch('cámaras privadas MGP- CÁMARAS PRIVADAS.csv');
+        const textPrivadas = await resPrivadas.text();
+        camarasPrivadasData = parseCSVPrivadas(textPrivadas);
+        console.log(`✅ Cámaras privadas cargadas: ${camarasPrivadasData.length}`);
+
+        // Cargar líneas de colectivo
+        await cargarLineasColectivo();
+
+        // Cargar cámaras LPR
+        cargarCamarasLPR();
+
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        showToast('Error cargando datos');
+      }
+    }
+
+    function parseCSV(text) {
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        // Manejar campos con comas dentro de comillas
+        const row = lines[i];
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let c = 0; c < row.length; c++) {
+          const char = row[c];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim().replace(/"/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim().replace(/"/g, ''));
+
+        if (values.length >= 4) {
+          const obj = {};
+          headers.forEach((h, idx) => obj[h] = values[idx] || '');
+          
+          // Normalizar nombres de columnas (el CSV tiene Latitud, Longitud con mayúscula)
+          const lat = obj.Latitud || obj.latitud;
+          const lng = obj.Longitud || obj.longitud;
+          
+          if (lat && lng) {
+            // Convertir formato español (coma decimal) a número
+            obj.latitud = parseFloat(lat.replace(',', '.'));
+            obj.longitud = parseFloat(lng.replace(',', '.'));
+            obj.NUMERO = obj['N CAMARA'] || obj.NUMERO || '';
+            obj.Nombre = obj.Direccion || obj.Nombre || '';
+            // Mantener columna LPR original (puede ser "LPR 1", "LPR 1 (OESTE)", etc.)
+            // También copiar 'Cant. Cam. LPR' si existe
+            obj['Cant. Cam. LPR'] = obj['Cant. Cam. LPR'] || '';
+            
+            if (!isNaN(obj.latitud) && !isNaN(obj.longitud)) {
+              data.push(obj);
+            }
+          }
+        }
+      }
+      return data;
+    }
+
+    function parseCSVPrivadas(text) {
+      const lines = text.split('\n');
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        // Formato: POINT (-57.5533386 -38.01662940000001)NOMBRE,Primera Junta 2074,...
+        const wktMatch = line.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/);
+        if (wktMatch) {
+          const lng = parseFloat(wktMatch[1]);
+          const lat = parseFloat(wktMatch[2]);
+          
+          // Extraer nombre después del WKT
+          const restOfLine = line.replace(/POINT\s*\([^)]+\)[^,]*,/, '');
+          const parts = restOfLine.split(',');
+          const nombre = parts[0]?.trim() || 'Cámara Privada';
+
+          if (!isNaN(lat) && !isNaN(lng)) {
+            data.push({
+              latitud: lat,
+              longitud: lng,
+              Nombre: nombre
+            });
+          }
+        }
+      }
+      return data;
+    }
+
+    let allBusRoutesData = [];
+
+    async function cargarLineasColectivo() {
+      try {
+        const res = await fetch('Recorrido lineas Colectivos - tabla colectivos (1).csv');
+        const text = await res.text();
+        
+        // Parsear el CSV completo
+        allBusRoutesData = parseCSVGenerico(text);
+        console.log(`🚌 Rutas de colectivos cargadas: ${allBusRoutesData.length}`);
+        
+        // Extraer líneas únicas de la columna 'Linea Colectivo'
+        const lineas = [...new Set(allBusRoutesData.map(item => item['Linea Colectivo']))].filter(l => l).sort();
+        console.log(`🚌 Líneas encontradas: ${lineas.join(', ')}`);
+
+        const select = document.getElementById('bus-line-select');
+        select.innerHTML = '<option value="">Seleccione una línea</option>';
+        
+        lineas.forEach(linea => {
+          const opt = document.createElement('option');
+          opt.value = linea;
+          opt.textContent = linea;
+          select.appendChild(opt);
+        });
+      } catch (error) {
+        console.error('Error cargando líneas:', error);
+      }
+    }
+
+    // Parser genérico para CSV con headers
+    function parseCSVGenerico(text) {
+      const lines = text.split('\n');
+      if (lines.length < 2) return [];
+      
+      // Obtener headers
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        
+        // Parsear respetando comillas
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let c = 0; c < line.length; c++) {
+          const char = line[c];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim().replace(/"/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim().replace(/"/g, ''));
+
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = values[idx] || '');
+        data.push(obj);
+      }
+      return data;
+    }
+
+    let lprCamaras = [];
+
+    function cargarCamarasLPR() {
+      // Función para verificar si una cámara tiene LPR (igual que el original)
+      function hasLPR(camera) {
+        // Verificar columna LPR (puede ser "LPR 1", "LPR 1 (OESTE)", etc.)
+        if (camera.LPR && camera.LPR.trim() !== '' && camera.LPR.trim() !== '0') {
+          return true;
+        }
+        // Verificar columna Cant. Cam. LPR
+        if (camera['Cant. Cam. LPR']) {
+          const cantLpr = parseInt(camera['Cant. Cam. LPR']);
+          if (cantLpr > 0) return true;
+        }
+        return false;
+      }
+
+      // Agrupar cámaras por ID y filtrar
+      const cameraMap = new Map();
+      
+      camarasData.forEach(camera => {
+        const cameraID = camera.NUMERO;
+        if (!cameraID) return;
+        if (!hasLPR(camera)) return;
+        
+        if (cameraMap.has(cameraID)) {
+          const existing = cameraMap.get(cameraID);
+          if (camera.LPR && camera.LPR.trim() && (!existing.LPR || !existing.LPR.trim())) {
+            cameraMap.set(cameraID, camera);
+          }
+        } else {
+          cameraMap.set(cameraID, camera);
+        }
+      });
+
+      lprCamaras = Array.from(cameraMap.values());
+      
+      // Ordenar por número de cámara
+      lprCamaras.sort((a, b) => {
+        const numA = parseInt(a.NUMERO) || 0;
+        const numB = parseInt(b.NUMERO) || 0;
+        return numA - numB;
+      });
+
+      console.log(`📷 Cámaras LPR encontradas: ${lprCamaras.length}`);
+
+      const select = document.getElementById('lpr-camera-select');
+      select.innerHTML = '<option value="">Seleccione cámara LPR</option>';
+      
+      lprCamaras.forEach(cam => {
+        const opt = document.createElement('option');
+        opt.value = cam.NUMERO;
+        const lprLabel = cam.LPR && cam.LPR.trim() ? cam.LPR : 'LPR';
+        opt.textContent = `${cam.NUMERO} - ${cam.Nombre?.substring(0, 25) || ''} (${lprLabel})`;
+        select.appendChild(opt);
+      });
+    }
+
+    // ========================================
+    // EVENT LISTENERS
+    // ========================================
+    function initEventListeners() {
+      // Toggle menú
+      document.getElementById('menu-toggle').addEventListener('click', togglePanel);
+      document.getElementById('close-panel').addEventListener('click', closePanel);
+      document.getElementById('overlay').addEventListener('click', closePanel);
+
+      // Buscar dirección
+      document.getElementById('search-button').addEventListener('click', buscarDireccion);
+      document.getElementById('address-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') buscarDireccion();
+      });
+
+      // Buscar cámara
+      document.getElementById('go-to-camera-button').addEventListener('click', irACamara);
+      document.getElementById('camera-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') irACamara();
+      });
+
+      // Línea de colectivo
+      document.getElementById('show-bus-route-button').addEventListener('click', mostrarRecorridoColectivo);
+      document.getElementById('bus-line-search').addEventListener('input', filtrarLineas);
+
+      // LPR
+      document.getElementById('show-lpr-radius-button').addEventListener('click', mostrarRadioLPR);
+
+      // Cámaras toggles
+      document.getElementById('camaras-checkbox').addEventListener('change', toggleCamaras);
+      document.getElementById('camaras-privadas-checkbox').addEventListener('change', toggleCamarasPrivadas);
+
+      // Mi ubicación
+      document.getElementById('my-location-btn').addEventListener('click', irAMiUbicacion);
+
+      // Resetear búsquedas - usar touchend para mejor respuesta en móvil
+      const resetBtn = document.getElementById('reset-button');
+      
+      function handleReset(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🗑️ Botón limpiar activado');
+        resetearBusquedas();
+      }
+      
+      resetBtn.addEventListener('click', handleReset);
+      resetBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        handleReset(e);
+      });
+    }
+
+    // ========================================
+    // RESETEAR BÚSQUEDAS
+    // ========================================
+    function resetearBusquedas() {
+      console.log('🧹 Ejecutando resetearBusquedas...');
+      
+      // Guardar estado de checkboxes
+      const camarasChecked = document.getElementById('camaras-checkbox').checked;
+      const camarasPrivadasChecked = document.getElementById('camaras-privadas-checkbox').checked;
+
+      // Limpiar capa de cámaras cercanas (incluye searchMarker)
+      if (addressSearchLayer) {
+        map.removeLayer(addressSearchLayer);
+        addressSearchLayer = null;
+        searchMarker = null; // El marker estaba dentro del layer
+        console.log('✅ addressSearchLayer eliminado');
+      }
+
+      // Limpiar círculo de radio
+      if (addressCircleLayer) {
+        map.removeLayer(addressCircleLayer);
+        addressCircleLayer = null;
+        console.log('✅ addressCircleLayer eliminado');
+      }
+
+      // Limpiar searchMarker si está suelto (por si acaso)
+      if (searchMarker) {
+        map.removeLayer(searchMarker);
+        searchMarker = null;
+      }
+
+      // Limpiar marcador de búsqueda de cámara
+      if (cameraSearchMarker) {
+        map.removeLayer(cameraSearchMarker);
+        cameraSearchMarker = null;
+      }
+
+      // Limpiar recorrido de colectivo
+      if (busRouteLayer) {
+        map.removeLayer(busRouteLayer);
+        busRouteLayer = null;
+      }
+
+      // Limpiar radio LPR
+      if (lprRadiusLayer) {
+        map.removeLayer(lprRadiusLayer);
+        lprRadiusLayer = null;
+      }
+
+      // Limpiar marcador de mi ubicación
+      if (myLocationMarker) {
+        map.removeLayer(myLocationMarker);
+        myLocationMarker = null;
+      }
+
+      // Limpiar inputs (sin tocar checkboxes)
+      document.getElementById('address-input').value = '';
+      document.getElementById('camera-input').value = '';
+      document.getElementById('bus-line-search').value = '';
+      document.getElementById('bus-line-select').value = '';
+      document.getElementById('lpr-camera-select').value = '';
+
+      // Restaurar estado de checkboxes
+      document.getElementById('camaras-checkbox').checked = camarasChecked;
+      document.getElementById('camaras-privadas-checkbox').checked = camarasPrivadasChecked;
+
+      // Resetear vista del mapa
+      map.setView([-38.0055, -57.5426], 13);
+
+      closePanel();
+      showToast('Búsquedas limpiadas');
+    }
+
+    // ========================================
+    // FUNCIONES DEL PANEL
+    // ========================================
+    function togglePanel() {
+      document.getElementById('search-panel').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('visible');
+    }
+
+    function closePanel() {
+      document.getElementById('search-panel').classList.remove('open');
+      document.getElementById('overlay').classList.remove('visible');
+    }
+
+    // ========================================
+    // BÚSQUEDA DE DIRECCIÓN (TomTom API - igual que el original)
+    // ========================================
+    const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
+
+    async function buscarDireccion() {
+      const address = document.getElementById('address-input').value.trim();
+      if (!address) {
+        showToast('Ingrese una dirección');
+        return;
+      }
+
+      showToast('Buscando...');
+
+      try {
+        const location = await geocodeAddress(address);
+        console.log('Resultado geocode:', location);
+        
+        if (location) {
+          // Limpiar búsquedas anteriores
+          if (searchMarker) map.removeLayer(searchMarker);
+          if (addressSearchLayer) map.removeLayer(addressSearchLayer);
+          if (addressCircleLayer) map.removeLayer(addressCircleLayer);
+          
+          const center = L.latLng(location.lat, location.lon);
+          
+          // Crear capa para cámaras cercanas
+          addressSearchLayer = L.layerGroup();
+          addressCircleLayer = L.layerGroup();
+          
+          // Dibujar círculo de 500m
+          L.circle(center, {
+            radius: 500,
+            color: '#0088ff',
+            fillColor: '#0088ff',
+            fillOpacity: 0.15,
+            weight: 2
+          }).addTo(addressCircleLayer);
+          
+          // Marcador de la dirección buscada
+          searchMarker = L.marker([location.lat, location.lon], {
+            icon: L.divIcon({
+              className: 'search-marker',
+              html: '<div style="background:#ff4444;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">📍</div>',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })
+          }).addTo(addressSearchLayer);
+          searchMarker.bindPopup(`<b>📍 ${address}</b>`);
+          
+          // Buscar y mostrar cámaras cercanas (500m) con número visible
+          let camarasCercanas = 0;
+          camarasData.forEach(cam => {
+            const camLat = cam.latitud;
+            const camLon = cam.longitud;
+            if (!isNaN(camLat) && !isNaN(camLon)) {
+              const camPos = L.latLng(camLat, camLon);
+              const distancia = center.distanceTo(camPos);
+              if (distancia <= 500) {
+                camarasCercanas++;
+                const isLPR = cam.TIPO === 'LPR' || cam.LPR === '1';
+                const bgColor = isLPR ? '#00cc66' : '#1e88e5';
+                
+                L.marker([camLat, camLon], {
+                  icon: L.divIcon({
+                    className: 'camera-nearby-icon',
+                    html: `<div style="background:${bgColor};min-width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);padding:2px;">${cam.NUMERO}</div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                  })
+                }).bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(addressSearchLayer);
+              }
+            }
+          });
+          
+          addressCircleLayer.addTo(map);
+          addressSearchLayer.addTo(map);
+          map.setView([location.lat, location.lon], 16);
+          closePanel();
+          showToast(`${camarasCercanas} cámaras en 500m`);
+        } else {
+          showToast('Dirección no encontrada');
+        }
+      } catch (error) {
+        showToast('Error en la búsqueda');
+        console.error('Error geocode:', error);
+      }
+    }
+
+    async function geocodeAddress(address) {
+      const biasLat = -38.00042;
+      const biasLon = -57.5562;
+      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+      
+      console.log('Buscando en TomTom:', url);
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('Respuesta TomTom:', data);
+        
+        if (data.results && data.results.length > 0) {
+          const position = data.results[0].position;
+          console.log(`✅ Geocoded '${address}' to:`, position);
+          return { lat: position.lat, lon: position.lon };
+        }
+      } catch (error) {
+        console.error("Error geocoding address:", error);
+      }
+      return null;
+    }
+
+    // ========================================
+    // IR A CÁMARA
+    // ========================================
+    function irACamara() {
+      const numero = document.getElementById('camera-input').value.trim();
+      if (!numero) {
+        showToast('Ingrese número de cámara');
+        return;
+      }
+
+      const camara = camarasData.find(c => 
+        c.NUMERO == numero || 
+        c.Nombre?.includes(numero) ||
+        String(c.NUMERO).padStart(3, '0') === numero.padStart(3, '0')
+      );
+
+      if (camara) {
+        const lat = camara.latitud;
+        const lng = camara.longitud;
+        
+        // Limpiar marcador anterior
+        if (cameraSearchMarker) {
+          map.removeLayer(cameraSearchMarker);
+        }
+        
+        // Crear marcador con el número de cámara
+        cameraSearchMarker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            className: 'camera-search-icon',
+            html: `<div style="background:#ff6600;min-width:30px;height:30px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.4);padding:2px;">${camara.NUMERO}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        }).addTo(map);
+        
+        cameraSearchMarker.bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>${camara.Nombre || ''}`).openPopup();
+        
+        map.setView([lat, lng], 18);
+        closePanel();
+        showToast(`Cámara ${numero} encontrada`);
+      } else {
+        showToast('Cámara no encontrada');
+      }
+    }
+
+    // ========================================
+    // LÍNEAS DE COLECTIVO
+    // ========================================
+    function filtrarLineas() {
+      const filtro = document.getElementById('bus-line-search').value.toLowerCase();
+      const select = document.getElementById('bus-line-select');
+      
+      Array.from(select.options).forEach(opt => {
+        if (opt.value === '') return;
+        opt.style.display = opt.text.toLowerCase().includes(filtro) ? '' : 'none';
+      });
+    }
+
+    async function mostrarRecorridoColectivo() {
+      const linea = document.getElementById('bus-line-select').value;
+      if (!linea) {
+        showToast('Seleccione una línea');
+        return;
+      }
+
+      showToast('Cargando recorrido...');
+
+      try {
+        // Filtrar las rutas de la línea seleccionada
+        const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === linea);
+        
+        // Obtener números de cámara del recorrido
+        const cameraNumbers = routeCameras.map(route => route['Nº Camara'] || route['NÂº Camara']);
+        
+        // Encontrar las cámaras con sus coordenadas
+        const camerasOnRoute = camarasData.filter(cam => cameraNumbers.includes(cam.NUMERO));
+
+        if (busRouteLayer) map.removeLayer(busRouteLayer);
+
+        if (camerasOnRoute.length > 0) {
+          busRouteLayer = L.layerGroup();
+          const coords = [];
+
+          camerasOnRoute.forEach((camara, idx) => {
+            const lat = camara.latitud;
+            const lng = camara.longitud;
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+              coords.push([lat, lng]);
+              
+              // Marcador de cámara
+              L.marker([lat, lng], {
+                icon: L.divIcon({
+                  className: 'camera-icon bus-route-camera',
+                  html: `<div style="background:#ff6600;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${camara.NUMERO}</div>`,
+                  iconSize: [28, 28],
+                  iconAnchor: [14, 14]
+                })
+              }).bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>Línea: ${linea}<br>${camara.Nombre || ''}`).addTo(busRouteLayer);
+            }
+          });
+
+          // Dibujar línea conectando las cámaras (en orden)
+          if (coords.length > 1) {
+            L.polyline(coords, {
+              color: '#ff6600',
+              weight: 3,
+              opacity: 0.7,
+              dashArray: '10, 5'
+            }).addTo(busRouteLayer);
+          }
+
+          busRouteLayer.addTo(map);
+          
+          // Centrar en el recorrido
+          if (coords.length > 0) {
+            const bounds = L.latLngBounds(coords);
+            map.fitBounds(bounds, { padding: [50, 50] });
+          }
+
+          closePanel();
+          showToast(`Línea ${linea}: ${camerasOnRoute.length} cámaras`);
+        } else {
+          showToast('No se encontraron cámaras en el recorrido');
+        }
+      } catch (error) {
+        showToast('Error cargando recorrido');
+        console.error(error);
+      }
+    }
+
+    // ========================================
+    // CÁMARAS LPR
+    // ========================================
+    function mostrarRadioLPR() {
+      const selectedCameraId = document.getElementById('lpr-camera-select').value;
+      if (!selectedCameraId) {
+        showToast('Seleccione una cámara LPR');
+        return;
+      }
+
+      const selectedLprCamera = lprCamaras.find(c => c.NUMERO === selectedCameraId);
+      if (!selectedLprCamera) {
+        showToast('Cámara no encontrada');
+        return;
+      }
+
+      const lat = selectedLprCamera.latitud;
+      const lng = selectedLprCamera.longitud;
+      const center = L.latLng(lat, lng);
+
+      if (lprRadiusLayer) map.removeLayer(lprRadiusLayer);
+
+      lprRadiusLayer = L.layerGroup();
+
+      // Círculo ROJO de 2km (igual que el original)
+      L.circle([lat, lng], {
+        radius: 2000,
+        fillColor: '#f03',
+        color: 'red',
+        weight: 2,
+        fillOpacity: 0.2
+      }).addTo(lprRadiusLayer);
+
+      // Marcador de la cámara LPR seleccionada
+      const lprLabel = selectedLprCamera.LPR || 'LPR';
+      L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: 'lpr-selected-marker',
+          html: `<div style="background:#ff0000;min-width:32px;height:32px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:white;box-shadow:0 2px 10px rgba(255,0,0,0.5);padding:3px;">${selectedCameraId}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        }),
+        zIndexOffset: 1000
+      }).bindPopup(`<b>📷 Cámara LPR: ${selectedCameraId}</b><br>${selectedLprCamera.Nombre || ''}<br><i>${lprLabel}</i>`).addTo(lprRadiusLayer);
+
+      // Mostrar todas las cámaras dentro del radio de 2km
+      let camarasEnRadio = 0;
+      camarasData.forEach(cam => {
+        if (cam.NUMERO === selectedCameraId) return; // Skip la seleccionada
+        
+        const camLat = cam.latitud;
+        const camLng = cam.longitud;
+        if (!isNaN(camLat) && !isNaN(camLng)) {
+          const camPos = L.latLng(camLat, camLng);
+          const distancia = center.distanceTo(camPos);
+          if (distancia <= 2000) {
+            camarasEnRadio++;
+            const isLPR = cam.LPR && cam.LPR.trim() !== '' && cam.LPR.trim() !== '0';
+            const bgColor = isLPR ? '#ff6600' : '#1e88e5';
+            
+            L.marker([camLat, camLng], {
+              icon: L.divIcon({
+                className: isLPR ? 'lpr-camera-icon' : 'camera-icon',
+                html: `<div style="background:${bgColor};min-width:26px;height:26px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);padding:2px;">${cam.NUMERO}</div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+              })
+            }).bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(lprRadiusLayer);
+          }
+        }
+      });
+
+      lprRadiusLayer.addTo(map);
+      map.setView([lat, lng], 14);
+      closePanel();
+      showToast(`${camarasEnRadio} cámaras en radio 2km`);
+    }
+
+    // ========================================
+    // TOGGLE CÁMARAS
+    // ========================================
+    function toggleCamaras(e) {
+      if (e.target.checked) {
+        if (!camarasLayer) {
+          camarasLayer = L.markerClusterGroup();
+          
+          camarasData.forEach(cam => {
+            const lat = parseFloat(cam.latitud);
+            const lng = parseFloat(cam.longitud);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                  className: 'camera-icon',
+                  html: '<div style="background:#1e88e5;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">📹</div>',
+                  iconSize: [24, 24],
+                  iconAnchor: [12, 12]
+                })
+              });
+              marker.bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}`);
+              camarasLayer.addLayer(marker);
+            }
+          });
+        }
+        map.addLayer(camarasLayer);
+        showToast(`${camarasData.length} cámaras mostradas`);
+      } else {
+        if (camarasLayer) map.removeLayer(camarasLayer);
+      }
+    }
+
+    function toggleCamarasPrivadas(e) {
+      if (e.target.checked) {
+        if (!camarasPrivadasLayer) {
+          camarasPrivadasLayer = L.markerClusterGroup();
+          
+          camarasPrivadasData.forEach(cam => {
+            const lat = parseFloat(cam.latitud);
+            const lng = parseFloat(cam.longitud);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                  className: 'camera-private-icon',
+                  html: '<div style="background:#9c27b0;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">📷</div>',
+                  iconSize: [24, 24],
+                  iconAnchor: [12, 12]
+                })
+              });
+              marker.bindPopup(`<b>📷 Cámara Privada</b><br>${cam.Nombre || ''}`);
+              camarasPrivadasLayer.addLayer(marker);
+            }
+          });
+        }
+        map.addLayer(camarasPrivadasLayer);
+        showToast(`${camarasPrivadasData.length} cámaras privadas`);
+      } else {
+        if (camarasPrivadasLayer) map.removeLayer(camarasPrivadasLayer);
+      }
+    }
+
+    // ========================================
+    // MI UBICACIÓN
+    // ========================================
+    function irAMiUbicacion() {
+      if (!navigator.geolocation) {
+        showToast('Geolocalización no soportada');
+        return;
+      }
+
+      showToast('Obteniendo ubicación...');
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          
+          if (myLocationMarker) map.removeLayer(myLocationMarker);
+          
+          myLocationMarker = L.marker([latitude, longitude], {
+            icon: L.divIcon({
+              className: 'my-location',
+              html: '<div style="background:#4285f4;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(66,133,244,0.5);"></div>',
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            })
+          }).addTo(map);
+
+          map.setView([latitude, longitude], 17);
+          showToast('Ubicación encontrada');
+        },
+        (error) => {
+          showToast('No se pudo obtener ubicación');
+          console.error(error);
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+
+    // ========================================
+    // UTILIDADES
+    // ========================================
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
