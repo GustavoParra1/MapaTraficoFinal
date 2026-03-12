@@ -942,9 +942,9 @@
     }
 
     // ========================================
-    // BÚSQUEDA DE DIRECCIÓN (TomTom API - igual que el original)
+    // BÚSQUEDA DE DIRECCIÓN (Google Maps Geocoding API)
     // ========================================
-    const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
+    const GOOGLE_MAPS_API_KEY = 'AIzaSyC9Zl70EdPvHxgZCQVxbvCp8cJvEOsH9-0';
 
     async function buscarDireccion() {
       const address = document.getElementById('address-input').value.trim();
@@ -1031,29 +1031,31 @@
     }
 
     async function geocodeAddress(address) {
-      const biasLat = -38.00042;
-      const biasLon = -57.5562;
+      // Asegurar que el geocodificador entienda cruces de calles
+      // No modificar dirección - Google Maps entiende "Buenos Aires y [calle]"
+      const query = address.trim();
       
-      // 🔧 CORRECCIÓN ESPECIAL: "Buenos Aires y [calle]" - mutar a "BA" para evitar confusión con provincia
-      if (address.toLowerCase().includes('buenos aires y')) {
-        address = address.replace(/Buenos Aires\s+y/i, 'BA y');
-        console.log('[Buenos Aires Fix] 🔄 Mutado a:', address);
-      }
+      // Bounds para Mar del Plata: SW (-38.05, -57.62) a NE (-37.95, -57.52)
+      const bounds = '|-38.05,-57.62|-37.95,-57.52';
       
-      // Búsqueda simple
-      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+      // URL de Google Maps Geocoding API
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&bounds=${encodeURIComponent(bounds)}&components=country:AR&key=${GOOGLE_MAPS_API_KEY}`;
       
-      console.log('Buscando en TomTom:', url);
+      console.log('🔍 Geocoding con Google Maps:', query);
       
       try {
         const response = await fetch(url);
         const data = await response.json();
-        console.log('Respuesta TomTom:', data);
+        console.log('✅ Respuesta Google Maps:', data);
         
         if (data.results && data.results.length > 0) {
-          const position = data.results[0].position;
-          console.log(`✅ Geocoded '${address}' to:`, position);
-          return { lat: position.lat, lon: position.lon };
+          const location = data.results[0].geometry.location;
+          const formattedAddress = data.results[0].formatted_address;
+          console.log(`✅ Geocoded '${query}' to:`, location, 'Address:', formattedAddress);
+          return { lat: location.lat, lon: location.lng };
+        } else {
+          console.warn('⚠️ No results found for:', query);
+          if (data.status) console.log('Status:', data.status);
         }
       } catch (error) {
         console.error("Error geocoding address:", error);
