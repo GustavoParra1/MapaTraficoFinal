@@ -1355,6 +1355,11 @@ function createRankedIcon(rank, type) {
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc';
 
+// Normalizar texto: remover acentos y tildes
+function normalizeText(text) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 async function geocodeAddress(address) {
   const query = address.trim();
   
@@ -1380,9 +1385,12 @@ async function geocodeAddress(address) {
         const location = dataIntersection.results[0].geometry.location;
         const formattedAddress = dataIntersection.results[0].formatted_address;
         
-        // Validar que el resultado contenga AMBOS nombres de calles (no ambiguo)
-        const hasStreet1 = formattedAddress.toLowerCase().includes(street1.toLowerCase());
-        const hasStreet2 = formattedAddress.toLowerCase().includes(street2.toLowerCase());
+        // Validar que el resultado contenga AMBOS nombres de calles (sin acentos)
+        const normalizedAddress = normalizeText(formattedAddress);
+        const normalizedStreet1 = normalizeText(street1);
+        const normalizedStreet2 = normalizeText(street2);
+        const hasStreet1 = normalizedAddress.includes(normalizedStreet1);
+        const hasStreet2 = normalizedAddress.includes(normalizedStreet2);
         
         if (hasStreet1 && hasStreet2) {
           console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
