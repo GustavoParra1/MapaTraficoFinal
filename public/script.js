@@ -1355,20 +1355,28 @@ function createRankedIcon(rank, type) {
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 
 async function geocodeAddress(address) {
-  const biasLat = -38.00042;
-  const biasLon = -57.5562;
-  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&lat=${biasLat}&lon=${biasLon}&radius=50000`;
+  const query = address.trim();
+  
+  // Usar Google Maps Geocoding API
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+  
   try {
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.results && data.results.length > 0) {
-          const position = data.results[0].position;
-          console.log(`Geocoded '${address}' to:`, position);
-          return { lat: position.lat, lon: position.lon };
-      }
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      const location = data.results[0].geometry.location;
+      const formattedAddress = data.results[0].formatted_address;
+      console.log(`✅ Geocoded '${query}' to:`, location, '- Address:', formattedAddress);
+      return { lat: location.lat, lon: location.lng };
+    } else {
+      console.warn(`⚠️ No results found for: ${query}`);
+      if (data.status) console.log('Status:', data.status);
+    }
   } catch (error) {
-      console.error("Error geocoding address:", error);
+    console.error("Error geocoding address:", error);
   }
+  
   return null;
 }
 

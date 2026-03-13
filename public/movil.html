@@ -942,9 +942,9 @@
     }
 
     // ========================================
-    // BÚSQUEDA DE DIRECCIÓN (Nominatim + detección de cruces)
+    // BÚSQUEDA DE DIRECCIÓN (Google Maps Geocoding API)
     // ========================================
-    // Usa OpenStreetMap Nominatim API (gratuito, sin necesidad de API key)
+    const GOOGLE_MAPS_API_KEY = 'AIzaSyC9Zl70EdPvHxgZCQVxbvCp8cJvEOsH9-0';
 
     async function buscarDireccion() {
       const address = document.getElementById('address-input').value.trim();
@@ -1033,73 +1033,24 @@
     async function geocodeAddress(address) {
       const query = address.trim();
       
-      // Detectar si es una búsqueda de cruce (formato: "calle y calle" o "calle & calle")
-      const intersectionMatch = query.match(/^(.+?)\s+(?:y|&)\s+(.+?)(?:,|$)/i);
+      // Usar Google Maps Geocoding API
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
       
-      if (intersectionMatch) {
-        // Es un cruce - buscar ambas calles y calcular intersección
-        const street1 = intersectionMatch[1].trim();
-        const street2 = intersectionMatch[2].trim();
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
         
-        console.log(`🔍 Buscando intersección: "${street1}" y "${street2}"`);
-        
-        try {
-          // Buscar primera calle
-          const url1 = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-          const res1 = await fetch(url1, {
-            headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-          });
-          const data1 = await res1.json();
-          
-          // Buscar segunda calle
-          const url2 = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(street2 + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-          const res2 = await fetch(url2, {
-            headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-          });
-          const data2 = await res2.json();
-          
-          if (data1.length > 0 && data2.length > 0) {
-            const p1 = data1[0];
-            const p2 = data2[0];
-            
-            console.log(`   ✅ ${street1}: ${p1.lat}, ${p1.lon}`);
-            console.log(`   ✅ ${street2}: ${p2.lat}, ${p2.lon}`);
-            
-            // Calcular punto medio (aproximación de intersección)
-            const lat = (parseFloat(p1.lat) + parseFloat(p2.lat)) / 2;
-            const lon = (parseFloat(p1.lon) + parseFloat(p2.lon)) / 2;
-            
-            console.log(`   🎯 Intersección encontrada: ${lat}, ${lon}`);
-            return { lat, lon };
-          } else {
-            console.warn('⚠️ No se encontró una o ambas calles');
-            if (data1.length === 0) console.log(`   ❌ ${street1} no encontrada`);
-            if (data2.length === 0) console.log(`   ❌ ${street2} no encontrada`);
-          }
-        } catch (error) {
-          console.error("Error buscando intersección:", error);
+        if (data.results && data.results.length > 0) {
+          const location = data.results[0].geometry.location;
+          const formattedAddress = data.results[0].formatted_address;
+          console.log(`✅ Geocoded '${query}' to:`, location, '- Address:', formattedAddress);
+          return { lat: location.lat, lon: location.lng };
+        } else {
+          console.warn(`⚠️ No results found for: ${query}`);
+          if (data.status) console.log('Status:', data.status);
         }
-      } else {
-        // Es una dirección normal - buscar en Nominatim
-        console.log(`🔍 Buscando dirección: "${query}"`);
-        
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-          const response = await fetch(url, {
-            headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-          });
-          const data = await response.json();
-          
-          if (data && data.length > 0) {
-            const result = data[0];
-            console.log(`   ✅ ${result.display_name}`);
-            return { lat: parseFloat(result.lat), lon: parseFloat(result.lon) };
-          } else {
-            console.warn('⚠️ Dirección no encontrada:', query);
-          }
-        } catch (error) {
-          console.error("Error geocoding address:", error);
-        }
+      } catch (error) {
+        console.error("Error geocoding address:", error);
       }
       
       return null;
