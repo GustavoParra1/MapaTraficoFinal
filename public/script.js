@@ -1353,6 +1353,7 @@ function createRankedIcon(rank, type) {
 }
 
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc';
 
 async function geocodeAddress(address) {
   const query = address.trim();
@@ -1361,65 +1362,61 @@ async function geocodeAddress(address) {
   const intersectionMatch = query.match(/^(.+?)\s+(?:y|&)\s+(.+?)$/i);
   
   if (intersectionMatch) {
-    // Es un cruce - buscar ambas calles y calcular intersección
+    // Es un cruce - buscar ambas calles con Google Maps y calcular intersección
     const street1 = intersectionMatch[1].trim();
     const street2 = intersectionMatch[2].trim();
     
     console.log(`🔍 Buscando intersección: "${street1}" y "${street2}"`);
     
     try {
-      // Buscar primera calle en Nominatim
-      const url1 = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-      const res1 = await fetch(url1, {
-        headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-      });
+      // Buscar primera calle
+      const url1 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const res1 = await fetch(url1);
       const data1 = await res1.json();
       
-      // Buscar segunda calle en Nominatim
-      const url2 = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(street2 + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-      const res2 = await fetch(url2, {
-        headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-      });
+      // Buscar segunda calle
+      const url2 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street2 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const res2 = await fetch(url2);
       const data2 = await res2.json();
       
-      if (data1 && data1.length > 0 && data2 && data2.length > 0) {
-        const loc1 = data1[0];
-        const loc2 = data2[0];
+      if (data1.results && data1.results.length > 0 && data2.results && data2.results.length > 0) {
+        const loc1 = data1.results[0].geometry.location;
+        const loc2 = data2.results[0].geometry.location;
         
-        console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lon}`);
-        console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lon}`);
+        console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lng}`);
+        console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lng}`);
         
         // Calcular punto medio (aproximación de intersección)
-        const lat = (parseFloat(loc1.lat) + parseFloat(loc2.lat)) / 2;
-        const lon = (parseFloat(loc1.lon) + parseFloat(loc2.lon)) / 2;
+        const lat = (loc1.lat + loc2.lat) / 2;
+        const lon = (loc1.lng + loc2.lng) / 2;
         
         console.log(`   🎯 Intersección encontrada: ${lat}, ${lon}`);
         return { lat, lon };
       } else {
         console.warn('⚠️ No se encontró una o ambas calles');
-        if (!data1 || data1.length === 0) console.log(`   ❌ ${street1} no encontrada`);
-        if (!data2 || data2.length === 0) console.log(`   ❌ ${street2} no encontrada`);
+        if (!data1.results || data1.results.length === 0) console.log(`   ❌ ${street1} no encontrada`);
+        if (!data2.results || data2.results.length === 0) console.log(`   ❌ ${street2} no encontrada`);
       }
     } catch (error) {
       console.error("Error buscando intersección:", error);
     }
   } else {
-    // Es una dirección normal - buscar en Nominatim
+    // Es una dirección normal - buscar en Google Maps
     console.log(`🔍 Buscando dirección: "${query}"`);
     
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&format=json&limit=1`;
-      const response = await fetch(url, {
-        headers: { 'User-Agent': 'MapaTrafico-MDP/1.0' }
-      });
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const response = await fetch(url);
       const data = await response.json();
       
-      if (data && data.length > 0) {
-        const result = data[0];
-        console.log(`   ✅ ${result.display_name}`);
-        return { lat: parseFloat(result.lat), lon: parseFloat(result.lon) };
+      if (data.results && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        const formattedAddress = data.results[0].formatted_address;
+        console.log(`   ✅ ${formattedAddress}`);
+        return { lat: location.lat, lon: location.lng };
       } else {
         console.warn(`⚠️ No results found for: ${query}`);
+        if (data.status) console.log('Status:', data.status);
       }
     } catch (error) {
       console.error("Error geocoding address:", error);
