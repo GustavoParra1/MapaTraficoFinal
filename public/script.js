@@ -1426,7 +1426,7 @@ async function geocodeAddress(address) {
         const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
         console.log(`   📏 Distancia entre calles: ${distancia.toFixed(0)}m`);
         
-        if (distancia > 800) {
+        if (distancia > 500) {
           console.warn(`   ❌ Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
           return null; // Calles paralelas, no es una intersección válida
         }
