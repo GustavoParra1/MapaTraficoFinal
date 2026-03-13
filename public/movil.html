@@ -961,13 +961,20 @@
         
         if (location) {
           // Limpiar búsquedas anteriores
-          if (searchMarker) map.removeLayer(searchMarker);
-          if (addressSearchLayer) map.removeLayer(addressSearchLayer);
-          if (addressCircleLayer) map.removeLayer(addressCircleLayer);
+          try {
+            if (addressSearchLayer && map.hasLayer(addressSearchLayer)) {
+              map.removeLayer(addressSearchLayer);
+            }
+            if (addressCircleLayer && map.hasLayer(addressCircleLayer)) {
+              map.removeLayer(addressCircleLayer);
+            }
+          } catch (e) {
+            console.warn('Error limpiando capas anteriores:', e);
+          }
           
           const center = L.latLng(location.lat, location.lon);
           
-          // Crear capa para cámaras cercanas
+          // Crear capa para cámaras cercanas y marcadores
           addressSearchLayer = L.layerGroup();
           addressCircleLayer = L.layerGroup();
           
@@ -980,16 +987,21 @@
             weight: 2
           }).addTo(addressCircleLayer);
           
-          // Marcador de la dirección buscada
+          // Marcador de la dirección buscada - crear con DivIcon
           searchMarker = L.marker([location.lat, location.lon], {
             icon: L.divIcon({
               className: 'search-marker',
-              html: '<div style="background:#ff4444;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">📍</div>',
-              iconSize: [24, 24],
-              iconAnchor: [12, 12]
+              html: '<div style="background:#ff4444;width:30px;height:30px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;z-index:1000;">📍</div>',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
+              popupAnchor: [0, -15]
             })
-          }).addTo(addressSearchLayer);
+          });
+          
           searchMarker.bindPopup(`<b>📍 ${address}</b>`);
+          searchMarker.addTo(addressSearchLayer);
+          
+          console.log('✅ Marcador añadido a capa');
           
           // Buscar y mostrar cámaras cercanas (500m) con número visible
           let camarasCercanas = 0;
@@ -1016,8 +1028,11 @@
             }
           });
           
+          // Agregar capas al mapa
           addressCircleLayer.addTo(map);
           addressSearchLayer.addTo(map);
+          
+          // Centrar mapa en la dirección
           map.setView([location.lat, location.lon], 16);
           closePanel();
           showToast(`${camarasCercanas} cámaras en 500m`);
