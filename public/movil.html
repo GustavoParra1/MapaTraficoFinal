@@ -1045,6 +1045,18 @@
       }
     }
 
+    // Calcular distancia entre dos puntos (Haversine - en metros)
+    function calcularDistancia(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c * 1000; // Convertir a metros
+    }
+    
     async function geocodeAddress(address) {
       const query = address.trim();
       
@@ -1091,6 +1103,15 @@
             
             console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lng}`);
             console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lng}`);
+            
+            // Validar distancia entre calles
+            const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
+            console.log(`   📏 Distancia entre calles: ${distancia.toFixed(0)}m`);
+            
+            if (distancia > 800) {
+              console.warn(`   ❌ Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
+              return null; // Calles paralelas, no es una intersección válida
+            }
             
             // Calcular punto medio (aproximación de intersección)
             const lat = (loc1.lat + loc2.lat) / 2;

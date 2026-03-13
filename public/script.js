@@ -1402,6 +1402,15 @@ async function geocodeAddress(address) {
         console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lng}`);
         console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lng}`);
         
+        // Validar distancia entre calles
+        const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
+        console.log(`   📏 Distancia entre calles: ${distancia.toFixed(0)}m`);
+        
+        if (distancia > 800) {
+          console.warn(`   ❌ Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
+          return null; // Calles paralelas, no es una intersección válida
+        }
+        
         // Calcular punto medio (aproximación de intersección)
         const lat = (loc1.lat + loc2.lat) / 2;
         const lon = (loc1.lng + loc2.lng) / 2;
