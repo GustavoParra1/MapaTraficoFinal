@@ -1081,13 +1081,25 @@
           if (dataIntersection.results && dataIntersection.results.length > 0) {
             const location = dataIntersection.results[0].geometry.location;
             const formattedAddress = dataIntersection.results[0].formatted_address;
-            console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
-            console.log(`   📍 ${location.lat}, ${location.lng}`);
-            return { lat: location.lat, lon: location.lng };
+            
+            // Validar que el resultado contenga AMBOS nombres de calles (no ambiguo)
+            const hasStreet1 = formattedAddress.toLowerCase().includes(street1.toLowerCase());
+            const hasStreet2 = formattedAddress.toLowerCase().includes(street2.toLowerCase());
+            
+            if (hasStreet1 && hasStreet2) {
+              console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
+              console.log(`   📍 ${location.lat}, ${location.lng}`);
+              return { lat: location.lat, lon: location.lng };
+            } else {
+              console.log(`   ⚠️ Resultado ambiguo (contiene: ${formattedAddress})`);
+              console.log(`   ℹ️ Intentando búsqueda por separado...`);
+            }
           }
           
-          // Si no encuentra, buscar cada calle por separado y calcular punto medio
-          console.log('   ℹ️ No encontrada directamente, intentando punto medio...');
+          // Si no encuentra o resultado fue ambiguo, buscar cada calle por separado y calcular punto medio
+          if (!dataIntersection.results || dataIntersection.results.length === 0) {
+            console.log('   ℹ️ No encontrada directamente, intentando punto medio...');
+          }
           
           const url1 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
           const res1 = await fetch(url1);
