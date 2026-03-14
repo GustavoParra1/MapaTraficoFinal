@@ -1373,15 +1373,28 @@ async function geocodeWithFallback(streetName) {
   
   try {
     // Fallback a Nominatim si Google Maps falló
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(streetName)}&city=Mar%20del%20Plata&country=Argentina&format=json`;
+    // Remover puntos de la calle para mejor compatibilidad con Nominatim
+    const streetForSearch = streetName.replace(/\./g, '');
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(streetForSearch)}&city=Mar%20del%20Plata&country=Argentina&format=json`;
+    
+    console.log(`   🔍 [Nominatim] Buscando: ${streetForSearch}`);
     const nominatimResponse = await fetch(nominatimUrl);
     const nominatimData = await nominatimResponse.json();
     
+    console.log(`   📊 [Nominatim] Respuesta recibida:`, nominatimData.length, 'resultados');
+    
     if (nominatimData && nominatimData.length > 0) {
       const loc = nominatimData[0];
-      console.log(`   📍 [Nominatim] Respuesta:`, { lat: loc.lat, lon: loc.lon });
-      console.log(`   ✅ [Nominatim] ${streetName}`);
-      return { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
+      const lat = parseFloat(loc.lat);
+      const lon = parseFloat(loc.lon);
+      
+      console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
+      
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return { lat, lon };
+      } else {
+        console.warn(`   ❌ Coordinadas inválidas de Nominatim: lat=${loc.lat}, lon=${loc.lon}`);
+      }
     }
   } catch (error) {
     console.warn(`   ⚠️ Nominatim error for ${streetName}:`, error);
@@ -6201,22 +6214,8 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
 
 // ============================================
 // FUNCIÓN AUXILIAR: CALCULAR DISTANCIA
+// (Función duplicada removida - ver línea 1408)
 // ============================================
-function calcularDistancia(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // Radio de la Tierra en metros
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // Distancia en metros
-}
-
 
     case 'concentracion_siniestros': {
       await loadSiniestrosData();

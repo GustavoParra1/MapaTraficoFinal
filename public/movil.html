@@ -1076,15 +1076,28 @@
       
       try {
         // Fallback a Nominatim si Google Maps falló
-        const nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(streetName)}&city=Mar%20del%20Plata&country=Argentina&format=json`;
+        // Remover puntos de la calle para mejor compatibilidad con Nominatim
+        const streetForSearch = streetName.replace(/\./g, '');
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(streetForSearch)}&city=Mar%20del%20Plata&country=Argentina&format=json`;
+        
+        console.log(`   🔍 [Nominatim] Buscando: ${streetForSearch}`);
         const nominatimResponse = await fetch(nominatimUrl);
         const nominatimData = await nominatimResponse.json();
         
+        console.log(`   📊 [Nominatim] Respuesta recibida:`, nominatimData.length, 'resultados');
+        
         if (nominatimData && nominatimData.length > 0) {
           const loc = nominatimData[0];
-          console.log(`   📍 [Nominatim] Respuesta:`, { lat: loc.lat, lon: loc.lon });
-          console.log(`   ✅ [Nominatim] ${streetName}`);
-          return { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
+          const lat = parseFloat(loc.lat);
+          const lon = parseFloat(loc.lon);
+          
+          console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
+          
+          if (!isNaN(lat) && !isNaN(lon)) {
+            return { lat, lon };
+          } else {
+            console.warn(`   ❌ Coordinadas inválidas de Nominatim: lat=${loc.lat}, lon=${loc.lon}`);
+          }
         }
       } catch (error) {
         console.warn(`   ⚠️ Nominatim error for ${streetName}:`, error);
