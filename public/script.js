@@ -1354,6 +1354,27 @@ function createRankedIcon(rank, type) {
 
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
 
+// Expandir abreviaciones comunes en nombres de calles
+function expandAbbreviations(streetName) {
+  let expanded = streetName;
+  
+  // Diccionario de abreviaciones frecuentes en Argentina
+  const abbreviations = {
+    ' B\\.' : ' BAUTISTA ',
+    ' B\\s' : ' BAUTISTA ',
+    ' Av\\.' : ' AVENIDA ',
+    ' Av ' : ' AVENIDA ',
+    ' Pje\\.' : ' PASAJE ',
+    ' Carr\\.' : ' CARRERA ',
+  };
+  
+  for (const [abbr, full] of Object.entries(abbreviations)) {
+    expanded = expanded.replace(new RegExp(abbr, 'gi'), full);
+  }
+  
+  return expanded.replace(/\s+/g, ' ').trim(); // Limpiar espacios duplicados
+}
+
 // Función para geocodificar con fallback a Nominatim
 async function geocodeWithFallback(streetName) {
   try {
@@ -1373,15 +1394,28 @@ async function geocodeWithFallback(streetName) {
   
   try {
     // Fallback a Nominatim si Google Maps falló
-    // Remover puntos de la calle para mejor compatibilidad con Nominatim
-    const streetForSearch = streetName.replace(/\./g, '');
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(streetForSearch)}&city=Mar%20del%20Plata&country=Argentina&format=json`;
+    // Remover puntos y expandir abreviaciones
+    let streetForSearch = streetName.replace(/\./g, '');
+    const expandedStreet = expandAbbreviations(streetForSearch);
     
-    console.log(`   🔍 [Nominatim] Buscando: ${streetForSearch}`);
-    const nominatimResponse = await fetch(nominatimUrl);
-    const nominatimData = await nominatimResponse.json();
+    console.log(`   🔍 [Nominatim] Buscando: ${expandedStreet} (original: ${streetName})`);
+    
+    // Primero intentar búsqueda completa sin filtrar demasiado por ciudad
+    let nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(expandedStreet + " Mar del Plata Argentina")}&format=json&limit=5`;
+    
+    let nominatimResponse = await fetch(nominatimUrl);
+    let nominatimData = await nominatimResponse.json();
     
     console.log(`   📊 [Nominatim] Respuesta recibida:`, nominatimData.length, 'resultados');
+    
+    // Si no encuentra, intentar sin la ciudad
+    if (!nominatimData || nominatimData.length === 0) {
+      console.log(`   🔄 [Nominatim] Reintentando sin ciudad específica...`);
+      nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(expandedStreet)}&country=Argentina&format=json&limit=5`;
+      nominatimResponse = await fetch(nominatimUrl);
+      nominatimData = await nominatimResponse.json();
+      console.log(`   📊 [Nominatim] Segunda búsqueda: ${nominatimData.length} resultados`);
+    }
     
     if (nominatimData && nominatimData.length > 0) {
       const loc = nominatimData[0];
