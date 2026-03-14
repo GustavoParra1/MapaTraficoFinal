@@ -1419,15 +1419,22 @@ async function geocodeWithFallback(streetName) {
     
     if (nominatimData && nominatimData.length > 0) {
       const loc = nominatimData[0];
-      const lat = parseFloat(loc.lat);
-      const lon = parseFloat(loc.lon);
       
-      console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
+      // VALIDACIÓN CRÍTICA: Asegurarse de que ambos campos existen
+      const latStr = String(loc.lat || '').trim();
+      const lonStr = String(loc.lon || '').trim();
       
-      if (!isNaN(lat) && !isNaN(lon)) {
+      const lat = latStr ? parseFloat(latStr) : NaN;
+      const lon = lonStr ? parseFloat(lonStr) : NaN;
+      
+      console.log(`   🔍 [DEBUG] Raw values: lat="${loc.lat}", lon="${loc.lon}"`);
+      console.log(`   🔍 [DEBUG] Parsed: lat=${lat}, lon=${lon}, isNaN(lat)=${isNaN(lat)}, isNaN(lon)=${isNaN(lon)}`);
+      
+      if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+        console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
         return { lat, lon };
       } else {
-        console.warn(`   ❌ Coordinadas inválidas de Nominatim: lat=${loc.lat}, lon=${loc.lon}`);
+        console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lon=${lon}`);
       }
     }
   } catch (error) {

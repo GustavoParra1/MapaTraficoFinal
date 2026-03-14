@@ -1122,59 +1122,22 @@ async function geocodeWithFallback(streetName) {
         
         if (nominatimData && nominatimData.length > 0) {
           const loc = nominatimData[0];
-          const lat = parseFloat(loc.lat);
-          const lon = parseFloat(loc.lon);
-          
-          console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
-          
-          if (!isNaN(lat) && !isNaN(lon)) {
-            return { lat, lon };
-          } else {
-            console.warn(`   ❌ Coordinadas inválidas de Nominatim: lat=${loc.lat}, lon=${loc.lon}`);
-          }
-        }
-      } catch (error) {
-        console.warn(`   ⚠️ Nominatim error for ${streetName}:`, error);
-      }
       
-      console.warn(`   ❌ ${streetName} no encontrada (Google + Nominatim)`);
-      return null;
-    }
-    
-    // Normalizar texto: remover acentos y tildes
-    function normalizeText(text) {
-      return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    }
-    
-    async function geocodeAddress(address) {
-      const query = address.trim();
+      // VALIDACIÓN CRÍTICA: Asegurarse de que ambos campos existen
+      const latStr = String(loc.lat || '').trim();
+      const lonStr = String(loc.lon || '').trim();
       
-      // Detectar si es una búsqueda de cruce (formato: "calle y calle" o "calle & calle")
-      const intersectionMatch = query.match(/^(.+?)\s+(?:y|&)\s+(.+?)$/i);
+      const lat = latStr ? parseFloat(latStr) : NaN;
+      const lon = lonStr ? parseFloat(lonStr) : NaN;
       
-      if (intersectionMatch) {
-        // Es un cruce - intentar buscar como "intersection" primero
-        const street1 = intersectionMatch[1].trim();
-        const street2 = intersectionMatch[2].trim();
-        
-        console.log(`🔍 Buscando intersección: "${street1}" y "${street2}"`);
-        
-        try {
-          // Primero intentar buscar la intersección como una sola búsqueda
-          const intersectionQuery = `${street1} y ${street2}, Mar del Plata, Argentina`;
-          const urlIntersection = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(intersectionQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
-          
-          const resIntersection = await fetch(urlIntersection);
-          const dataIntersection = await resIntersection.json();
-          
-          if (dataIntersection.results && dataIntersection.results.length > 0) {
-            const location = dataIntersection.results[0].geometry.location;
-            const formattedAddress = dataIntersection.results[0].formatted_address;
-            
-            // Validar que el resultado contenga AMBOS nombres de calles (sin acentos)
-            const normalizedAddress = normalizeText(formattedAddress);
-            const normalizedStreet1 = normalizeText(street1);
-            const normalizedStreet2 = normalizeText(street2);
+      console.log(`   🔍 [DEBUG] Raw values: lat="${loc.lat}", lon="${loc.lon}"`);
+      console.log(`   🔍 [DEBUG] Parsed: lat=${lat}, lon=${lon}, isNaN(lat)=${isNaN(lat)}, isNaN(lon)=${isNaN(lon)}`);
+      
+      if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+        console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
+        return { lat, lon };
+      } else {
+        console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lon=${lon}`);
             const hasStreet1 = normalizedAddress.includes(normalizedStreet1);
             const hasStreet2 = normalizedAddress.includes(normalizedStreet2);
             
