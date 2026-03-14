@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -1177,9 +1177,9 @@ async function geocodeWithFallback(streetName) {
             
             // Calcular punto medio (aproximación de intersección)
             const lat = (loc1.lat + loc2.lat) / 2;
-            const lng = (loc1.lng + loc2.lng) / 2;
+            const lon = (loc1.lng + loc2.lng) / 2;
             
-            console.log(`   🎯 Punto medio: ${lat}, ${lng}`);
+            console.log(`   🎯 Punto medio: ${lat}, ${lon}`);
             return { lat, lng };
           } else {
             console.warn('⚠️ No se encontró una o ambas calles');
