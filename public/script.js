@@ -1522,6 +1522,7 @@ async function geocodeAddress(address) {
         // Validar distancia entre calles
         const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
         console.log(`   📏 Distancia entre calles: ${distancia.toFixed(0)}m`);
+        console.log(`   🔍 DEBUG distancia: lat1=${loc1.lat}, lng1=${loc1.lng}, lat2=${loc2.lat}, lng2=${loc2.lng}`);
         
         if (distancia > 500) {
           console.warn(`   ❌ Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
