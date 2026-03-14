@@ -1434,7 +1434,7 @@ async function geocodeWithFallback(streetName) {
         console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lng=${lng}`);
         return { lat, lng };
       } else {
-        console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lon=${lon}`);
+        console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lng=${lng}`);
       }
     }
   } catch (error) {
@@ -1497,7 +1497,7 @@ async function geocodeAddress(address) {
         if (hasStreet1 && hasStreet2) {
           console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
           console.log(`   📍 ${location.lat}, ${location.lng}`);
-          return { lat: location.lat, lon: location.lng };
+          return { lat: location.lat, lng: location.lng };
         } else {
           console.log(`   ⚠️ Resultado ambiguo (contiene: ${formattedAddress})`);
           console.log(`   ℹ️ Intentando búsqueda por separado...`);
@@ -1531,10 +1531,10 @@ async function geocodeAddress(address) {
         
         // Calcular punto medio (aproximación de intersección)
         const lat = (loc1.lat + loc2.lat) / 2;
-        const lon = (loc1.lng + loc2.lng) / 2;
+        const lng = (loc1.lng + loc2.lng) / 2;
         
-        console.log(`   🎯 Punto medio: ${lat}, ${lon}`);
-        return { lat, lon };
+        console.log(`   🎯 Punto medio: ${lat}, ${lng}`);
+        return { lat, lng };
       } else {
         console.warn('⚠️ No se encontró una o ambas calles');
         if (!loc1Data) console.log(`   ❌ ${street1} no encontrada`);
