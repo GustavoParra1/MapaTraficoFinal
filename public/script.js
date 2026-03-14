@@ -1333,7 +1333,7 @@ let allSiniestrosData; // Variable para almacenar los datos de siniestros
 console.log("🟢 script.js cargado una sola vez");
 // ============================================
 // 1. CONFIGURACIÓN DE API KEY (AL PRINCIPIO)
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E'; // ✅ CORRECTO
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc'; // ✅ CORRECTO (misma que movil.html)
 
 
 function createRankedIcon(rank, type) {
