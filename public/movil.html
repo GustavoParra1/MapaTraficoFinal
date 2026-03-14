@@ -1082,6 +1082,7 @@
         
         if (nominatimData && nominatimData.length > 0) {
           const loc = nominatimData[0];
+          console.log(`   📍 [Nominatim] Respuesta:`, { lat: loc.lat, lon: loc.lon });
           console.log(`   ✅ [Nominatim] ${streetName}`);
           return { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
         }
