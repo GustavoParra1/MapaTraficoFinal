@@ -1045,8 +1045,61 @@
       }
     }
 
+    // ========================================
+    // 🔧 FUNCIÓN AUXILIAR: NORMALIZAR DIRECCIONES
+    // ========================================
+    function normalizarDireccion(texto) {
+      let normalizado = texto.trim();
+      
+      // 📋 DICCIONARIO DE ABREVIATURAS COMUNES EN LA COSTA
+      const abreviaturasMap = {
+        'F\\.\\s*U\\.': 'Félix U.',
+        'f\\.\\s*u\\.': 'félix u.',
+        'J\\.\\s*M\\.': 'José Manuel',
+        'j\\.\\s*m\\.': 'josé manuel',
+        'Av\\.\\s+': 'Avenida ',
+        'av\\.\\s+': 'avenida ',
+        'Clle\\.': 'Calle',
+        'clle\\.': 'calle',
+      };
+      
+      // 🔄 Aplicar reemplazos de abreviaturas
+      for (const [abbrev, completo] of Object.entries(abreviaturasMap)) {
+        const regex = new RegExp(abbrev, 'gi');
+        normalizado = normalizado.replace(regex, completo);
+      }
+      
+      // 🎯 ACENTOS: Corregir palabras sin acento
+      const acentosMap = {
+        'jose': 'José',
+        'JOSE': 'JOSÉ',
+        'felix': 'Félix',
+        'FELIX': 'FÉLIX',
+        'manuel': 'Manuel',
+        'MANUEL': 'MANUEL',
+        'camet': 'Camet',
+        'CAMET': 'CAMET',
+        'estrada': 'Estrada',
+        'ESTRADA': 'ESTRADA',
+        'colon': 'Colón',
+        'COLON': 'COLÓN',
+      };
+      
+      for (const [sin, con] of Object.entries(acentosMap)) {
+        // Reemplazar palabras completas (no partes de palabras)
+        const regexWord = new RegExp(`\\b${sin}\\b`, 'g');
+        normalizado = normalizado.replace(regexWord, con);
+      }
+      
+      console.log(`   🔧 Normalización: "${texto}" → "${normalizado}"`);
+      return normalizado;
+    }
+
     async function geocodeAddress(address) {
-      const query = address.trim();
+      let query = address.trim();
+      
+      // 🔧 NORMALIZAR la entrada ANTES de procesar
+      query = normalizarDireccion(query);
       
       // Detectar si es una búsqueda de cruce (formato: "calle y calle" o "calle & calle")
       const intersectionMatch = query.match(/^(.+?)\s+(?:y|&)\s+(.+?)$/i);
