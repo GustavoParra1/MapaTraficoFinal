@@ -1386,7 +1386,7 @@ async function geocodeWithFallback(streetName) {
     if (googleData.results && googleData.results.length > 0) {
       const loc = googleData.results[0].geometry.location;
       console.log(`   ✅ [Google] ${streetName}`);
-      return { lat: loc.lat, lon: loc.lng };
+      return { lat: loc.lat, lng: loc.lng };
     }
   } catch (error) {
     console.warn(`   ⚠️ Google Maps error for ${streetName}:`, error);
@@ -1425,14 +1425,14 @@ async function geocodeWithFallback(streetName) {
       const lonStr = String(loc.lon || '').trim();
       
       const lat = latStr ? parseFloat(latStr) : NaN;
-      const lon = lonStr ? parseFloat(lonStr) : NaN;
+      const lng = lonStr ? parseFloat(lonStr) : NaN;
       
       console.log(`   🔍 [DEBUG] Raw values: lat="${loc.lat}", lon="${loc.lon}"`);
-      console.log(`   🔍 [DEBUG] Parsed: lat=${lat}, lon=${lon}, isNaN(lat)=${isNaN(lat)}, isNaN(lon)=${isNaN(lon)}`);
+      console.log(`   🔍 [DEBUG] Parsed: lat=${lat}, lng=${lng}, isNaN(lat)=${isNaN(lat)}, isNaN(lng)=${isNaN(lng)}`);
       
-      if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
-        console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lon=${lon}`);
-        return { lat, lon };
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lng=${lng}`);
+        return { lat, lng };
       } else {
         console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lon=${lon}`);
       }
