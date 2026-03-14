@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CIMU M├│vil</title>
+  <title>CIMU Móvil</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
   <!-- Leaflet CSS -->
@@ -35,7 +35,7 @@
       z-index: 1;
     }
 
-    /* Bot├│n de men├║ flotante */
+    /* Botón de menú flotante */
     #menu-toggle {
       position: fixed;
       top: 15px;
@@ -59,7 +59,7 @@
       transform: scale(0.95);
     }
 
-    /* Panel de b├║squeda */
+    /* Panel de búsqueda */
     #search-panel {
       position: fixed;
       top: 0;
@@ -79,7 +79,7 @@
       left: 0;
     }
 
-    /* Overlay cuando el men├║ est├í abierto */
+    /* Overlay cuando el menú está abierto */
     #overlay {
       position: fixed;
       top: 0;
@@ -160,7 +160,7 @@
       transform: scale(0.98);
     }
 
-    /* Checkboxes para c├ímaras */
+    /* Checkboxes para cámaras */
     .camera-toggle {
       display: flex;
       align-items: center;
@@ -181,7 +181,7 @@
       flex: 1;
     }
 
-    /* T├¡tulo del panel */
+    /* Título del panel */
     .panel-title {
       color: white;
       font-size: 20px;
@@ -192,7 +192,7 @@
       border-bottom: 2px solid #0088ff;
     }
 
-    /* Bot├│n cerrar panel */
+    /* Botón cerrar panel */
     #close-panel {
       position: absolute;
       top: 20px;
@@ -296,7 +296,7 @@
       opacity: 1;
     }
 
-    /* Mi ubicaci├│n */
+    /* Mi ubicación */
     #my-location-btn {
       position: fixed;
       bottom: 30px;
@@ -316,7 +316,7 @@
       justify-content: center;
     }
 
-    /* Input con micr├│fono */
+    /* Input con micrófono */
     .input-with-mic {
       display: flex;
       gap: 8px;
@@ -366,76 +366,76 @@
   <!-- Mapa -->
   <div id="mapid"></div>
 
-  <!-- Bot├│n de men├║ -->
-  <button type="button" id="menu-toggle">Ôÿ░</button>
+  <!-- Botón de menú -->
+  <button type="button" id="menu-toggle">☰</button>
 
-  <!-- Bot├│n mi ubicaci├│n -->
-  <button type="button" id="my-location-btn">­ƒôì</button>
+  <!-- Botón mi ubicación -->
+  <button type="button" id="my-location-btn">📍</button>
 
   <!-- Overlay -->
   <div id="overlay"></div>
 
-  <!-- Panel de b├║squeda -->
+  <!-- Panel de búsqueda -->
   <div id="search-panel">
-    <button type="button" id="close-panel">Ô£ò</button>
-    <div class="panel-title">­ƒù║´©Å CIMU M├│vil</div>
+    <button type="button" id="close-panel">✕</button>
+    <div class="panel-title">🗺️ CIMU Móvil</div>
 
     <!-- Buscador de direcciones -->
     <div class="panel-section">
-      <h3>­ƒöì Buscar Direcci├│n</h3>
+      <h3>🔍 Buscar Dirección</h3>
       <div class="input-with-mic">
-        <input type="text" id="address-input" placeholder="Ej: Av. Col├│n 1234">
-        <button type="button" class="mic-button" id="address-mic-button" title="Reconocimiento de voz">­ƒÄñ</button>
+        <input type="text" id="address-input" placeholder="Ej: Av. Colón 1234">
+        <button type="button" class="mic-button" id="address-mic-button" title="Reconocimiento de voz">🎤</button>
       </div>
       <button type="button" id="search-button">Buscar</button>
     </div>
 
-    <!-- Buscador de c├ímaras -->
+    <!-- Buscador de cámaras -->
     <div class="panel-section">
-      <h3>­ƒô╣ Buscar C├ímara</h3>
+      <h3>📹 Buscar Cámara</h3>
       <div class="input-with-mic">
-        <input type="text" id="camera-input" placeholder="N├║mero de c├ímara...">
-        <button type="button" class="mic-button" id="camera-mic-button" title="Reconocimiento de voz">­ƒÄñ</button>
+        <input type="text" id="camera-input" placeholder="Número de cámara...">
+        <button type="button" class="mic-button" id="camera-mic-button" title="Reconocimiento de voz">🎤</button>
       </div>
-      <button type="button" id="go-to-camera-button">Ir a C├ímara</button>
+      <button type="button" id="go-to-camera-button">Ir a Cámara</button>
     </div>
 
-    <!-- L├¡neas de colectivo -->
+    <!-- Líneas de colectivo -->
     <div class="panel-section">
-      <h3>­ƒÜî L├¡neas de Colectivo</h3>
-      <input type="text" id="bus-line-search" placeholder="Buscar l├¡nea...">
+      <h3>🚌 Líneas de Colectivo</h3>
+      <input type="text" id="bus-line-search" placeholder="Buscar línea...">
       <select id="bus-line-select">
-        <option value="">Seleccione una l├¡nea</option>
+        <option value="">Seleccione una línea</option>
       </select>
       <button type="button" id="show-bus-route-button">Mostrar Recorrido</button>
     </div>
 
-    <!-- C├ímaras LPR -->
+    <!-- Cámaras LPR -->
     <div class="panel-section">
-      <h3>­ƒÜù C├ímaras LPR</h3>
+      <h3>🚗 Cámaras LPR</h3>
       <select id="lpr-camera-select">
-        <option value="">Seleccione c├ímara LPR</option>
+        <option value="">Seleccione cámara LPR</option>
       </select>
       <button type="button" id="show-lpr-radius-button">Mostrar Radio</button>
     </div>
 
     <!-- Toggles de capas -->
     <div class="panel-section">
-      <h3>­ƒôÀ Capas</h3>
+      <h3>📷 Capas</h3>
       <div class="camera-toggle">
         <input type="checkbox" id="camaras-checkbox">
-        <label for="camaras-checkbox">C├ímaras P├║blicas</label>
+        <label for="camaras-checkbox">Cámaras Públicas</label>
       </div>
       <div class="camera-toggle">
         <input type="checkbox" id="camaras-privadas-checkbox">
-        <label for="camaras-privadas-checkbox">C├ímaras Privadas</label>
+        <label for="camaras-privadas-checkbox">Cámaras Privadas</label>
       </div>
     </div>
 
-    <!-- Bot├│n Resetear -->
+    <!-- Botón Resetear -->
     <div class="panel-section" style="position: relative; z-index: 20;">
       <button type="button" id="reset-button" style="background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);">
-        ­ƒùæ´©Å Limpiar B├║squedas
+        🗑️ Limpiar Búsquedas
       </button>
     </div>
   </div>
@@ -467,12 +467,12 @@
     let lprRadiusLayer = null;
     let searchMarker = null;
     let myLocationMarker = null;
-    let addressSearchLayer = null; // Capa para c├ímaras cercanas a direcci├│n
-    let addressCircleLayer = null; // C├¡rculo de radio
-    let cameraSearchMarker = null; // Marcador de b├║squeda por n├║mero de c├ímara
+    let addressSearchLayer = null; // Capa para cámaras cercanas a dirección
+    let addressCircleLayer = null; // Círculo de radio
+    let cameraSearchMarker = null; // Marcador de búsqueda por número de cámara
 
     // ========================================
-    // INICIALIZACI├ôN
+    // INICIALIZACIÓN
     // ========================================
     document.addEventListener('DOMContentLoaded', async () => {
       initMap();
@@ -494,28 +494,28 @@
       // Capa base
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '┬® OpenStreetMap'
+        attribution: '© OpenStreetMap'
       }).addTo(map);
     }
 
     async function cargarDatos() {
       try {
-        // Cargar c├ímaras p├║blicas
+        // Cargar cámaras públicas
         const resCamaras = await fetch('Camaras.CSV1.csv');
         const textCamaras = await resCamaras.text();
         camarasData = parseCSV(textCamaras);
-        console.log(`Ô£à C├ímaras cargadas: ${camarasData.length}`);
+        console.log(`✅ Cámaras cargadas: ${camarasData.length}`);
 
-        // Cargar c├ímaras privadas (formato WKT diferente)
-        const resPrivadas = await fetch('c├ímaras privadas MGP- C├üMARAS PRIVADAS.csv');
+        // Cargar cámaras privadas (formato WKT diferente)
+        const resPrivadas = await fetch('cámaras privadas MGP- CÁMARAS PRIVADAS.csv');
         const textPrivadas = await resPrivadas.text();
         camarasPrivadasData = parseCSVPrivadas(textPrivadas);
-        console.log(`Ô£à C├ímaras privadas cargadas: ${camarasPrivadasData.length}`);
+        console.log(`✅ Cámaras privadas cargadas: ${camarasPrivadasData.length}`);
 
-        // Cargar l├¡neas de colectivo
+        // Cargar líneas de colectivo
         await cargarLineasColectivo();
 
-        // Cargar c├ímaras LPR
+        // Cargar cámaras LPR
         cargarCamarasLPR();
 
       } catch (error) {
@@ -553,18 +553,18 @@
           const obj = {};
           headers.forEach((h, idx) => obj[h] = values[idx] || '');
           
-          // Normalizar nombres de columnas (el CSV tiene Latitud, Longitud con may├║scula)
+          // Normalizar nombres de columnas (el CSV tiene Latitud, Longitud con mayúscula)
           const lat = obj.Latitud || obj.latitud;
           const lng = obj.Longitud || obj.longitud;
           
           if (lat && lng) {
-            // Convertir formato espa├▒ol (coma decimal) a n├║mero
+            // Convertir formato español (coma decimal) a número
             obj.latitud = parseFloat(lat.replace(',', '.'));
             obj.longitud = parseFloat(lng.replace(',', '.'));
             obj.NUMERO = obj['N CAMARA'] || obj.NUMERO || '';
             obj.Nombre = obj.Direccion || obj.Nombre || '';
             // Mantener columna LPR original (puede ser "LPR 1", "LPR 1 (OESTE)", etc.)
-            // Tambi├®n copiar 'Cant. Cam. LPR' si existe
+            // También copiar 'Cant. Cam. LPR' si existe
             obj['Cant. Cam. LPR'] = obj['Cant. Cam. LPR'] || '';
             
             if (!isNaN(obj.latitud) && !isNaN(obj.longitud)) {
@@ -588,10 +588,10 @@
           const lng = parseFloat(wktMatch[1]);
           const lat = parseFloat(wktMatch[2]);
           
-          // Extraer nombre despu├®s del WKT
+          // Extraer nombre después del WKT
           const restOfLine = line.replace(/POINT\s*\([^)]+\)[^,]*,/, '');
           const parts = restOfLine.split(',');
-          const nombre = parts[0]?.trim() || 'C├ímara Privada';
+          const nombre = parts[0]?.trim() || 'Cámara Privada';
 
           if (!isNaN(lat) && !isNaN(lng)) {
             data.push({
@@ -614,14 +614,14 @@
         
         // Parsear el CSV completo
         allBusRoutesData = parseCSVGenerico(text);
-        console.log(`­ƒÜî Rutas de colectivos cargadas: ${allBusRoutesData.length}`);
+        console.log(`🚌 Rutas de colectivos cargadas: ${allBusRoutesData.length}`);
         
-        // Extraer l├¡neas ├║nicas de la columna 'Linea Colectivo'
+        // Extraer líneas únicas de la columna 'Linea Colectivo'
         const lineas = [...new Set(allBusRoutesData.map(item => item['Linea Colectivo']))].filter(l => l).sort();
-        console.log(`­ƒÜî L├¡neas encontradas: ${lineas.join(', ')}`);
+        console.log(`🚌 Líneas encontradas: ${lineas.join(', ')}`);
 
         const select = document.getElementById('bus-line-select');
-        select.innerHTML = '<option value="">Seleccione una l├¡nea</option>';
+        select.innerHTML = '<option value="">Seleccione una línea</option>';
         
         lineas.forEach(linea => {
           const opt = document.createElement('option');
@@ -630,11 +630,11 @@
           select.appendChild(opt);
         });
       } catch (error) {
-        console.error('Error cargando l├¡neas:', error);
+        console.error('Error cargando líneas:', error);
       }
     }
 
-    // Parser gen├®rico para CSV con headers
+    // Parser genérico para CSV con headers
     function parseCSVGenerico(text) {
       const lines = text.split('\n');
       if (lines.length < 2) return [];
@@ -675,7 +675,7 @@
     let lprCamaras = [];
 
     function cargarCamarasLPR() {
-      // Funci├│n para verificar si una c├ímara tiene LPR (igual que el original)
+      // Función para verificar si una cámara tiene LPR (igual que el original)
       function hasLPR(camera) {
         // Verificar columna LPR (puede ser "LPR 1", "LPR 1 (OESTE)", etc.)
         if (camera.LPR && camera.LPR.trim() !== '' && camera.LPR.trim() !== '0') {
@@ -689,7 +689,7 @@
         return false;
       }
 
-      // Agrupar c├ímaras por ID y filtrar
+      // Agrupar cámaras por ID y filtrar
       const cameraMap = new Map();
       
       camarasData.forEach(camera => {
@@ -709,17 +709,17 @@
 
       lprCamaras = Array.from(cameraMap.values());
       
-      // Ordenar por n├║mero de c├ímara
+      // Ordenar por número de cámara
       lprCamaras.sort((a, b) => {
         const numA = parseInt(a.NUMERO) || 0;
         const numB = parseInt(b.NUMERO) || 0;
         return numA - numB;
       });
 
-      console.log(`­ƒôÀ C├ímaras LPR encontradas: ${lprCamaras.length}`);
+      console.log(`📷 Cámaras LPR encontradas: ${lprCamaras.length}`);
 
       const select = document.getElementById('lpr-camera-select');
-      select.innerHTML = '<option value="">Seleccione c├ímara LPR</option>';
+      select.innerHTML = '<option value="">Seleccione cámara LPR</option>';
       
       lprCamaras.forEach(cam => {
         const opt = document.createElement('option');
@@ -734,48 +734,48 @@
     // EVENT LISTENERS
     // ========================================
     function initEventListeners() {
-      // Toggle men├║
+      // Toggle menú
       document.getElementById('menu-toggle').addEventListener('click', togglePanel);
       document.getElementById('close-panel').addEventListener('click', closePanel);
       document.getElementById('overlay').addEventListener('click', closePanel);
 
-      // Buscar direcci├│n
+      // Buscar dirección
       document.getElementById('search-button').addEventListener('click', buscarDireccion);
       document.getElementById('address-input').addEventListener('keypress', e => {
         if (e.key === 'Enter') buscarDireccion();
       });
 
-      // Buscar c├ímara
+      // Buscar cámara
       document.getElementById('go-to-camera-button').addEventListener('click', irACamara);
       document.getElementById('camera-input').addEventListener('keypress', e => {
         if (e.key === 'Enter') irACamara();
       });
 
-      // L├¡nea de colectivo
+      // Línea de colectivo
       document.getElementById('show-bus-route-button').addEventListener('click', mostrarRecorridoColectivo);
       document.getElementById('bus-line-search').addEventListener('input', filtrarLineas);
 
       // LPR
       document.getElementById('show-lpr-radius-button').addEventListener('click', mostrarRadioLPR);
 
-      // C├ímaras toggles
+      // Cámaras toggles
       document.getElementById('camaras-checkbox').addEventListener('change', toggleCamaras);
       document.getElementById('camaras-privadas-checkbox').addEventListener('change', toggleCamarasPrivadas);
 
-      // Mi ubicaci├│n
+      // Mi ubicación
       document.getElementById('my-location-btn').addEventListener('click', irAMiUbicacion);
 
       // Reconocimiento de voz
       document.getElementById('address-mic-button').addEventListener('click', () => startVoiceRecognition('address-input'));
       document.getElementById('camera-mic-button').addEventListener('click', () => startVoiceRecognition('camera-input'));
 
-      // Resetear b├║squedas - usar touchend para mejor respuesta en m├│vil
+      // Resetear búsquedas - usar touchend para mejor respuesta en móvil
       const resetBtn = document.getElementById('reset-button');
       
       function handleReset(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('­ƒùæ´©Å Bot├│n limpiar activado');
+        console.log('🗑️ Botón limpiar activado');
         resetearBusquedas();
       }
       
@@ -793,7 +793,7 @@
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (!SpeechRecognition) {
-        showToast('ÔØî Reconocimiento de voz no disponible en este navegador');
+        showToast('❌ Reconocimiento de voz no disponible en este navegador');
         return;
       }
 
@@ -804,14 +804,14 @@
       // Configurar reconocimiento
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'es-AR'; // Espa├▒ol de Argentina
+      recognition.lang = 'es-AR'; // Español de Argentina
       
-      // Cambiar bot├│n a estado "escuchando"
+      // Cambiar botón a estado "escuchando"
       button.classList.add('listening');
-      button.textContent = 'ÔÅ║´©Å';
+      button.textContent = '⏺️';
 
       recognition.onstart = () => {
-        console.log('­ƒÄñ Escuchando...');
+        console.log('🎤 Escuchando...');
       };
 
       recognition.onresult = (event) => {
@@ -823,10 +823,10 @@
         
         if (transcript) {
           input.value = transcript.trim();
-          console.log('­ƒÄñ Reconocido:', transcript);
-          showToast('Ô£à ' + transcript);
+          console.log('🎤 Reconocido:', transcript);
+          showToast('✅ ' + transcript);
           
-          // Auto trigger search si es direcci├│n
+          // Auto trigger search si es dirección
           if (inputId === 'address-input') {
             setTimeout(buscarDireccion, 300);
           }
@@ -838,9 +838,9 @@
         let errorMsg = 'Error en reconocimiento de voz';
         
         if (event.error === 'no-speech') {
-          errorMsg = 'ÔÜá´©Å No se detect├│ voz. Intenta de nuevo.';
+          errorMsg = '⚠️ No se detectó voz. Intenta de nuevo.';
         } else if (event.error === 'network') {
-          errorMsg = 'ÔÜá´©Å Error de conexi├│n';
+          errorMsg = '⚠️ Error de conexión';
         }
         
         showToast(errorMsg);
@@ -848,45 +848,45 @@
 
       recognition.onend = () => {
         button.classList.remove('listening');
-        button.textContent = '­ƒÄñ';
-        console.log('­ƒÄñ Reconocimiento finalizado');
+        button.textContent = '🎤';
+        console.log('🎤 Reconocimiento finalizado');
       };
 
       recognition.start();
     }
 
     // ========================================
-    // RESETEAR B├ÜSQUEDAS
+    // RESETEAR BÚSQUEDAS
     // ========================================
     function resetearBusquedas() {
-      console.log('­ƒº╣ Ejecutando resetearBusquedas...');
+      console.log('🧹 Ejecutando resetearBusquedas...');
       
       // Guardar estado de checkboxes
       const camarasChecked = document.getElementById('camaras-checkbox').checked;
       const camarasPrivadasChecked = document.getElementById('camaras-privadas-checkbox').checked;
 
-      // Limpiar capa de c├ímaras cercanas (incluye searchMarker)
+      // Limpiar capa de cámaras cercanas (incluye searchMarker)
       if (addressSearchLayer) {
         map.removeLayer(addressSearchLayer);
         addressSearchLayer = null;
         searchMarker = null; // El marker estaba dentro del layer
-        console.log('Ô£à addressSearchLayer eliminado');
+        console.log('✅ addressSearchLayer eliminado');
       }
 
-      // Limpiar c├¡rculo de radio
+      // Limpiar círculo de radio
       if (addressCircleLayer) {
         map.removeLayer(addressCircleLayer);
         addressCircleLayer = null;
-        console.log('Ô£à addressCircleLayer eliminado');
+        console.log('✅ addressCircleLayer eliminado');
       }
 
-      // Limpiar searchMarker si est├í suelto (por si acaso)
+      // Limpiar searchMarker si está suelto (por si acaso)
       if (searchMarker) {
         map.removeLayer(searchMarker);
         searchMarker = null;
       }
 
-      // Limpiar marcador de b├║squeda de c├ímara
+      // Limpiar marcador de búsqueda de cámara
       if (cameraSearchMarker) {
         map.removeLayer(cameraSearchMarker);
         cameraSearchMarker = null;
@@ -904,7 +904,7 @@
         lprRadiusLayer = null;
       }
 
-      // Limpiar marcador de mi ubicaci├│n
+      // Limpiar marcador de mi ubicación
       if (myLocationMarker) {
         map.removeLayer(myLocationMarker);
         myLocationMarker = null;
@@ -925,7 +925,7 @@
       map.setView([-38.0055, -57.5426], 13);
 
       closePanel();
-      showToast('B├║squedas limpiadas');
+      showToast('Búsquedas limpiadas');
     }
 
     // ========================================
@@ -942,14 +942,14 @@
     }
 
     // ========================================
-    // B├ÜSQUEDA DE DIRECCI├ôN (Google Maps Geocoding API)
+    // BÚSQUEDA DE DIRECCIÓN (Google Maps Geocoding API)
     // ========================================
     const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc';
 
     async function buscarDireccion() {
       const address = document.getElementById('address-input').value.trim();
       if (!address) {
-        showToast('Ingrese una direcci├│n');
+        showToast('Ingrese una dirección');
         return;
       }
 
@@ -960,7 +960,7 @@
         console.log('Resultado geocode:', location);
         
         if (location) {
-          // Limpiar b├║squedas anteriores
+          // Limpiar búsquedas anteriores
           try {
             if (addressSearchLayer && map.hasLayer(addressSearchLayer)) {
               map.removeLayer(addressSearchLayer);
@@ -974,11 +974,11 @@
           
           const center = L.latLng(location.lat, location.lon);
           
-          // Crear capa para c├ímaras cercanas y marcadores
+          // Crear capa para cámaras cercanas y marcadores
           addressSearchLayer = L.layerGroup();
           addressCircleLayer = L.layerGroup();
           
-          // Dibujar c├¡rculo de 500m
+          // Dibujar círculo de 500m
           L.circle(center, {
             radius: 500,
             color: '#0088ff',
@@ -987,23 +987,23 @@
             weight: 2
           }).addTo(addressCircleLayer);
           
-          // Marcador de la direcci├│n buscada - crear con DivIcon
+          // Marcador de la dirección buscada - crear con DivIcon
           searchMarker = L.marker([location.lat, location.lon], {
             icon: L.divIcon({
               className: 'search-marker',
-              html: '<div style="background:#ff4444;width:30px;height:30px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;z-index:1000;">­ƒôì</div>',
+              html: '<div style="background:#ff4444;width:30px;height:30px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;z-index:1000;">📍</div>',
               iconSize: [30, 30],
               iconAnchor: [15, 15],
               popupAnchor: [0, -15]
             })
           });
           
-          searchMarker.bindPopup(`<b>­ƒôì ${address}</b>`);
+          searchMarker.bindPopup(`<b>📍 ${address}</b>`);
           searchMarker.addTo(addressSearchLayer);
           
-          console.log('Ô£à Marcador a├▒adido a capa');
+          console.log('✅ Marcador añadido a capa');
           
-          // Buscar y mostrar c├ímaras cercanas (500m) con n├║mero visible
+          // Buscar y mostrar cámaras cercanas (500m) con número visible
           let camarasCercanas = 0;
           camarasData.forEach(cam => {
             const camLat = cam.latitud;
@@ -1023,7 +1023,7 @@
                     iconSize: [28, 28],
                     iconAnchor: [14, 14]
                   })
-                }).bindPopup(`<b>­ƒô╣ C├ímara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(addressSearchLayer);
+                }).bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(addressSearchLayer);
               }
             }
           });
@@ -1032,169 +1032,100 @@
           addressCircleLayer.addTo(map);
           addressSearchLayer.addTo(map);
           
-          // Centrar mapa en la direcci├│n
+          // Centrar mapa en la dirección
           map.setView([location.lat, location.lon], 16);
           closePanel();
-          showToast(`${camarasCercanas} c├ímaras en 500m`);
+          showToast(`${camarasCercanas} cámaras en 500m`);
         } else {
-          showToast('Direcci├│n no encontrada');
+          showToast('Dirección no encontrada');
         }
       } catch (error) {
-        showToast('Error en la b├║squeda');
+        showToast('Error en la búsqueda');
         console.error('Error geocode:', error);
       }
     }
 
-    // Calcular distancia entre dos puntos (Haversine - en metros)
-    function calcularDistancia(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Radio de la Tierra en km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c * 1000; // Convertir a metros
-    }
-    
-// Expandir abreviaciones comunes en nombres de calles
-function expandAbbreviations(streetName) {
-  let expanded = streetName;
-  
-  // Diccionario de abreviaciones frecuentes en Argentina
-  const abbreviations = {
-    ' B\\.' : ' BAUTISTA ',
-    ' B\\s' : ' BAUTISTA ',
-    ' Av\\.' : ' AVENIDA ',
-    ' Av ' : ' AVENIDA ',
-    ' Pje\\.' : ' PASAJE ',
-    ' Carr\\.' : ' CARRERA ',
-  };
-  
-  for (const [abbr, full] of Object.entries(abbreviations)) {
-    expanded = expanded.replace(new RegExp(abbr, 'gi'), full);
-  }
-  
-  return expanded.replace(/\s+/g, ' ').trim(); // Limpiar espacios duplicados
-}
-
-// Funci├│n para geocodificar con fallback a Nominatim
-async function geocodeWithFallback(streetName) {
-  try {
-    // Primero intentar Google Maps
-    const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(streetName + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
-    const googleResponse = await fetch(googleUrl);
-    const googleData = await googleResponse.json();
-    
-    if (googleData.results && googleData.results.length > 0) {
-      const loc = googleData.results[0].geometry.location;
-      console.log(`   Ô£à [Google] ${streetName}`);
-      return { lat: loc.lat, lng: loc.lng };
-    }
-  } catch (error) {
-    console.warn(`   ÔÜá´©Å Google Maps error for ${streetName}:`, error);
-  }
-  
-  try {
-    // Fallback a Nominatim si Google Maps fall├│
-    // Remover puntos y expandir abreviaciones
-    let streetForSearch = streetName.replace(/\./g, '');
-    const expandedStreet = expandAbbreviations(streetForSearch);
-    
-    console.log(`   ­ƒöì [Nominatim] Buscando: ${expandedStreet} (original: ${streetName})`);
-    
-    // Primero intentar b├║squeda completa sin filtrar demasiado por ciudad
-    let nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(expandedStreet + " Mar del Plata Argentina")}&format=json&limit=5`;
-    
-    let nominatimResponse = await fetch(nominatimUrl);
-    let nominatimData = await nominatimResponse.json();
-    
-    console.log(`   ­ƒôè [Nominatim] Respuesta recibida:`, nominatimData.length, 'resultados');
-    
-    // Si no encuentra, intentar sin la ciudad
-    if (!nominatimData || nominatimData.length === 0) {
-      console.log(`   ­ƒöä [Nominatim] Reintentando sin ciudad espec├¡fica...`);
-      nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(expandedStreet)}&country=Argentina&format=json&limit=5`;
-      nominatimResponse = await fetch(nominatimUrl);
-      nominatimData = await nominatimResponse.json();
-      console.log(`   ­ƒôè [Nominatim] Segunda b├║squeda: ${nominatimData.length} resultados`);
-    }
+    async function geocodeAddress(address) {
+      const query = address.trim();
+      
+      // Detectar si es una búsqueda de cruce (formato: "calle y calle" o "calle & calle")
+      const intersectionMatch = query.match(/^(.+?)\s+(?:y|&)\s+(.+?)$/i);
+      
+      if (intersectionMatch) {
+        // Es un cruce - intentar buscar como "intersection" primero
+        const street1 = intersectionMatch[1].trim();
+        const street2 = intersectionMatch[2].trim();
         
-        if (nominatimData && nominatimData.length > 0) {
-          const loc = nominatimData[0];
-      
-      // VALIDACI├ôN CR├ìTICA: Asegurarse de que ambos campos existen
-      const latStr = String(loc.lat || '').trim();
-      const lonStr = String(loc.lon || '').trim();
-      
-      const lat = latStr ? parseFloat(latStr) : NaN;
-      const lng = lonStr ? parseFloat(lonStr) : NaN;
-      
-      console.log(`   ­ƒöì [DEBUG] Raw values: lat="${loc.lat}", lon="${loc.lon}"`);
-      console.log(`   ­ƒöì [DEBUG] Parsed: lat=${lat}, lng=${lng}, isNaN(lat)=${isNaN(lat)}, isNaN(lng)=${isNaN(lng)}`);
-      
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        console.log(`   Ô£à [Nominatim] ${streetName} ÔåÆ lat=${lat}, lng=${lng}`);
-        return { lat, lng };
-      } else {
-        console.warn(`   ÔØî Coordinadas inv├ílidas: lat=${lat}, lng=${lng}`);
-            const hasStreet1 = normalizedAddress.includes(normalizedStreet1);
-            const hasStreet2 = normalizedAddress.includes(normalizedStreet2);
-            
-            if (hasStreet1 && hasStreet2) {
-              console.log(`   Ô£à Intersecci├│n encontrada directamente: ${formattedAddress}`);
-              console.log(`   ­ƒôì ${location.lat}, ${location.lng}`);
-              return { lat: location.lat, lng: location.lng };
-            } else {
-              console.log(`   ÔÜá´©Å Resultado ambiguo (contiene: ${formattedAddress})`);
-              console.log(`   Ôä╣´©Å Intentando b├║squeda por separado...`);
-            }
+        console.log(`🔍 Buscando intersección: "${street1}" y "${street2}"`);
+        
+        try {
+          // Primero intentar buscar la intersección como una sola búsqueda
+          const intersectionQuery = `${street1} y ${street2}, Mar del Plata, Argentina`;
+          const urlIntersection = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(intersectionQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
+          
+          const resIntersection = await fetch(urlIntersection);
+          const dataIntersection = await resIntersection.json();
+          
+          if (dataIntersection.results && dataIntersection.results.length > 0) {
+            const location = dataIntersection.results[0].geometry.location;
+            const formattedAddress = dataIntersection.results[0].formatted_address;
+            console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
+            console.log(`   📍 ${location.lat}, ${location.lng}`);
+            return { lat: location.lat, lon: location.lng };
           }
           
-          // Si no encuentra o resultado fue ambiguo, buscar cada calle por separado y calcular punto medio
-          if (!dataIntersection.results || dataIntersection.results.length === 0) {
-            console.log('   Ôä╣´©Å No encontrada directamente, intentando punto medio...');
-          }
+          // Si no encuentra, buscar cada calle por separado y calcular punto medio
+          console.log('   ℹ️ No encontrada directamente, intentando punto medio...');
           
-          const loc1Data = await geocodeWithFallback(street1);
-          const loc2Data = await geocodeWithFallback(street2);
+          const url1 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+          const res1 = await fetch(url1);
+          const data1 = await res1.json();
           
-          if (loc1Data && loc2Data) {
-            const loc1 = loc1Data;
-            const loc2 = loc2Data;
+          const url2 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street2 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+          const res2 = await fetch(url2);
+          const data2 = await res2.json();
+          
+          if (data1.results && data1.results.length > 0 && data2.results && data2.results.length > 0) {
+            const loc1 = data1.results[0].geometry.location;
+            const loc2 = data2.results[0].geometry.location;
             
-            console.log(`   Ô£à ${street1}: ${loc1.lat}, ${loc1.lng}`);
-            console.log(`   Ô£à ${street2}: ${loc2.lat}, ${loc2.lng}`);
+            console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lng}`);
+            console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lng}`);
             
-            // Validar distancia entre calles
-            const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
-            console.log(`   ­ƒôÅ Distancia entre calles: ${distancia.toFixed(0)}m`);
-            
-            if (distancia > 1500) {
-              console.warn(`   ÔØî Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
-              return null; // Calles paralelas, no es una intersecci├│n v├ílida
-            }
-            
-            // Calcular punto medio (aproximaci├│n de intersecci├│n)
+            // Calcular punto medio (aproximación de intersección)
             const lat = (loc1.lat + loc2.lat) / 2;
             const lon = (loc1.lng + loc2.lng) / 2;
             
-            console.log(`   ­ƒÄ» Punto medio: ${lat}, ${lon}`);
-            return { lat, lng };
+            console.log(`   🎯 Punto medio: ${lat}, ${lon}`);
+            return { lat, lon };
           } else {
-            console.warn('ÔÜá´©Å No se encontr├│ una o ambas calles');
-            if (!loc1Data) console.log(`   ÔØî ${street1} no encontrada`);
-            if (!loc2Data) console.log(`   ÔØî ${street2} no encontrada`);
+            console.warn('⚠️ No se encontró una o ambas calles');
+            if (!data1.results || data1.results.length === 0) console.log(`   ❌ ${street1} no encontrada`);
+            if (!data2.results || data2.results.length === 0) console.log(`   ❌ ${street2} no encontrada`);
           }
         } catch (error) {
-          console.error("Error buscando intersecci├│n:", error);
+          console.error("Error buscando intersección:", error);
         }
       } else {
-        // Es una direcci├│n normal - buscar con fallback Google Maps ÔåÆ Nominatim
-        console.log(`­ƒöì Buscando direcci├│n: "${query}"`);
-        const result = await geocodeWithFallback(query);
-        if (result) {
-          return result;
+        // Es una dirección normal - buscar en Google Maps
+        console.log(`🔍 Buscando dirección: "${query}"`);
+        
+        try {
+          const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+          const response = await fetch(url);
+          const data = await response.json();
+          
+          if (data.results && data.results.length > 0) {
+            const location = data.results[0].geometry.location;
+            const formattedAddress = data.results[0].formatted_address;
+            console.log(`   ✅ ${formattedAddress}`);
+            return { lat: location.lat, lon: location.lng };
+          } else {
+            console.warn(`⚠️ No results found for: ${query}`);
+            if (data.status) console.log('Status:', data.status);
+          }
+        } catch (error) {
+          console.error("Error geocoding address:", error);
         }
       }
       
@@ -1202,12 +1133,12 @@ async function geocodeWithFallback(streetName) {
     }
 
     // ========================================
-    // IR A C├üMARA
+    // IR A CÁMARA
     // ========================================
     function irACamara() {
       const numero = document.getElementById('camera-input').value.trim();
       if (!numero) {
-        showToast('Ingrese n├║mero de c├ímara');
+        showToast('Ingrese número de cámara');
         return;
       }
 
@@ -1226,7 +1157,7 @@ async function geocodeWithFallback(streetName) {
           map.removeLayer(cameraSearchMarker);
         }
         
-        // Crear marcador con el n├║mero de c├ímara
+        // Crear marcador con el número de cámara
         cameraSearchMarker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: 'camera-search-icon',
@@ -1236,18 +1167,18 @@ async function geocodeWithFallback(streetName) {
           })
         }).addTo(map);
         
-        cameraSearchMarker.bindPopup(`<b>­ƒô╣ C├ímara ${camara.NUMERO}</b><br>${camara.Nombre || ''}`).openPopup();
+        cameraSearchMarker.bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>${camara.Nombre || ''}`).openPopup();
         
         map.setView([lat, lng], 18);
         closePanel();
-        showToast(`C├ímara ${numero} encontrada`);
+        showToast(`Cámara ${numero} encontrada`);
       } else {
-        showToast('C├ímara no encontrada');
+        showToast('Cámara no encontrada');
       }
     }
 
     // ========================================
-    // L├ìNEAS DE COLECTIVO
+    // LÍNEAS DE COLECTIVO
     // ========================================
     function filtrarLineas() {
       const filtro = document.getElementById('bus-line-search').value.toLowerCase();
@@ -1262,20 +1193,20 @@ async function geocodeWithFallback(streetName) {
     async function mostrarRecorridoColectivo() {
       const linea = document.getElementById('bus-line-select').value;
       if (!linea) {
-        showToast('Seleccione una l├¡nea');
+        showToast('Seleccione una línea');
         return;
       }
 
       showToast('Cargando recorrido...');
 
       try {
-        // Filtrar las rutas de la l├¡nea seleccionada
+        // Filtrar las rutas de la línea seleccionada
         const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === linea);
         
-        // Obtener n├║meros de c├ímara del recorrido
-        const cameraNumbers = routeCameras.map(route => route['N┬║ Camara'] || route['N├é┬║ Camara']);
+        // Obtener números de cámara del recorrido
+        const cameraNumbers = routeCameras.map(route => route['Nº Camara'] || route['NÂº Camara']);
         
-        // Encontrar las c├ímaras con sus coordenadas
+        // Encontrar las cámaras con sus coordenadas
         const camerasOnRoute = camarasData.filter(cam => cameraNumbers.includes(cam.NUMERO));
 
         if (busRouteLayer) map.removeLayer(busRouteLayer);
@@ -1291,7 +1222,7 @@ async function geocodeWithFallback(streetName) {
             if (!isNaN(lat) && !isNaN(lng)) {
               coords.push([lat, lng]);
               
-              // Marcador de c├ímara
+              // Marcador de cámara
               L.marker([lat, lng], {
                 icon: L.divIcon({
                   className: 'camera-icon bus-route-camera',
@@ -1299,11 +1230,11 @@ async function geocodeWithFallback(streetName) {
                   iconSize: [28, 28],
                   iconAnchor: [14, 14]
                 })
-              }).bindPopup(`<b>­ƒô╣ C├ímara ${camara.NUMERO}</b><br>L├¡nea: ${linea}<br>${camara.Nombre || ''}`).addTo(busRouteLayer);
+              }).bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>Línea: ${linea}<br>${camara.Nombre || ''}`).addTo(busRouteLayer);
             }
           });
 
-          // Dibujar l├¡nea conectando las c├ímaras (en orden)
+          // Dibujar línea conectando las cámaras (en orden)
           if (coords.length > 1) {
             L.polyline(coords, {
               color: '#ff6600',
@@ -1322,9 +1253,9 @@ async function geocodeWithFallback(streetName) {
           }
 
           closePanel();
-          showToast(`L├¡nea ${linea}: ${camerasOnRoute.length} c├ímaras`);
+          showToast(`Línea ${linea}: ${camerasOnRoute.length} cámaras`);
         } else {
-          showToast('No se encontraron c├ímaras en el recorrido');
+          showToast('No se encontraron cámaras en el recorrido');
         }
       } catch (error) {
         showToast('Error cargando recorrido');
@@ -1333,18 +1264,18 @@ async function geocodeWithFallback(streetName) {
     }
 
     // ========================================
-    // C├üMARAS LPR
+    // CÁMARAS LPR
     // ========================================
     function mostrarRadioLPR() {
       const selectedCameraId = document.getElementById('lpr-camera-select').value;
       if (!selectedCameraId) {
-        showToast('Seleccione una c├ímara LPR');
+        showToast('Seleccione una cámara LPR');
         return;
       }
 
       const selectedLprCamera = lprCamaras.find(c => c.NUMERO === selectedCameraId);
       if (!selectedLprCamera) {
-        showToast('C├ímara no encontrada');
+        showToast('Cámara no encontrada');
         return;
       }
 
@@ -1356,7 +1287,7 @@ async function geocodeWithFallback(streetName) {
 
       lprRadiusLayer = L.layerGroup();
 
-      // C├¡rculo ROJO de 2km (igual que el original)
+      // Círculo ROJO de 2km (igual que el original)
       L.circle([lat, lng], {
         radius: 2000,
         fillColor: '#f03',
@@ -1365,7 +1296,7 @@ async function geocodeWithFallback(streetName) {
         fillOpacity: 0.2
       }).addTo(lprRadiusLayer);
 
-      // Marcador de la c├ímara LPR seleccionada
+      // Marcador de la cámara LPR seleccionada
       const lprLabel = selectedLprCamera.LPR || 'LPR';
       L.marker([lat, lng], {
         icon: L.divIcon({
@@ -1375,9 +1306,9 @@ async function geocodeWithFallback(streetName) {
           iconAnchor: [16, 16]
         }),
         zIndexOffset: 1000
-      }).bindPopup(`<b>­ƒôÀ C├ímara LPR: ${selectedCameraId}</b><br>${selectedLprCamera.Nombre || ''}<br><i>${lprLabel}</i>`).addTo(lprRadiusLayer);
+      }).bindPopup(`<b>📷 Cámara LPR: ${selectedCameraId}</b><br>${selectedLprCamera.Nombre || ''}<br><i>${lprLabel}</i>`).addTo(lprRadiusLayer);
 
-      // Mostrar todas las c├ímaras dentro del radio de 2km
+      // Mostrar todas las cámaras dentro del radio de 2km
       let camarasEnRadio = 0;
       camarasData.forEach(cam => {
         if (cam.NUMERO === selectedCameraId) return; // Skip la seleccionada
@@ -1399,7 +1330,7 @@ async function geocodeWithFallback(streetName) {
                 iconSize: [26, 26],
                 iconAnchor: [13, 13]
               })
-            }).bindPopup(`<b>­ƒô╣ C├ímara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(lprRadiusLayer);
+            }).bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}<br><i>${Math.round(distancia)}m</i>`).addTo(lprRadiusLayer);
           }
         }
       });
@@ -1407,11 +1338,11 @@ async function geocodeWithFallback(streetName) {
       lprRadiusLayer.addTo(map);
       map.setView([lat, lng], 14);
       closePanel();
-      showToast(`${camarasEnRadio} c├ímaras en radio 2km`);
+      showToast(`${camarasEnRadio} cámaras en radio 2km`);
     }
 
     // ========================================
-    // TOGGLE C├üMARAS
+    // TOGGLE CÁMARAS
     // ========================================
     function toggleCamaras(e) {
       if (e.target.checked) {
@@ -1425,18 +1356,18 @@ async function geocodeWithFallback(streetName) {
               const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                   className: 'camera-icon',
-                  html: '<div style="background:#1e88e5;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">­ƒô╣</div>',
+                  html: '<div style="background:#1e88e5;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">📹</div>',
                   iconSize: [24, 24],
                   iconAnchor: [12, 12]
                 })
               });
-              marker.bindPopup(`<b>­ƒô╣ C├ímara ${cam.NUMERO}</b><br>${cam.Nombre || ''}`);
+              marker.bindPopup(`<b>📹 Cámara ${cam.NUMERO}</b><br>${cam.Nombre || ''}`);
               camarasLayer.addLayer(marker);
             }
           });
         }
         map.addLayer(camarasLayer);
-        showToast(`${camarasData.length} c├ímaras mostradas`);
+        showToast(`${camarasData.length} cámaras mostradas`);
       } else {
         if (camarasLayer) map.removeLayer(camarasLayer);
       }
@@ -1454,33 +1385,33 @@ async function geocodeWithFallback(streetName) {
               const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                   className: 'camera-private-icon',
-                  html: '<div style="background:#9c27b0;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">­ƒôÀ</div>',
+                  html: '<div style="background:#9c27b0;width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">📷</div>',
                   iconSize: [24, 24],
                   iconAnchor: [12, 12]
                 })
               });
-              marker.bindPopup(`<b>­ƒôÀ C├ímara Privada</b><br>${cam.Nombre || ''}`);
+              marker.bindPopup(`<b>📷 Cámara Privada</b><br>${cam.Nombre || ''}`);
               camarasPrivadasLayer.addLayer(marker);
             }
           });
         }
         map.addLayer(camarasPrivadasLayer);
-        showToast(`${camarasPrivadasData.length} c├ímaras privadas`);
+        showToast(`${camarasPrivadasData.length} cámaras privadas`);
       } else {
         if (camarasPrivadasLayer) map.removeLayer(camarasPrivadasLayer);
       }
     }
 
     // ========================================
-    // MI UBICACI├ôN
+    // MI UBICACIÓN
     // ========================================
     function irAMiUbicacion() {
       if (!navigator.geolocation) {
-        showToast('Geolocalizaci├│n no soportada');
+        showToast('Geolocalización no soportada');
         return;
       }
 
-      showToast('Obteniendo ubicaci├│n...');
+      showToast('Obteniendo ubicación...');
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -1498,10 +1429,10 @@ async function geocodeWithFallback(streetName) {
           }).addTo(map);
 
           map.setView([latitude, longitude], 17);
-          showToast('Ubicaci├│n encontrada');
+          showToast('Ubicación encontrada');
         },
         (error) => {
-          showToast('No se pudo obtener ubicaci├│n');
+          showToast('No se pudo obtener ubicación');
           console.error(error);
         },
         { enableHighAccuracy: true }

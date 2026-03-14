@@ -1353,114 +1353,7 @@ function createRankedIcon(rank, type) {
 }
 
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
-
-// Expandir abreviaciones comunes en nombres de calles
-function expandAbbreviations(streetName) {
-  let expanded = streetName;
-  
-  // Diccionario de abreviaciones frecuentes en Argentina
-  const abbreviations = {
-    ' B\\.' : ' BAUTISTA ',
-    ' B\\s' : ' BAUTISTA ',
-    ' Av\\.' : ' AVENIDA ',
-    ' Av ' : ' AVENIDA ',
-    ' Pje\\.' : ' PASAJE ',
-    ' Carr\\.' : ' CARRERA ',
-  };
-  
-  for (const [abbr, full] of Object.entries(abbreviations)) {
-    expanded = expanded.replace(new RegExp(abbr, 'gi'), full);
-  }
-  
-  return expanded.replace(/\s+/g, ' ').trim(); // Limpiar espacios duplicados
-}
-
-// Función para geocodificar con fallback a Nominatim
-async function geocodeWithFallback(streetName) {
-  try {
-    // Primero intentar Google Maps
-    const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(streetName + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
-    const googleResponse = await fetch(googleUrl);
-    const googleData = await googleResponse.json();
-    
-    if (googleData.results && googleData.results.length > 0) {
-      const loc = googleData.results[0].geometry.location;
-      console.log(`   ✅ [Google] ${streetName}`);
-      return { lat: loc.lat, lng: loc.lng };
-    }
-  } catch (error) {
-    console.warn(`   ⚠️ Google Maps error for ${streetName}:`, error);
-  }
-  
-  try {
-    // Fallback a Nominatim si Google Maps falló
-    // Remover puntos y expandir abreviaciones
-    let streetForSearch = streetName.replace(/\./g, '');
-    const expandedStreet = expandAbbreviations(streetForSearch);
-    
-    console.log(`   🔍 [Nominatim] Buscando: ${expandedStreet} (original: ${streetName})`);
-    
-    // Primero intentar búsqueda completa sin filtrar demasiado por ciudad
-    let nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(expandedStreet + " Mar del Plata Argentina")}&format=json&limit=5`;
-    
-    let nominatimResponse = await fetch(nominatimUrl);
-    let nominatimData = await nominatimResponse.json();
-    
-    console.log(`   📊 [Nominatim] Respuesta recibida:`, nominatimData.length, 'resultados');
-    
-    // Si no encuentra, intentar sin la ciudad
-    if (!nominatimData || nominatimData.length === 0) {
-      console.log(`   🔄 [Nominatim] Reintentando sin ciudad específica...`);
-      nominatimUrl = `https://nominatim.openstreetmap.org/search?street=${encodeURIComponent(expandedStreet)}&country=Argentina&format=json&limit=5`;
-      nominatimResponse = await fetch(nominatimUrl);
-      nominatimData = await nominatimResponse.json();
-      console.log(`   📊 [Nominatim] Segunda búsqueda: ${nominatimData.length} resultados`);
-    }
-    
-    if (nominatimData && nominatimData.length > 0) {
-      const loc = nominatimData[0];
-      
-      // VALIDACIÓN CRÍTICA: Asegurarse de que ambos campos existen
-      const latStr = String(loc.lat || '').trim();
-      const lonStr = String(loc.lon || '').trim();
-      
-      const lat = latStr ? parseFloat(latStr) : NaN;
-      const lng = lonStr ? parseFloat(lonStr) : NaN;
-      
-      console.log(`   🔍 [DEBUG] Raw values: lat="${loc.lat}", lon="${loc.lon}"`);
-      console.log(`   🔍 [DEBUG] Parsed: lat=${lat}, lng=${lng}, isNaN(lat)=${isNaN(lat)}, isNaN(lng)=${isNaN(lng)}`);
-      
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        console.log(`   ✅ [Nominatim] ${streetName} → lat=${lat}, lng=${lng}`);
-        return { lat, lng };
-      } else {
-        console.warn(`   ❌ Coordinadas inválidas: lat=${lat}, lng=${lng}`);
-      }
-    }
-  } catch (error) {
-    console.warn(`   ⚠️ Nominatim error for ${streetName}:`, error);
-  }
-  
-  console.warn(`   ❌ ${streetName} no encontrada (Google + Nominatim)`);
-  return null;
-}
-
-// Calcular distancia entre dos puntos (Haversine - en metros)
-function calcularDistancia(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radio de la Tierra en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c * 1000; // Convertir a metros
-}
-
-// Normalizar texto: remover acentos y tildes
-function normalizeText(text) {
-  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc';
 
 async function geocodeAddress(address) {
   const query = address.trim();
@@ -1486,69 +1379,63 @@ async function geocodeAddress(address) {
       if (dataIntersection.results && dataIntersection.results.length > 0) {
         const location = dataIntersection.results[0].geometry.location;
         const formattedAddress = dataIntersection.results[0].formatted_address;
-        
-        // Validar que el resultado contenga AMBOS nombres de calles (sin acentos)
-        const normalizedAddress = normalizeText(formattedAddress);
-        const normalizedStreet1 = normalizeText(street1);
-        const normalizedStreet2 = normalizeText(street2);
-        const hasStreet1 = normalizedAddress.includes(normalizedStreet1);
-        const hasStreet2 = normalizedAddress.includes(normalizedStreet2);
-        
-        if (hasStreet1 && hasStreet2) {
-          console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
-          console.log(`   📍 ${location.lat}, ${location.lng}`);
-          return { lat: location.lat, lng: location.lng };
-        } else {
-          console.log(`   ⚠️ Resultado ambiguo (contiene: ${formattedAddress})`);
-          console.log(`   ℹ️ Intentando búsqueda por separado...`);
-        }
+        console.log(`   ✅ Intersección encontrada directamente: ${formattedAddress}`);
+        console.log(`   📍 ${location.lat}, ${location.lng}`);
+        return { lat: location.lat, lon: location.lng };
       }
       
-      // Si no encuentra o resultado fue ambiguo, buscar cada calle por separado y calcular punto medio
-      if (!dataIntersection.results || dataIntersection.results.length === 0) {
-        console.log('   ℹ️ No encontrada directamente, intentando punto medio...');
-      }
+      // Si no encuentra, buscar cada calle por separado y calcular punto medio
+      console.log('   ℹ️ No encontrada directamente, intentando punto medio...');
       
-      const loc1Data = await geocodeWithFallback(street1);
-      const loc2Data = await geocodeWithFallback(street2);
+      const url1 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street1 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const res1 = await fetch(url1);
+      const data1 = await res1.json();
       
-      if (loc1Data && loc2Data) {
-        const loc1 = loc1Data;
-        const loc2 = loc2Data;
+      const url2 = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(street2 + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const res2 = await fetch(url2);
+      const data2 = await res2.json();
+      
+      if (data1.results && data1.results.length > 0 && data2.results && data2.results.length > 0) {
+        const loc1 = data1.results[0].geometry.location;
+        const loc2 = data2.results[0].geometry.location;
         
         console.log(`   ✅ ${street1}: ${loc1.lat}, ${loc1.lng}`);
         console.log(`   ✅ ${street2}: ${loc2.lat}, ${loc2.lng}`);
         
-        // Validar distancia entre calles
-        const distancia = calcularDistancia(loc1.lat, loc1.lng, loc2.lat, loc2.lng);
-        console.log(`   📏 Distancia entre calles: ${distancia.toFixed(0)}m`);
-        console.log(`   🔍 DEBUG distancia: lat1=${loc1.lat}, lng1=${loc1.lng}, lat2=${loc2.lat}, lng2=${loc2.lng}`);
-        
-        if (distancia > 1500) {
-          console.warn(`   ❌ Calles muy lejanas (${distancia.toFixed(0)}m) - probablemente paralelas`);
-          return null; // Calles paralelas, no es una intersección válida
-        }
-        
         // Calcular punto medio (aproximación de intersección)
         const lat = (loc1.lat + loc2.lat) / 2;
-        const lng = (loc1.lng + loc2.lng) / 2;
+        const lon = (loc1.lng + loc2.lng) / 2;
         
-        console.log(`   🎯 Punto medio: ${lat}, ${lng}`);
-        return { lat, lng };
+        console.log(`   🎯 Punto medio: ${lat}, ${lon}`);
+        return { lat, lon };
       } else {
         console.warn('⚠️ No se encontró una o ambas calles');
-        if (!loc1Data) console.log(`   ❌ ${street1} no encontrada`);
-        if (!loc2Data) console.log(`   ❌ ${street2} no encontrada`);
+        if (!data1.results || data1.results.length === 0) console.log(`   ❌ ${street1} no encontrada`);
+        if (!data2.results || data2.results.length === 0) console.log(`   ❌ ${street2} no encontrada`);
       }
     } catch (error) {
       console.error("Error buscando intersección:", error);
     }
   } else {
-    // Es una dirección normal - buscar con fallback Google Maps → Nominatim
+    // Es una dirección normal - buscar en Google Maps
     console.log(`🔍 Buscando dirección: "${query}"`);
-    const result = await geocodeWithFallback(query);
-    if (result) {
-      return result;
+    
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query + ", Mar del Plata, Argentina")}&key=${GOOGLE_MAPS_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        const formattedAddress = data.results[0].formatted_address;
+        console.log(`   ✅ ${formattedAddress}`);
+        return { lat: location.lat, lon: location.lng };
+      } else {
+        console.warn(`⚠️ No results found for: ${query}`);
+        if (data.status) console.log('Status:', data.status);
+      }
+    } catch (error) {
+      console.error("Error geocoding address:", error);
     }
   }
   
@@ -6256,8 +6143,22 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
 
 // ============================================
 // FUNCIÓN AUXILIAR: CALCULAR DISTANCIA
-// (Función duplicada removida - ver línea 1408)
 // ============================================
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Radio de la Tierra en metros
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distancia en metros
+}
+
 
     case 'concentracion_siniestros': {
       await loadSiniestrosData();
