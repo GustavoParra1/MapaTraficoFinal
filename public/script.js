@@ -1353,7 +1353,6 @@ function createRankedIcon(rank, type) {
 }
 
 const TOMTOM_API_KEY = 'ViFhDo6I00BxfLOvXJBs9yZ20TmYpKC5';
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBp2ZiKA4lYieyjX_aJJjE023NeqKrRhJc';
 
 async function geocodeAddress(address) {
   const query = address.trim();
