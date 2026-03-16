@@ -1257,77 +1257,129 @@
     }
 
     async function mostrarRecorridoColectivo() {
-      const linea = document.getElementById('bus-line-select').value;
-      if (!linea) {
-        showToast('Seleccione una línea');
-        return;
-      }
+  const linea = document.getElementById('bus-line-select').value;
+  if (!linea) {
+    showToast('Seleccione una línea');
+    return;
+  }
 
-      showToast('Cargando recorrido...');
+  showToast('Cargando recorrido...');
 
-      try {
-        // Limpiar cualquier ruta previa
-        if (busRouteLayer) {
-          map.removeLayer(busRouteLayer);
-          busRouteLayer = null;
+  if (busRouteLayer) {
+    map.removeLayer(busRouteLayer);
+    busRouteLayer = null;
+  }
+
+  busRouteLayer = L.layerGroup();
+
+  try {
+
+    // ======================================
+    // 1 CARGAR GEOJSON DEL RECORRIDO
+    // ======================================
+
+    const response = await fetch(`linea${linea}.geojson`);
+
+    if (response.ok) {
+
+      const geojson = await response.json();
+
+      const routeLayer = L.geoJSON(geojson, {
+        style: {
+          color: '#ff0000',
+          weight: 4
+        }
+      }).addTo(busRouteLayer);
+
+      const routeLine = geojson.features.find(
+      f => f.geometry.type === "LineString" || f.geometry.type === "MultiLineString"
+    );
+
+      // ======================================
+      // 2 BUSCAR CAMARAS A 100 METROS
+      // ======================================
+
+      let camerasFound = 0;
+
+      camarasData.forEach(cam => {
+
+        const pt = turf.point([cam.longitud, cam.latitud]);
+
+        const distance = turf.pointToLineDistance(
+          pt,
+          routeLine,
+          { units: 'meters' }
+        );
+
+        if (distance <= 100) {
+
+          camerasFound++;
+
+          L.marker([cam.latitud, cam.longitud], {
+            icon: L.divIcon({
+              html: `<div style="background:#ff6600;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;">${cam.NUMERO}</div>`,
+              iconSize: [28,28],
+              iconAnchor: [14,14]
+            })
+          })
+          .bindPopup(`📹 Cámara ${cam.NUMERO}<br>${cam.Nombre}`)
+          .addTo(busRouteLayer);
         }
 
-        // Filtrar las rutas de la línea seleccionada
-        const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === linea);
-        // Obtener números de cámara del recorrido
-        const cameraNumbers = routeCameras.map(route => route['Nº Camara'] || route['NÂº Camara']);
-        // Encontrar las cámaras con sus coordenadas
-        const camerasOnRoute = camarasData.filter(cam => cameraNumbers.includes(cam.NUMERO));
+      });
 
-        if (camerasOnRoute.length > 0) {
-          busRouteLayer = L.layerGroup();
-          const coords = [];
+      busRouteLayer.addTo(map);
 
-          camerasOnRoute.forEach((camara, idx) => {
-            const lat = camara.latitud;
-            const lng = camara.longitud;
-            if (!isNaN(lat) && !isNaN(lng)) {
-              coords.push([lat, lng]);
-              // Marcador de cámara
-              L.marker([lat, lng], {
-                icon: L.divIcon({
-                  className: 'camera-icon bus-route-camera',
-                  html: `<div style="background:#ff6600;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${camara.NUMERO}</div>`,
-                  iconSize: [28, 28],
-                  iconAnchor: [14, 14]
-                })
-              }).bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>Línea: ${linea}<br>${camara.Nombre || ''}`).addTo(busRouteLayer);
-            }
-          });
+      map.fitBounds(routeLayer.getBounds());
 
-          // Dibujar línea conectando las cámaras (en orden)
-          if (coords.length > 1) {
-            L.polyline(coords, {
-              color: '#ff6600',
-              weight: 3,
-              opacity: 0.7,
-              dashArray: '10, 5'
-            }).addTo(busRouteLayer);
-          }
+      showToast(`Línea ${linea}: ${camerasFound} cámaras a ≤100m`);
 
-          busRouteLayer.addTo(map);
-          // Centrar en el recorrido
-          if (coords.length > 0) {
-            const bounds = L.latLngBounds(coords);
-            map.fitBounds(bounds, { padding: [50, 50] });
-          }
+    } else {
 
-          closePanel();
-          showToast(`Línea ${linea}: ${camerasOnRoute.length} cámaras`);
-        } else {
-          showToast('No se encontraron cámaras en el recorrido');
-        }
-      } catch (error) {
-        showToast('Error cargando recorrido');
-        console.error(error);
-      }
+      // ======================================
+      // SI NO HAY GEOJSON (ej: linea 221)
+      // ======================================
+
+      const routeCameras = allBusRoutesData.filter(
+        r => r['Linea Colectivo'] === linea
+      );
+
+      const cameraNumbers = routeCameras.map(
+        r => r['Nº Camara'] || r['NÂº Camara']
+      );
+
+      const camerasOnRoute = camarasData.filter(
+        cam => cameraNumbers.includes(cam.NUMERO)
+      );
+
+      camerasOnRoute.forEach(cam => {
+
+        L.marker([cam.latitud, cam.longitud], {
+          icon: L.divIcon({
+            html: `<div style="background:#ff6600;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;">${cam.NUMERO}</div>`,
+            iconSize:[28,28],
+            iconAnchor:[14,14]
+          })
+        })
+        .bindPopup(`📹 Cámara ${cam.NUMERO}`)
+        .addTo(busRouteLayer);
+
+      });
+
+      busRouteLayer.addTo(map);
+
+      showToast(`Línea ${linea}: ${camerasOnRoute.length} cámaras`);
     }
 
+    closePanel();
+
+  } catch (error) {
+
+    console.error(error);
+    showToast('Error cargando recorrido');
+
+  }
+}
     // ========================================
     // CÁMARAS LPR
     // ========================================
