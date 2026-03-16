@@ -477,6 +477,11 @@
     document.addEventListener('DOMContentLoaded', async () => {
       initMap();
       await cargarDatos();
+      // Limpieza extra: asegurar que no haya rutas dibujadas al iniciar
+      if (typeof busRouteLayer !== 'undefined' && busRouteLayer) {
+        map.removeLayer(busRouteLayer);
+        busRouteLayer = null;
+      }
       initEventListeners();
       hideLoading();
     });
@@ -512,7 +517,7 @@
         camarasPrivadasData = parseCSVPrivadas(textPrivadas);
         console.log(`✅ Cámaras privadas cargadas: ${camarasPrivadasData.length}`);
 
-        // Cargar líneas de colectivo
+        // Cargar líneas de colectivo (solo llena el select, NO dibuja rutas)
         await cargarLineasColectivo();
 
         // Cargar cámaras LPR
@@ -1261,16 +1266,18 @@
       showToast('Cargando recorrido...');
 
       try {
+        // Limpiar cualquier ruta previa
+        if (busRouteLayer) {
+          map.removeLayer(busRouteLayer);
+          busRouteLayer = null;
+        }
+
         // Filtrar las rutas de la línea seleccionada
         const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === linea);
-        
         // Obtener números de cámara del recorrido
         const cameraNumbers = routeCameras.map(route => route['Nº Camara'] || route['NÂº Camara']);
-        
         // Encontrar las cámaras con sus coordenadas
         const camerasOnRoute = camarasData.filter(cam => cameraNumbers.includes(cam.NUMERO));
-
-        if (busRouteLayer) map.removeLayer(busRouteLayer);
 
         if (camerasOnRoute.length > 0) {
           busRouteLayer = L.layerGroup();
@@ -1279,10 +1286,8 @@
           camerasOnRoute.forEach((camara, idx) => {
             const lat = camara.latitud;
             const lng = camara.longitud;
-            
             if (!isNaN(lat) && !isNaN(lng)) {
               coords.push([lat, lng]);
-              
               // Marcador de cámara
               L.marker([lat, lng], {
                 icon: L.divIcon({
@@ -1306,7 +1311,6 @@
           }
 
           busRouteLayer.addTo(map);
-          
           // Centrar en el recorrido
           if (coords.length > 0) {
             const bounds = L.latLngBounds(coords);
