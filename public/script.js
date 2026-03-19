@@ -1468,11 +1468,34 @@ function displayConsultaResults(htmlContent) {
       // 🔥 Bloquear autocargas mientras limpiamos
       window._bloquearSiniestros = true;
   
+
       // 1. Eliminar capa de siniestros
       if (siniestrosLayer && mymap.hasLayer(siniestrosLayer)) {
           mymap.removeLayer(siniestrosLayer);
       }
       siniestrosLayer.clearLayers();
+
+
+      // 1b. Eliminar recorridos de colectivo (líneas naranjas) y cualquier polyline naranja residual
+      setTimeout(() => {
+        // Eliminar capa group
+        if (typeof busRoutesLayer !== 'undefined' && busRoutesLayer && busRoutesLayer.clearLayers) {
+          try {
+            if (mymap.hasLayer(busRoutesLayer)) {
+              mymap.removeLayer(busRoutesLayer);
+            }
+            busRoutesLayer.clearLayers();
+          } catch (e) {
+            console.warn('No se pudo limpiar busRoutesLayer en resetMapaComoRecienCargado:', e);
+          }
+        }
+        // Eliminar cualquier polyline residual (trayectorias de colectivo)
+        Object.values(mymap._layers).forEach(layer => {
+          if (layer instanceof L.Polyline) {
+            try { mymap.removeLayer(layer); } catch(e){}
+          }
+        });
+      }, 50);
   
       if (topSiniestrosLabelsLayer) topSiniestrosLabelsLayer.clearLayers();
       document.getElementById('top-siniestros-panel').style.display = 'none';
@@ -3523,43 +3546,112 @@ function populateBusLineSelector() {
 }
 
 function displayBusRoute() {
-    loadBaseCSVData().then(() => {
-        const selectedLine = busLineSelect.value;
-        if (!selectedLine || !allBusRoutesData || !allCamerasData) {
-            return;
+          // Ocultar cámaras generales al mostrar un recorrido de colectivo
+          if (mymap.hasLayer(camarasLayer)) {
+            mymap.removeLayer(camarasLayer);
+          }
+    loadBaseCSVData().then(async () => {
+      const selectedLine = busLineSelect.value;
+      if (!selectedLine || !allBusRoutesData || !allCamerasData) {
+        return;
+      }
+
+      // Limpiar completamente el layer de recorridos de colectivo y evitar duplicados
+      try {
+        if (mymap.hasLayer(busRoutesLayer)) {
+          mymap.removeLayer(busRoutesLayer);
         }
-
         busRoutesLayer.clearLayers();
+      } catch (e) {
+        console.warn('No se pudo limpiar busRoutesLayer:', e);
+      }
 
-        const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === selectedLine);
-        const cameraNumbers = routeCameras.map(route => route['Nº Camara']);
+      // IMPORTANTE: No agregar cámaras de colectivo al layer general de cámaras
 
-        const direccionHeaderKey = Object.keys(allCamerasData[0] || {}).find(k => k.toLowerCase().includes('direcci'));
+      // 1. Intentar cargar el GeoJSON de la línea
+      const geojsonFile = `linea${selectedLine}.geojson`;
+      let geojsonData = null;
+      try {
+        const res = await fetch(geojsonFile);
+        if (res.ok) {
+          geojsonData = await res.json();
+        }
+      } catch (e) {
+        geojsonData = null;
+      }
 
-        const camerasOnRoute = allCamerasData.filter(camera => cameraNumbers.includes(camera['N CAMARA']));
-
-        camerasOnRoute.forEach(camara => {
-            const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
-            const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
-            const id = camara['N CAMARA'];
-            const direccion = camara[direccionHeaderKey];
-
-            if (id && direccion && !isNaN(lat) && !isNaN(lon)) {
-                const cameraIcon = L.divIcon({
-                    className: 'camera-icon bus-route-camera', // Add a specific class
-                    html: `<span>${id}</span>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                });
-
-                const marker = L.marker([lat, lon], { icon: cameraIcon });
-                marker.bindPopup(`<b>Cámara: ${id}</b><br>Línea: ${selectedLine}<br>${direccion}`);
-                busRoutesLayer.addLayer(marker);
-            }
+      // 2. Dibujar la trayectoria si existe el geojson
+      let routeLatLngs = [];
+      if (geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+        geojsonData.features.forEach(feature => {
+          if (feature.geometry.type === 'LineString') {
+            const latlngs = feature.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            routeLatLngs = routeLatLngs.concat(latlngs);
+            const polyline = L.polyline(latlngs, {
+              color: '#ff6600',
+              weight: 5,
+              opacity: 0.8
+            });
+            polyline.bindPopup(`<b>Línea ${selectedLine}</b>`);
+            busRoutesLayer.addLayer(polyline);
+          }
         });
+      }
 
-        mymap.addLayer(busRoutesLayer);
-        busRouteCheckbox.checked = true;
+      // 3. Marcar las cámaras asociadas a la línea
+      const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === selectedLine);
+      const cameraNumbers = routeCameras.map(route => route['Nº Camara']);
+      const direccionHeaderKey = Object.keys(allCamerasData[0] || {}).find(k => k.toLowerCase().includes('direcci'));
+      const camerasOnRoute = allCamerasData.filter(camera => cameraNumbers.includes(camera['N CAMARA']));
+
+      camerasOnRoute.forEach(camara => {
+        const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
+        const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
+        const id = camara['N CAMARA'];
+        const direccion = camara[direccionHeaderKey];
+        if (id && direccion && !isNaN(lat) && !isNaN(lon)) {
+          // Ícono naranja circular con número de cámara (igual móvil)
+          const cameraIcon = L.divIcon({
+            className: 'camera-icon bus-route-camera',
+            html: `<div style=\"background:#ff6600;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:white;\">${id}</div>`,
+            iconSize: [28,28],
+            iconAnchor: [14,14]
+          });
+          const marker = L.marker([lat, lon], { icon: cameraIcon });
+          marker.bindPopup(`<b>📹 Cámara ${id}</b><br>${direccion}`);
+          busRoutesLayer.addLayer(marker);
+        }
+      });
+
+      // 4. Si hay geojson, buscar paradas y marcarlas con estilo móvil (círculo azul con punto blanco)
+      if (geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+        geojsonData.features.forEach((feature) => {
+          if (feature.geometry.type === 'Point') {
+            const [lon, lat] = feature.geometry.coordinates;
+            // Ícono: círculo azul con punto blanco en el centro
+            const paradaIcon = L.divIcon({
+              className: 'bus-stop-icon',
+              html: `<div style=\"background:#2196f3;width:22px;height:22px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;\"><div style=\"background:white;width:8px;height:8px;border-radius:50%;\"></div></div>`,
+              iconSize: [22,22],
+              iconAnchor: [11,11]
+            });
+            const marker = L.marker([lat, lon], { icon: paradaIcon });
+            busRoutesLayer.addLayer(marker);
+          }
+        });
+      }
+
+      // 5. Ajustar el mapa a la ruta si hay trayectoria
+      if (routeLatLngs.length > 1) {
+        mymap.fitBounds(routeLatLngs);
+      } else if (camerasOnRoute.length > 0) {
+        // Si no hay geojson, ajustar a las cámaras
+        const bounds = L.latLngBounds(camerasOnRoute.map(camara => [parseFloat(String(camara.Latitud).replace(',', '.')), parseFloat(String(camara.Longitud).replace(',', '.'))]));
+        mymap.fitBounds(bounds);
+      }
+
+      mymap.addLayer(busRoutesLayer);
+      busRouteCheckbox.checked = true;
     });
 }
 

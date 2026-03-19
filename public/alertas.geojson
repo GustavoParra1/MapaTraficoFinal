@@ -6,102 +6,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "Murió un joven tras el choque entre un auto y un tren en la Ruta 2: hay otros heridos",
-        "direccion": "Ruta 2",
-        "link": "https://ahoramardelplata.com.ar/policiales/murio-un-joven-tras-el-choque-entre-un-auto-y-un-tren-en-la-ruta-2-hay-otros-heridos",
-        "timestamp": 1769431157487
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "Un deportista de la Selección argentina de BMX freestyle despistó en la Autovía 2",
-        "direccion": "Ruta 2",
-        "link": "https://www.lacapitalmdp.com/un-deportista-de-la-seleccion-argentina-de-bmx-freestyle-despisto-en-la-autovia-2/",
-        "timestamp": 1769437753683
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5448336,
-          -38.0038583
-        ]
-      },
-      "properties": {
-        "titulo": "Incidente en un Bingo: un turista fue aprehendido por agredir a una policía",
-        "direccion": "Entre Ríos y Moreno",
-        "link": "https://www.lacapitalmdp.com/incidente-en-un-bingo-un-turista-fue-aprehendido-por-agredir-a-una-policia/",
-        "timestamp": 1769441657282
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5491039,
-          -37.9969746
-        ]
-      },
-      "properties": {
-        "titulo": "Los dos conductores protagonistas del choque que lesionó a Bastián habían consumido bebidas alcohólicas",
-        "direccion": "Teníán 0",
-        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/los-dos-conductores-protagonistas-del-choque-que-lesiono-a-bastian-habian-consumido-bebidas-alcoholicas",
-        "timestamp": 1769459139449
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.58043,
-          -37.988235
-        ]
-      },
-      "properties": {
-        "titulo": "Cortes de tránsito y desvíos tras el voraz incendio en la zona de Colón y Perú",
-        "direccion": "Colón y Perú",
-        "link": "https://ahoramardelplata.com.ar/sociedad/cortes-de-transito-y-desvios-tras-el-voraz-incendio-en-la-zona-de-colon-y-peru",
-        "timestamp": 1769534623507
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.58043,
-          -37.988235
-        ]
-      },
-      "properties": {
-        "titulo": "Así fue el voraz incendio en Colón y Perú: las llamas y el después del siniestro",
-        "direccion": "Colón y Perú",
-        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/asi-fue-el-voraz-incendio-en-colon-y-peru-las-llamas-y-el-despues-del-siniestro",
-        "timestamp": 1769534623721
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           -57.55307,
           -37.98596
         ]
@@ -447,6 +351,22 @@
         "direccion": "Avenida Colón y Perú hace menos de",
         "link": "https://noticiasmdq.com/argenfer-resurge-de-las-cenizas-la-emblematica-ferreteria-marplatense-reabre-sus-puertas-este-jueves/",
         "timestamp": 1773221012510
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5588626,
+          -38.0125208
+        ]
+      },
+      "properties": {
+        "titulo": "El barrio Primera Junta, escenario de un nuevo siniestro vial grave en menos de un mes",
+        "direccion": "San Luis y Rodríguez Peña tras huir",
+        "link": "https://www.lacapitalmdp.com/el-barrio-primera-junta-escenario-de-un-nuevo-siniestro-vial-grave-en-menos-de-un-mes/",
+        "timestamp": 1773946992712
       }
     }
   ]
