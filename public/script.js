@@ -2999,36 +2999,106 @@ function applyCamarasFilters() {
     const selectedBarrioName = barrioFilterSelect.value;
     let selectedBarrioFeature = null;
     if (selectedBarrioName !== 'all' && barriosData) {
-        selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
+      selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
+    }
+
+    // Filtrado por línea de colectivo usando distancia al recorrido Y asociación por tabla
+    let filteredCameras = allCamerasData;
+    if (typeof busLineSelect !== 'undefined' && busLineSelect && busLineSelect.value && allBusRoutesData) {
+      const selectedLine = busLineSelect.value;
+      if (selectedLine) {
+        fetch(`linea${selectedLine}.geojson`)
+          .then(resp => resp.ok ? resp.json() : null)
+          .then(geojson => {
+            let camerasByDistance = [];
+            let camerasByTable = [];
+            let camerasSet = new Map();
+            if (geojson && geojson.features) {
+              const routeLine = geojson.features.find(f => f.geometry.type === "LineString" || f.geometry.type === "MultiLineString");
+              if (routeLine) {
+                allCamerasData.forEach(cam => {
+                  const lat = parseFloat(String(cam.Latitud).replace(',', '.'));
+                  const lon = parseFloat(String(cam.Longitud).replace(',', '.'));
+                  if (isNaN(lat) || isNaN(lon)) return;
+                  const pt = turf.point([lon, lat]);
+                  const distance = turf.pointToLineDistance(pt, routeLine, { units: 'meters' });
+                  if (distance <= 100) {
+                    camerasByDistance.push(cam);
+                  }
+                });
+              }
+            }
+            // Siempre agregar cámaras asociadas por tabla
+            const routeCameras = allBusRoutesData.filter(route => route['Linea Colectivo'] === selectedLine);
+            const cameraNumbers = routeCameras.map(route => route['Nº Camara'] || route['NÂº Camara']);
+            camerasByTable = allCamerasData.filter(camera => cameraNumbers.includes(camera['N CAMARA']));
+
+            // Unir ambas listas sin duplicados (por N CAMARA)
+            [...camerasByDistance, ...camerasByTable].forEach(cam => {
+              if (!camerasSet.has(cam['N CAMARA'])) {
+                camerasSet.set(cam['N CAMARA'], cam);
+              }
+            });
+            filteredCameras = Array.from(camerasSet.values());
+
+            // Limpiar y renderizar
+            camarasLayer.clearLayers();
+            const direccionHeaderKey = Object.keys(allCamerasData[0] || {}).find(k => k.toLowerCase().includes('direcci'));
+            filteredCameras.forEach(camara => {
+              const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
+              const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
+              if (isNaN(lat) || isNaN(lon)) return;
+              let shouldDisplay = true;
+              if (selectedBarrioFeature) {
+                const latlng = L.latLng(lat, lon);
+                shouldDisplay = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
+              }
+              if (shouldDisplay) {
+                const id = camara['N CAMARA'];
+                const direccion = camara[direccionHeaderKey];
+                const cameraIcon = L.divIcon({
+                  className: 'camera-icon',
+                  html: `<span>${id}</span>`,
+                  iconSize: [30, 30],
+                  iconAnchor: [15, 15]
+                });
+                const marker = L.marker([lat, lon], { icon: cameraIcon });
+                marker.bindPopup(`<b>Cámara: ${id}</b><br>${direccion}`);
+                camarasLayer.addLayer(marker);
+              }
+            });
+          });
+        // Salir para evitar render doble
+        return;
+      }
     }
 
     const direccionHeaderKey = Object.keys(allCamerasData[0] || {}).find(k => k.toLowerCase().includes('direcci'));
 
-    allCamerasData.forEach(camara => {
-        const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
-        const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
-        
-        if (isNaN(lat) || isNaN(lon)) return;
+    filteredCameras.forEach(camara => {
+      const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
+      const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
+      if (isNaN(lat) || isNaN(lon)) return;
 
-        let shouldDisplay = true;
-        if (selectedBarrioFeature) {
-            const latlng = L.latLng(lat, lon);
-            shouldDisplay = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
-        }
+      let shouldDisplay = true;
+      if (selectedBarrioFeature) {
+        const latlng = L.latLng(lat, lon);
+        shouldDisplay = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
+      }
 
-        if (shouldDisplay) {
-            const id = camara['N CAMARA'];
-            const direccion = camara[direccionHeaderKey];
-            const cameraIcon = L.divIcon({
-                className: 'camera-icon',
-                html: `<span>${id}</span>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-            const marker = L.marker([lat, lon], { icon: cameraIcon });
-            marker.bindPopup(`<b>Cámara: ${id}</b><br>${direccion}`);
-            camarasLayer.addLayer(marker);
-        }
+      if (shouldDisplay) {
+        const id = camara['N CAMARA'];
+        const direccion = camara[direccionHeaderKey];
+        const cameraIcon = L.divIcon({
+          className: 'camera-icon',
+          html: `<span>${id}</span>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        });
+        const marker = L.marker([lat, lon], { icon: cameraIcon });
+        marker.bindPopup(`<b>Cámara: ${id}</b><br>${direccion}`);
+        camarasLayer.addLayer(marker);
+      }
     });
 }
 
@@ -5015,6 +5085,21 @@ document.getElementById('clear-filters-btn').addEventListener('click', () => {
   // 8. DESBLOQUEAR FILTROS
   // --------------------------------------------
   window._bloquearSiniestros = false;
+
+  // --------------------------------------------
+  // 9. LIMPIAR TRAZADO DE LÍNEA DE COLECTIVO (busRoutesLayer)
+  // --------------------------------------------
+  try {
+    if (typeof busRoutesLayer !== 'undefined' && busRoutesLayer && busRoutesLayer.clearLayers) {
+      if (mymap.hasLayer(busRoutesLayer)) {
+        mymap.removeLayer(busRoutesLayer);
+      }
+      busRoutesLayer.clearLayers();
+      console.log('🧹 Línea de colectivo (busRoutesLayer) eliminada.');
+    }
+  } catch (e) {
+    console.warn('No se pudo limpiar busRoutesLayer al limpiar filtros:', e);
+  }
 
   console.log("✔️ Filtros limpiados SIN recargar siniestros ni romper consultas.");
 });
