@@ -3,12 +3,14 @@ import csv
 import json
 from collections import defaultdict
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Archivos (el script está dentro de public, los CSV están en el mismo directorio)
-archivo_camaras = os.path.join(base_dir, 'Camaras.CSV1 (1).csv')
-archivo_siniestros = os.path.join(base_dir, 'SINIESTROS.csv')
-archivo_salida = os.path.join(base_dir, 'siniestros_con_ubicacion.geojson')
+# Usar carpeta 'public' para los archivos fuente y salida
+base_dir = os.path.dirname(os.path.abspath(__file__))
+public_dir = os.path.abspath(os.path.join(base_dir, '..', 'public'))
+
+archivo_camaras = os.path.join(public_dir, 'Camaras.CSV1 (1).csv')
+archivo_siniestros = os.path.join(public_dir, 'SINIESTROS.csv')
+archivo_salida = os.path.join(public_dir, 'siniestros_con_ubicacion.geojson')
 
 print("📁 Directorio actual:", os.getcwd())
 print("📄 Archivo de cámaras:", archivo_camaras)
