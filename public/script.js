@@ -362,6 +362,26 @@ function setupMobileResponsive() {
 
 // Llamar setup móvil cuando DOM esté listo
 document.addEventListener('DOMContentLoaded', setupMobileResponsive);
+
+// --- FIX: Inicializar desplegables del panel derecho (details/summary) ---
+function initRightPanelDropdowns() {
+  const rightPanel = document.getElementById('right-panel');
+  if (!rightPanel) return;
+  const details = rightPanel.querySelectorAll('details');
+  details.forEach(function(detail) {
+    detail.removeAttribute('open');
+    detail.open = false;
+    detail.style.display = 'none';
+    void detail.offsetHeight;
+    detail.style.display = '';
+    const summary = detail.querySelector('summary');
+    if (summary) {
+      summary.style.cursor = 'pointer';
+    }
+  });
+  rightPanel.offsetHeight;
+}
+document.addEventListener('DOMContentLoaded', initRightPanelDropdowns);
 function setupAdminChatModal() {
   // Verificación de seguridad: verificar que el usuario está autenticado
   const currentUser = firebase.auth().currentUser;
@@ -3461,24 +3481,28 @@ function loadBaseCSVData() {
         
         // Mostrar cámaras automáticamente después de cargar los datos (solo si no se indica lo contrario)
         if (!skipAutoDisplayCameras) {
-            console.log('🎯 Renderizando cámaras automáticamente...');
-            const barrioFilter = document.getElementById('barrio-filter');
-            if (barrioFilter) {
-                barrioFilter.value = 'all';
-            }
-            applyCamarasFilters();
-            if (!mymap.hasLayer(camarasLayer)) {
-                mymap.addLayer(camarasLayer);
-            }
-            // Mark checkbox silently to match the visible state (without triggering change event)
-            const camarasCheckbox = document.getElementById('camaras-checkbox');
-            if (camarasCheckbox) {
-                camarasCheckbox.checked = true;
-            }
-            console.log('✅ Cámaras mostradas. Total en capa:', camarasLayer.getLayers().length);
+          console.log('🎯 Renderizando cámaras automáticamente...');
+          const barrioFilter = document.getElementById('barrio-filter');
+          if (barrioFilter) {
+            barrioFilter.value = 'all';
+          }
+          applyCamarasFilters();
+          if (!mymap.hasLayer(camarasLayer)) {
+            mymap.addLayer(camarasLayer);
+          }
+          // Mark checkbox silently to match the visible state (without triggering change event)
+          const camarasCheckbox = document.getElementById('camaras-checkbox');
+          if (camarasCheckbox) {
+            camarasCheckbox.checked = true;
+          }
+          // Inicializar desplegables del panel derecho después de mostrar cámaras
+          if (typeof initRightPanelDropdowns === 'function') {
+            initRightPanelDropdowns();
+          }
+          console.log('✅ Cámaras mostradas. Total en capa:', camarasLayer.getLayers().length);
         } else {
-            console.log('⏭️ Omitiendo visualización automática de cámaras');
-            skipAutoDisplayCameras = false; // Resetear el flag
+          console.log('⏭️ Omitiendo visualización automática de cámaras');
+          skipAutoDisplayCameras = false; // Resetear el flag
         }
     })
     .catch(error => {
@@ -3963,6 +3987,18 @@ if (showLprRadiusButton) {
 }
 // --- Checkbox de Cobertura Escolar ---
 document.addEventListener('DOMContentLoaded', () => {
+
+      // === FIX: Inicializar desplegables del panel derecho ===
+      // Selecciona todos los <details> dentro del panel derecho y fuerza su estado cerrado
+      const rightPanel = document.getElementById('right-panel');
+      if (rightPanel) {
+        const detailsList = rightPanel.querySelectorAll('details');
+        detailsList.forEach(details => {
+          details.open = false; // Fuerza cerrado al inicio
+          details.removeAttribute('open');
+        });
+        rightPanel.offsetHeight;
+      }
     // --- Lógica de Cobertura Escolar ---
 const colegiosCoberturaCheckbox = document.getElementById('colegios-cobertura-checkbox');
 const colegiosCoberturaLayer = L.layerGroup();
