@@ -20,6 +20,103 @@
   <!-- Tu CSS -->
   <link rel="stylesheet" href="css/style.css?v=202602191300">
 
+  <!-- ============================================================
+       INFORME DE SEGURIDAD - ESTILOS
+       ============================================================ -->
+  <style>
+    /* --- Botón principal informe --- */
+    #informe-barrio-btn {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px 14px;
+      background: #1a2332;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.2s;
+    }
+    #informe-barrio-btn:hover { background: #2d3f55; }
+
+    /* --- Tabs --- */
+    .informe-tab {
+      padding: 9px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .informe-tab:hover { color: #1e293b; }
+    .informe-tab.active { color: #1a2332; border-bottom-color: #1a2332; }
+
+    /* --- Tarjetas métricas --- */
+    .informe-metric {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 17px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .informe-metric .label { font-size: 13px; color: #64748b; font-weight: 500; }
+    .informe-metric .value { font-size: 29px; font-weight: 700; line-height: 1.1; }
+    .informe-metric .unit  { font-size: 14px; color: #94a3b8; margin-left: 2px; }
+
+    /* --- Cards de contenido --- */
+    .informe-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .informe-card h4 { margin: 0 0 14px; font-size: 15px; font-weight: 600; color: #1e293b; }
+
+    /* --- Barras de progreso --- */
+    .informe-progress-track { background: #e2e8f0; border-radius: 6px; height: 12px; overflow: hidden; margin-top: 5px; }
+    .informe-progress-bar   { height: 100%; border-radius: 6px; transition: width 0.7s ease; }
+
+    /* --- Tabla --- */
+    .informe-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .informe-tabla th { padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    .informe-tabla td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .informe-tabla tr:last-child td { border-bottom: none; }
+    .informe-tabla tr:hover td { background: #f8fafc; }
+
+    /* --- Badges --- */
+    .badge-critico  { background:#fde8e8; color:#9b1c1c; padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; display:inline-block; }
+    .badge-alto     { background:#fef3c7; color:#92400e; padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; display:inline-block; }
+    .badge-moderado { background:#d1fae5; color:#065f46; padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; display:inline-block; }
+    .badge-bajo     { background:#dbeafe; color:#1e40af; padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; display:inline-block; }
+
+    /* --- Recomendaciones --- */
+    .informe-rec { display:flex; gap:14px; align-items:flex-start; padding:14px 18px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px; }
+    .informe-rec.urgente { border-left:3px solid #dc2626; }
+    .informe-rec .rec-num { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+    .informe-rec p { margin:0; font-size:14px; color:#334155; line-height:1.65; }
+
+    /* --- Botones de acción rápida --- */
+    .btn-accion { padding:7px 16px; font-size:13px; background:#f1f5f9; color:#1e293b; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; transition:all 0.15s; font-weight:500; }
+    .btn-accion:hover { background:#e2e8f0; }
+
+    /* --- Barras de causa --- */
+    .causa-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .causa-row .causa-label { width:180px; font-size:13px; color:#64748b; text-align:right; flex-shrink:0; }
+    .causa-row .causa-track { flex:1; background:#e2e8f0; border-radius:4px; height:22px; overflow:hidden; }
+    .causa-row .causa-fill  { height:100%; border-radius:4px; transition:width 0.6s ease; display:flex; align-items:center; padding-left:7px; }
+    .causa-row .causa-fill span { font-size:11px; color:#fff; font-weight:600; }
+    .causa-row .causa-pct { width:32px; font-size:12px; color:#64748b; text-align:right; }
+  </style>
+
 </head>
 <body>
 
@@ -32,11 +129,15 @@
   <div id="user-info">
     <span id="user-email"></span>
     <button id="chat-panel-btn">💬 Panel de Chat</button>
+    <!-- ============================================================
+         BOTÓN INFORME DE SEGURIDAD - agregado aquí junto a chat-panel-btn
+         ============================================================ -->
+    <button id="informe-barrio-btn" onclick="abrirInformeBarrio()" style="display:none;">
+      📊 Informe por Barrio
+    </button>
     <button id="logout-btn">Cerrar Sesión</button>
   </div>
-    <!-- ============================================ -->
-<!-- SELECTOR DE TIPO DE MAPA -->
-<!-- ============================================ -->
+
 <div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
   <h4>🗺️ Tipo de Mapa Base</h4>
   <select id="base-map-selector">
@@ -47,9 +148,6 @@
   </select>
 </div>
 
-<!-- ============================================ -->
-<!-- NUEVO: STREET VIEW -->
-<!-- ============================================ -->
 <div class="filter-group" style="margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
   <h4>🚶 Street View</h4>
   <button id="streetview-btn">Activar Street View</button>
@@ -57,7 +155,7 @@
     📍 Haz clic en el mapa para ver Street View
   </p>
 </div>
-<!-- ============================================ -->
+
     <div id="search-container" class="filter-group">
       <h4>Buscador de Direcciones</h4>
       <input type="text" id="address-input" placeholder="Ingrese una dirección...">
@@ -138,17 +236,16 @@
       <div class="compass-cardinal south">S</div>
       <div class="compass-cardinal east">E</div>
       <div class="compass-cardinal west">O</div>
-  
       <div class="compass-star">
         <div class="star-point north-point"></div>
         <div class="star-point south-point"></div>
         <div class="star-point east-point"></div>
         <div class="star-point west-point"></div>
       </div>
-  
       <div class="compass-center"></div>
     </div>
   </div>
+
   <div id="info-cobertura-escolar" style="position: fixed; top: 70px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); padding: 12px 16px; font-size: 13px; line-height: 1.4; color: #222; width: 240px; cursor: move; z-index: 9999; display: none;">
     <h4 class="panel-header" style="margin: 0 0 6px 0; font-size: 14px; text-align: center; cursor: grab; padding: 4px; user-select: none;">📘 Cobertura Escolar</h4>
     <p>Indica el porcentaje de colegios que tienen una cámara pública a menos de <b>100 m</b>.</p>
@@ -161,7 +258,7 @@
       Los porcentajes se calculan por barrio en función de la cantidad de colegios cubiertos por cámaras.
     </p>
   </div>
-  
+
   <div id="info-corredores-escolares" style="display: none; position: fixed; top: 350px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); padding: 12px 16px; font-size: 13px; line-height: 1.4; color: #222; width: 240px; z-index: 9999;">
     <h4 class="panel-header" style="margin: 0 0 6px 0; font-size: 14px; text-align: center; color: #008000; cursor: grab; padding: 4px; user-select: none;">🚦 Corredores Escolares</h4>
     <p style="margin: 4px 0; font-size: 12px;">Información sobre cámaras de vigilancia en los <b>corredores escolares</b> de la ciudad.</p>
@@ -173,31 +270,27 @@
       </p>
     </div>
   </div>
-  
 
   <!-- === PANEL DERECHO === -->
   <div id="right-panel">
-    <!-- BOTÓN CERRAR EN MÓVIL (solo visible en pantallas pequeñas) -->
     <button id="close-right-panel-btn" style="display: none; position: absolute; top: 10px; right: 10px; background: #f8f9fa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 2001;">✕</button>
-    
+
     <h3>Cámaras</h3>
-    
-    <!-- Botón Preguntas/Ayuda en panel derecho -->
+
     <button id="btn-open-consultas" class="panel-help-button">
       <span class="button-text">PREGUNTAS / AYUDA</span>
     </button>
-    
+
     <label><input type="checkbox" id="camaras-checkbox"> Mostrar Cámaras</label>
     <label><input type="checkbox" id="camaras-privadas-checkbox"> Mostrar Cámaras Privadas</label>
     <label><input type="checkbox" id="zonas-sin-cobertura-checkbox"> Cobertura de Cámaras</label>
     <label><input type="checkbox" id="zonas-sin-cobertura-negativo-checkbox"> Zonas sin Cobertura</label>
     <label><input type="checkbox" id="corredores-escolares-checkbox"> Corredores Escolares</label>
     <label><input type="checkbox" id="colegios-checkbox"> Colegios</label>
-  <div class="layer-option">
-           <input type="checkbox" id="colegios-cobertura-checkbox">
-    <label for="colegios-cobertura-checkbox">Cobertura Escolar (colegios + cámaras)</label>
-  </div>
-    
+    <div class="layer-option">
+      <input type="checkbox" id="colegios-cobertura-checkbox">
+      <label for="colegios-cobertura-checkbox">Cobertura Escolar (colegios + cámaras)</label>
+    </div>
 
     <h3>Líneas de Colectivo</h3>
     <div class="filter-group">
@@ -208,7 +301,8 @@
     <label><input type="checkbox" id="bus-route-checkbox"> Mostrar Recorrido</label>
 
     <h3>Cámaras LPR</h3>
-                <div class="filter-group lpr-buttons-container">      <select id="lpr-camera-select"><option value="">Seleccione una cámara LPR</option></select>
+    <div class="filter-group lpr-buttons-container">
+      <select id="lpr-camera-select"><option value="">Seleccione una cámara LPR</option></select>
       <button id="show-lpr-radius-button">Mostrar Radio</button>
     </div>
 
@@ -227,7 +321,7 @@
       <div id="aforo-day-list"></div>
     </div>
 
-    <hr> <!-- Add a separator for better visual grouping -->
+    <hr>
 
     <h3>Patrullas</h3>
     <label><input type="checkbox" id="patrullas-checkbox"> Mostrar Patrullas</label>
@@ -240,10 +334,6 @@
       <label><input type="checkbox" id="robo-heatmap-checkbox"> Mapa de Calor (Robos)</label>
     </div>
   </div>
-
-
-  
-
 
   <!-- === PANELES SECUNDARIOS === -->
   <div id="alert-list-panel" class="panel-floating">
@@ -264,7 +354,6 @@
   <div id="consulta-results-panel" style="display: none;">
     <div class="panel-header"><h4>Resultado de la Consulta</h4></div>
     <div id="consulta-results-content"></div>
-    <!-- Nuevo panel para siniestros por día -->
     <div id="siniestros-por-dia-panel" style="display: none;">
       <h5>Siniestros por Día de la Semana</h5>
       <div id="siniestros-dia-content"></div>
@@ -281,108 +370,64 @@
         <summary>Análisis de Siniestros y Delitos</summary>
         <button class="consulta-btn" data-consulta="concentracion_siniestros">¿Zonas con mayor concentración de siniestros?</button>
         <button class="consulta-btn" data-consulta="barrios_mas_robos">5 Barrios con más eventos Robo Automotor</button>
-        <!-- Botón: Evaluación de Calles Inseguras -->
         <h3 style="margin-top:15px;">🛣️ Análisis de Calles</h3>
         <div class="consulta-item">
-        <button class="consulta-btn" onclick="analizarCallesSeguras(event, { topN: 20 })">
-        🚨 Top 20 Calles Más Peligrosas
-       </button>
-    </div>
+          <button class="consulta-btn" onclick="analizarCallesSeguras(event, { topN: 20 })">
+            🚨 Top 20 Calles Más Peligrosas
+          </button>
+        </div>
         <button class="consulta-btn" data-consulta="siniestros_noche">Mostrar siniestros en horario nocturno (22-06hs)</button>
-        <button class="consulta-btn" data-consulta="robos_por_dia">
-        📅 ¿Qué día de la semana hay más robos?
-        </button>        
+        <button class="consulta-btn" data-consulta="robos_por_dia">📅 ¿Qué día de la semana hay más robos?</button>
         <button class="consulta-btn" data-consulta="tipos_siniestros_comunes">Listar Causas de siniestros mas comunes</button>
         <button class="consulta-btn" data-consulta="ultimas_alertas">¿Dónde se generaron las últimas alertas?</button>
-      <details>
-        <summary>📉 Tendencias por Causa Específica</summary>
-    <button class="consulta-btn" data-consulta="tendencia_distraccion">
-        📈 ¿Están aumentando las distracciones?
-    </button>
-
-    <button class="consulta-btn" data-consulta="tendencia_semaforo">
-        🚦 ¿Disminuyeron las violaciones de semáforo?
-    </button>
-
-    <button class="consulta-btn" data-consulta="tendencia_exceso_velocidad">
-        ⚡ Tendencia: Exceso de Velocidad
-    </button>
-
-    <button class="consulta-btn" data-consulta="tendencia_peaton_imprudente">
-        🚶‍♂️ Tendencia: Peatón imprudente
-    </button>
-
-    <button class="consulta-btn" data-consulta="tendencia_no_prioridad">
-        🔁 Tendencia: No Respeto Prioridad de Paso
-    </button>
-      </details>
-     
-        <button class="consulta-btn" data-consulta="barrios_mas_siniestros">Los 5 Barrios que tienen más Siniestros</button>
-        <button class="consulta-btn" data-consulta="siniestros_hora_pico">Mostrar siniestros en hora pico (07-09 y 17-19hs)</button>        
-        <button class="consulta-btn" data-consulta="esquinas_mas_siniestros">¿Cuáles son las 10 esquinas con más siniestros?</button>
-        <button class="consulta-btn" data-consulta="esquinas_sin_semaforo_criticas">
-          🚦❌ Cruces Críticos SIN Semáforo
-      </button>        
-        <button class="consulta-btn" data-consulta="heatmap_robos">🔥 Mapa de calor: Robos con detención/secuestro</button>   
-        <button class="consulta-btn" data-consulta="siniestros_por_dia">¿Qué día de la semana hay más siniestros?</button>
-        <button class="consulta-btn" data-consulta="robos_zonas_sin_camaras">
-          🎯 Robos en Zonas sin Cámaras
-        </button>
-        
-        <button class="consulta-btn" data-consulta="siniestros_por_mes">
-          📊 Siniestros por Mes
-        </button>
-        
-        <button class="consulta-btn" data-consulta="robos_sin_intervencion">
-          🚨 Eventos Categoria Robos Automotor
-        </button>
-        <button class="consulta-btn" data-consulta="esquinas_peligrosas_peatones_ciclistas">
-          🚶‍♀️ Identificar las 10 esquinas más peligrosas para peatones y ciclistas 🚲
-        </button>
-        <!-- Agregar este botón en el panel de consultas, en la sección apropiada -->
-        <button class="consulta-btn" data-consulta="siniestros_corredores_escolares">
-          🎒 Siniestros en Corredores Escolares
-        </button>
-        
-      </details>
-      <details>
-
-          <summary>Optimización de Recursos</summary>
-          
-          <button class="consulta-btn" data-consulta="patrullaje_sugerido">
-            🚓 Rutas de patrullaje óptimas basadas en incidentes
-          </button>
-          
-          <!-- Controles adicionales para la consulta -->
-          <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; display: none;" id="patrullaje-controls">
-            <label for="num-rutas-input" style="display: block; margin-bottom: 5px;">Número de rutas a generar:</label>
-            <input type="number" id="num-rutas-input" min="1" max="10" value="3" style="width: 60px; padding: 5px;">
-            
-            <label for="turno-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Turno:</label>
-            <select id="turno-patrullaje" style="width: 100%; padding: 5px;">
-              <option value="all">Todos los horarios</option>
-              <option value="mañana">Mañana (6:00-14:00)</option>
-              <option value="tarde">Tarde (14:00-22:00)</option>
-              <option value="noche">Noche (22:00-6:00)</option>
-            </select>
-            
-            <label for="dias-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Días:</label>
-            <select id="dias-patrullaje" style="width: 100%; padding: 5px;">
-              <option value="all">Todos los días</option>
-              <option value="laborables">Días laborables</option>
-              <option value="finde">Fines de semana</option>
-            </select>
-          </div>
-        </details> 
         <details>
+          <summary>📉 Tendencias por Causa Específica</summary>
+          <button class="consulta-btn" data-consulta="tendencia_distraccion">📈 ¿Están aumentando las distracciones?</button>
+          <button class="consulta-btn" data-consulta="tendencia_semaforo">🚦 ¿Disminuyeron las violaciones de semáforo?</button>
+          <button class="consulta-btn" data-consulta="tendencia_exceso_velocidad">⚡ Tendencia: Exceso de Velocidad</button>
+          <button class="consulta-btn" data-consulta="tendencia_peaton_imprudente">🚶‍♂️ Tendencia: Peatón imprudente</button>
+          <button class="consulta-btn" data-consulta="tendencia_no_prioridad">🔁 Tendencia: No Respeto Prioridad de Paso</button>
+        </details>
+        <button class="consulta-btn" data-consulta="barrios_mas_siniestros">Los 5 Barrios que tienen más Siniestros</button>
+        <button class="consulta-btn" data-consulta="siniestros_hora_pico">Mostrar siniestros en hora pico (07-09 y 17-19hs)</button>
+        <button class="consulta-btn" data-consulta="esquinas_mas_siniestros">¿Cuáles son las 10 esquinas con más siniestros?</button>
+        <button class="consulta-btn" data-consulta="esquinas_sin_semaforo_criticas">🚦❌ Cruces Críticos SIN Semáforo</button>
+        <button class="consulta-btn" data-consulta="heatmap_robos">🔥 Mapa de calor: Robos con detención/secuestro</button>
+        <button class="consulta-btn" data-consulta="siniestros_por_dia">¿Qué día de la semana hay más siniestros?</button>
+        <button class="consulta-btn" data-consulta="robos_zonas_sin_camaras">🎯 Robos en Zonas sin Cámaras</button>
+        <button class="consulta-btn" data-consulta="siniestros_por_mes">📊 Siniestros por Mes</button>
+        <button class="consulta-btn" data-consulta="robos_sin_intervencion">🚨 Eventos Categoria Robos Automotor</button>
+        <button class="consulta-btn" data-consulta="esquinas_peligrosas_peatones_ciclistas">🚶‍♀️ Identificar las 10 esquinas más peligrosas para peatones y ciclistas 🚲</button>
+        <button class="consulta-btn" data-consulta="siniestros_corredores_escolares">🎒 Siniestros en Corredores Escolares</button>
+      </details>
+      <details>
+        <summary>Optimización de Recursos</summary>
+        <button class="consulta-btn" data-consulta="patrullaje_sugerido">🚓 Rutas de patrullaje óptimas basadas en incidentes</button>
+        <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; display: none;" id="patrullaje-controls">
+          <label for="num-rutas-input" style="display: block; margin-bottom: 5px;">Número de rutas a generar:</label>
+          <input type="number" id="num-rutas-input" min="1" max="10" value="3" style="width: 60px; padding: 5px;">
+          <label for="turno-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Turno:</label>
+          <select id="turno-patrullaje" style="width: 100%; padding: 5px;">
+            <option value="all">Todos los horarios</option>
+            <option value="mañana">Mañana (6:00-14:00)</option>
+            <option value="tarde">Tarde (14:00-22:00)</option>
+            <option value="noche">Noche (22:00-6:00)</option>
+          </select>
+          <label for="dias-patrullaje" style="display: block; margin-top: 10px; margin-bottom: 5px;">Días:</label>
+          <select id="dias-patrullaje" style="width: 100%; padding: 5px;">
+            <option value="all">Todos los días</option>
+            <option value="laborables">Días laborables</option>
+            <option value="finde">Fines de semana</option>
+          </select>
+        </div>
+      </details>
+      <details>
         <summary>Análisis de Cámaras y Cobertura</summary>
         <button class="consulta-btn" data-consulta="barrios_menor_cobertura">¿Qué barrios tienen menor cobertura de cámaras?</button>
         <button class="consulta-btn" data-consulta="camaras_sin_siniestros">🛡️ Cámaras sin siniestros cercanos (100m)</button>
-        <button class="consulta-btn" data-consulta="correlacion_camaras_robos">
-        📊 ¿Los barrios con más cámaras tienen menos robos?
-        </button>        
-        <button class="consulta-btn" data-consulta="comparar_camaras">🎯 Comparar cámaras públicas vs. privadas</button>        
-        <button class="consulta-btn" data-consulta="zonas_ciegas">Identificar "zonas ciegas" (siniestros sin cámaras)</button>        
+        <button class="consulta-btn" data-consulta="correlacion_camaras_robos">📊 ¿Los barrios con más cámaras tienen menos robos?</button>
+        <button class="consulta-btn" data-consulta="comparar_camaras">🎯 Comparar cámaras públicas vs. privadas</button>
+        <button class="consulta-btn" data-consulta="zonas_ciegas">Identificar "zonas ciegas" (siniestros sin cámaras)</button>
         <button class="consulta-btn" data-consulta="siniestros_en_zonas_descubiertas">🔥 Siniestros No Visualizados (NSD)</button>
         <div class="filter-group" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px;">
           <label for="moto-hour-input" style="display: block; margin-bottom: 5px;">Hora para análisis de motos:</label>
@@ -396,13 +441,11 @@
       </details>
       <details>
         <summary>Análisis de Infraestructura y Transporte</summary>
-        <button class="consulta-btn" data-consulta="lineas_colectivo_siniestros">Cámaras con >20 Siniestros Cercanos (50m)</button>        
-        <button class="consulta-btn" data-consulta="siniestros_cerca_paradas_colectivo">Siniestros cerca de cámaras de colectivo (30m)</button>        
+        <button class="consulta-btn" data-consulta="lineas_colectivo_siniestros">Cámaras con >20 Siniestros Cercanos (50m)</button>
+        <button class="consulta-btn" data-consulta="siniestros_cerca_paradas_colectivo">Siniestros cerca de cámaras de colectivo (30m)</button>
         <button class="consulta-btn" data-consulta="visualizar_recorridos_colectivos">Visualizar todas las cámaras de recorridos de colectivos</button>
         <button class="consulta-btn" data-consulta="semaforos_mas_siniestros">🚦 Semáforos con más siniestros viales</button>
-        <button class="consulta-btn" data-consulta="evolucion_temporal_siniestros">
-          📈 ¿Cómo evolucionaron los siniestros en los últimos 3 años?
-        </button>
+        <button class="consulta-btn" data-consulta="evolucion_temporal_siniestros">📈 ¿Cómo evolucionaron los siniestros en los últimos 3 años?</button>
       </details>
       <div id="consulta-resultados"></div>
     </div>
@@ -449,9 +492,7 @@
       <button id="tour-next">Siguiente ▶</button>
     </div>
   </div>
-  <!-- === FIN TOUR GUIDE === -->
 
-  <!-- Botón para iniciar el tour manualmente -->
   <button id="btn-start-tour" class="map-overlay-button">
     <span class="tour-icon">▶</span>
     <span class="button-text">GUÍA DE NAVEGACIÓN</span>
@@ -464,739 +505,866 @@
         <h4 id="info-modal-title">Análisis de Correlación</h4>
         <button id="info-modal-close-btn" class="close-button">X</button>
       </div>
-      <div id="info-modal-body">
-        <!-- El contenido se insertará dinámicamente -->
-      </div>
+      <div id="info-modal-body"></div>
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL INFORME DE SEGURIDAD POR BARRIO
+       ============================================================ -->
+  <div id="informe-barrio-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+    <div id="informe-barrio-inner" style="background:#fff; border-radius:12px; width:96vw; max-width:1176px; max-height:96vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative;">
+
+      <!-- HEADER arrastrable -->
+      <div id="informe-barrio-header" style="background:#1a2332; color:#fff; padding:17px 24px; display:flex; align-items:center; justify-content:space-between; cursor:move; flex-shrink:0; user-select:none;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-size:24px;">📊</span>
+          <div>
+            <div style="font-size:18px;font-weight:600;letter-spacing:0.3px;">Informe de Seguridad Urbana</div>
+            <div style="font-size:13px;color:#94a3b8;margin-top:2px;">CIMU · Análisis por barrio</div>
+          </div>
+        </div>
+        <button onclick="cerrarInformeBarrio()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:22px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+      </div>
+
+      <!-- SELECTOR DE BARRIO + TABS -->
+      <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 24px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <label style="font-size:14px;color:#64748b;font-weight:500;">BARRIO:</label>
+          <select id="informe-barrio-select" onchange="renderInformeBarrio()" style="padding:8px 14px;font-size:15px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;min-width:260px;cursor:pointer;">
+            <option value="">-- Seleccioná un barrio --</option>
+          </select>
+          <div id="informe-criticidad-badge" style="display:none;"></div>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button onclick="informeVerEnMapa()" id="btn-informe-ver-mapa" style="padding:8px 16px;font-size:13px;background:#1a2332;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none;">🗺️ Ver en mapa</button>
+            <button onclick="informeProponerCamaras()" id="btn-informe-camaras" style="padding:8px 16px;font-size:13px;background:#0f6e56;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none;">📷 Proponer cámaras</button>
+          </div>
+        </div>
+        <!-- TABS -->
+        <div style="display:flex;gap:0;overflow-x:auto;">
+          <button class="informe-tab active" data-tab="resumen"          onclick="switchInformeTab('resumen',this)">Resumen</button>
+          <button class="informe-tab"         data-tab="siniestros"      onclick="switchInformeTab('siniestros',this)">Siniestros</button>
+          <button class="informe-tab"         data-tab="camaras"         onclick="switchInformeTab('camaras',this)">Cámaras</button>
+          <button class="informe-tab"         data-tab="escolares"       onclick="switchInformeTab('escolares',this)">Corredores Escolares</button>
+          <button class="informe-tab"         data-tab="recomendaciones" onclick="switchInformeTab('recomendaciones',this)">Recomendaciones</button>
+        </div>
+      </div>
+
+      <!-- CONTENIDO dinámico -->
+      <div id="informe-barrio-content" style="overflow-y:auto;flex:1;padding:24px;">
+        <div style="text-align:center;color:#94a3b8;padding:70px 20px;font-size:16px;">
+          Seleccioná un barrio para generar el informe completo
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <!-- FIN MODAL INFORME -->
 
   <!-- === LIBRERÍAS Y SCRIPTS === -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
 
-<!-- Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E"></script>
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E"></script>
 
-<!-- Google Mutant Plugin -->
-<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.4/dist/Leaflet.GoogleMutant.js"></script>
+  <!-- Google Mutant Plugin -->
+  <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.4/dist/Leaflet.GoogleMutant.js"></script>
 
-<!-- ================= PANEL DE CHAT (BASE) ================= -->
-<div id="chatBasePanel">
-
-  <h3 class="draggable-header" id="chatBasePanel-header">
-    💬 Chat con <span id="chatBaseMovil"></span>
-    <button id="cerrarChatBaseBtn" class="close-button">✖</button>
-  </h3>
-
-  <div id="chatBaseMsgs"></div>
-
-  <div style="display: flex; gap: 5px;">
-    <input
-      id="chatBaseInput"
-      placeholder="Escribir mensaje..."
-      style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #aaa;"
-      disabled
-    >
-    <button id="enviarChatBaseBtn"
-      style="padding: 8px 14px; background: #1d4ed8; color: white; border: none; border-radius: 6px;"
-      disabled
-    >
-      Enviar
-    </button>
-  </div>
-
-</div>
-
-
-
-<div id="visor-patrulla" class="visor-hidden">
-  <!-- Header con info -->
-  <div class="visor-header" id="visor-patrulla-header" style="cursor: move;">
-    <div class="visor-title">
-      <span class="visor-icon">🚔</span>
-      <span class="visor-name">CÁMARA <span id="nombre-patrulla-visor"></span></span>
-    </div>
-    <button class="visor-close-btn" onclick="cerrarVisor(event)">✖</button>
-  </div>
-  
-  <!-- Info bar con coordenadas y velocidad -->
-  <div class="visor-info-bar">
-    <span id="visor-coords">📍 -38.0055, -57.5426</span>
-    <span id="visor-speed">🚗 0 km/h</span>
-    <span id="visor-status" class="status-live">● EN VIVO</span>
-  </div>
-  
-  <!-- Video principal -->
-  <div class="visor-video-wrapper">
-    <video id="visorVideo" autoplay playsinline muted style="display: block;"></video>
-    <canvas id="visorCanvas" style="display: none; width: 100%; height: 100%;"></canvas>
-  </div>
-  
-  <!-- Controles -->
-  <div class="visor-controls">
-    <span class="visor-label">🚔 CÁMARA <span id="visor-label-name"></span></span>
-    <div class="visor-buttons">
-      <button id="visor-audio-btn" class="visor-ctrl-btn" title="Audio">🔊</button>
-      <button id="visor-fullscreen-btn" class="visor-ctrl-btn" title="Pantalla completa">⛶</button>
+  <!-- ================= PANEL DE CHAT (BASE) ================= -->
+  <div id="chatBasePanel">
+    <h3 class="draggable-header" id="chatBasePanel-header">
+      💬 Chat con <span id="chatBaseMovil"></span>
+      <button id="cerrarChatBaseBtn" class="close-button">✖</button>
+    </h3>
+    <div id="chatBaseMsgs"></div>
+    <div style="display: flex; gap: 5px;">
+      <input id="chatBaseInput" placeholder="Escribir mensaje..." style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #aaa;" disabled>
+      <button id="enviarChatBaseBtn" style="padding: 8px 14px; background: #1d4ed8; color: white; border: none; border-radius: 6px;" disabled>Enviar</button>
     </div>
   </div>
-  
-  <!-- Miniaturas de otras cámaras (integradas) -->
-  <div id="visor-miniaturas-container">
-    <div id="visor-miniaturas">
-      <!-- Las miniaturas se insertan dinámicamente -->
+
+  <div id="visor-patrulla" class="visor-hidden">
+    <div class="visor-header" id="visor-patrulla-header" style="cursor: move;">
+      <div class="visor-title">
+        <span class="visor-icon">🚔</span>
+        <span class="visor-name">CÁMARA <span id="nombre-patrulla-visor"></span></span>
+      </div>
+      <button class="visor-close-btn" onclick="cerrarVisor(event)">✖</button>
     </div>
-  </div>
-</div>
-
-<!-- Panel multicamaras ahora está integrado en el visor -->
-
-<div id="chat-com-panel" class="panel-floating" style="display:none; width:320px; height:400px;">
-  <div class="panel-header" id="chat-com-header" style="cursor: move;">
-    <h4>📣 Chat con móviles</h4>
-    <button id="close-chat-com" class="close-button">X</button>
-  </div>
-  <div id="chat-com-mensajes" class="panel-content" style="overflow-y:auto; height:330px; padding:10px;"></div>
-</div>
-
-<!-- ====== MODAL DE CHAT ADMINISTRATIVO ====== -->
-<div id="admin-chat-modal" class="admin-chat-modal" style="display: none;">
-  <!-- Botón Cerrar -->
-  <button id="admin-chat-close-btn" class="admin-chat-close" title="Cerrar">✕</button>
-  
-  <!-- PIN Modal (Aparece solo si no está validado) -->
-  <div id="pin-modal-container" class="pin-modal-admin" style="display: none;">
-    <div class="pin-box">
-      <h3>🔐 Acceso Restringido</h3>
-      <p>Ingresa el PIN para acceder al panel de operadores</p>
-      <div id="pin-error-msg" style="color: #f44336; margin-bottom: 10px; display: none;"></div>
-      <input type="text" id="admin-pin-input" class="admin-pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
-      <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button class="pin-btn-submit" id="admin-pin-submit">Ingresar</button>
-        <button class="pin-btn-cancel" id="admin-pin-cancel">Cancelar</button>
+    <div class="visor-info-bar">
+      <span id="visor-coords">📍 -38.0055, -57.5426</span>
+      <span id="visor-speed">🚗 0 km/h</span>
+      <span id="visor-status" class="status-live">● EN VIVO</span>
+    </div>
+    <div class="visor-video-wrapper">
+      <video id="visorVideo" autoplay playsinline muted style="display: block;"></video>
+      <canvas id="visorCanvas" style="display: none; width: 100%; height: 100%;"></canvas>
+    </div>
+    <div class="visor-controls">
+      <span class="visor-label">🚔 CÁMARA <span id="visor-label-name"></span></span>
+      <div class="visor-buttons">
+        <button id="visor-audio-btn" class="visor-ctrl-btn" title="Audio">🔊</button>
+        <button id="visor-fullscreen-btn" class="visor-ctrl-btn" title="Pantalla completa">⛶</button>
       </div>
     </div>
+    <div id="visor-miniaturas-container">
+      <div id="visor-miniaturas"></div>
+    </div>
   </div>
 
-  <!-- Panel Principal (Aparece después de validar PIN) -->
-  <div id="admin-chat-content" class="admin-chat-content" style="display: none;">
-    <div class="admin-chat-header">
-      <h2>💬 Panel de Operadores</h2>
+  <div id="chat-com-panel" class="panel-floating" style="display:none; width:320px; height:400px;">
+    <div class="panel-header" id="chat-com-header" style="cursor: move;">
+      <h4>📣 Chat con móviles</h4>
+      <button id="close-chat-com" class="close-button">X</button>
     </div>
+    <div id="chat-com-mensajes" class="panel-content" style="overflow-y:auto; height:330px; padding:10px;"></div>
+  </div>
 
-    <div class="admin-chat-body">
-      <!-- Lista de Operadores -->
-      <div class="operadores-sidebar">
-        <h4>📋 Operadores</h4>
-        <div id="operadores-list-modal"></div>
+  <!-- ====== MODAL DE CHAT ADMINISTRATIVO ====== -->
+  <div id="admin-chat-modal" class="admin-chat-modal" style="display: none;">
+    <button id="admin-chat-close-btn" class="admin-chat-close" title="Cerrar">✕</button>
+    <div id="pin-modal-container" class="pin-modal-admin" style="display: none;">
+      <div class="pin-box">
+        <h3>🔐 Acceso Restringido</h3>
+        <p>Ingresa el PIN para acceder al panel de operadores</p>
+        <div id="pin-error-msg" style="color: #f44336; margin-bottom: 10px; display: none;"></div>
+        <input type="text" id="admin-pin-input" class="admin-pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="pin-btn-submit" id="admin-pin-submit">Ingresar</button>
+          <button class="pin-btn-cancel" id="admin-pin-cancel">Cancelar</button>
+        </div>
       </div>
-
-      <!-- Área de Chat -->
-      <div class="chat-area-modal">
-        <div id="chat-header-modal" class="chat-header-modal" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
-            <div>
-              <h3 id="selected-operador-name">-</h3>
-              <span id="selected-operador-status" class="status-indicator">🟢 Online</span>
+    </div>
+    <div id="admin-chat-content" class="admin-chat-content" style="display: none;">
+      <div class="admin-chat-header"><h2>💬 Panel de Operadores</h2></div>
+      <div class="admin-chat-body">
+        <div class="operadores-sidebar">
+          <h4>📋 Operadores</h4>
+          <div id="operadores-list-modal"></div>
+        </div>
+        <div class="chat-area-modal">
+          <div id="chat-header-modal" class="chat-header-modal" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
+              <div>
+                <h3 id="selected-operador-name">-</h3>
+                <span id="selected-operador-status" class="status-indicator">🟢 Online</span>
+              </div>
+              <button id="clear-chat-btn" style="background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">🗑️ Limpiar Chat</button>
             </div>
-            <button id="clear-chat-btn" style="background: #ff6b6b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">🗑️ Limpiar Chat</button>
+          </div>
+          <div id="messages-modal" class="messages-modal">
+            <div class="empty-messages"><p>Selecciona un operador para ver la conversación</p></div>
+          </div>
+          <div id="input-area-modal" class="input-area-modal" style="display: none;">
+            <input type="text" id="message-input-modal" placeholder="Escribe un mensaje...">
+            <button id="send-message-modal" class="send-btn-modal">Enviar</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div id="messages-modal" class="messages-modal">
-          <div class="empty-messages">
-            <p>Selecciona un operador para ver la conversación</p>
+  <style>
+    .admin-chat-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:850px; height:700px; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); display:flex; flex-direction:column; z-index:999; overflow:hidden; cursor:move; }
+    .admin-chat-close { position:absolute; top:12px; right:12px; background:#e0e0e0; color:#666; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .admin-chat-close:hover { background:#d0d0d0; color:#333; }
+    .pin-modal-admin { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1001; border-radius:12px; }
+    .pin-box { background:white; padding:40px; border-radius:8px; text-align:center; max-width:450px; }
+    .pin-box h3 { margin-bottom:10px; color:#333; }
+    .pin-box p { color:#666; margin-bottom:20px; font-size:0.95em; }
+    .admin-pin-input { font-size:2.2em; letter-spacing:15px; text-align:center; padding:20px; border:2px solid #ddd; border-radius:6px; width:100%; font-weight:bold; margin-bottom:15px; -webkit-text-security:disc; }
+    .admin-pin-input:focus { outline:none; border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,0.1); }
+    .admin-pin-input.error { border-color:#f44336; animation:shake 0.3s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+    .pin-btn-submit,.pin-btn-cancel { flex:1; padding:12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; }
+    .pin-btn-submit { background:#007bff; color:white; }
+    .pin-btn-submit:hover { background:#0056b3; }
+    .pin-btn-cancel { background:#e0e0e0; color:#333; }
+    .pin-btn-cancel:hover { background:#d0d0d0; }
+    .admin-chat-content { display:flex; flex-direction:column; height:100%; padding-top:30px; }
+    .admin-chat-header { background:#f5f5f5; color:#333; padding:12px 16px; text-align:center; cursor:move; user-select:none; border-bottom:1px solid #e0e0e0; border-radius:8px 8px 0 0; }
+    .admin-chat-header h2 { margin:0; font-size:1em; font-weight:600; }
+    .admin-chat-body { display:flex; flex:1; overflow:hidden; }
+    .operadores-sidebar { width:45%; background:#f5f5f5; border-right:1px solid #ddd; overflow-y:auto; padding:10px; }
+    .operadores-sidebar h4 { margin:0 0 12px 0; color:#333; font-size:1.05em; font-weight:600; }
+    .operador-btn-modal { width:100%; padding:12px; margin-bottom:6px; border:none; background:white; border-left:3px solid #ddd; cursor:pointer; text-align:left; border-radius:3px; transition:all 0.2s; color:#333; font-size:0.95em; display:flex; align-items:center; justify-content:space-between; }
+    .operador-btn-modal:hover { background:#f9f9f9; color:#000; }
+    .operador-btn-modal.active { background:#e3f2fd; color:#0056b3; border-left-color:#007bff; }
+    .operador-btn-modal-name { font-weight:600; font-size:0.95em; display:block; color:inherit; }
+    .operador-btn-modal-status { font-size:0.85em; opacity:0.7; color:inherit; }
+    .chat-area-modal { width:55%; display:flex; flex-direction:column; background:white; }
+    .chat-header-modal { padding:10px 12px; background:#fafafa; border-bottom:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; }
+    .chat-header-modal h3 { margin:0; font-size:0.95em; color:#333; }
+    .status-indicator { font-size:0.85em; opacity:0.8; }
+    .messages-modal { flex:1; overflow-y:auto; padding:12px; background:white; }
+    .message-modal { margin-bottom:10px; padding:8px 12px; border-radius:6px; font-size:0.95em; max-width:85%; }
+    .message-modal.admin { background:#e3f2fd; border-left:3px solid #007bff; margin-left:auto; text-align:right; }
+    .message-modal.operador { background:#f5f5f5; border-left:3px solid #999; margin-right:auto; }
+    .message-modal.system { background:#fff3cd; border-left:3px solid #ffc107; margin:10px auto; text-align:center; font-style:italic; color:#856404; }
+    .message-time-modal { font-size:0.9em; opacity:0.6; margin-top:8px; }
+    .empty-messages { display:flex; align-items:center; justify-content:center; height:100%; color:#999; text-align:center; }
+    .input-area-modal { padding:12px; background:#fafafa; border-top:1px solid #e0e0e0; display:flex; gap:8px; min-height:50px; }
+    .input-area-modal input { flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:4px; font-size:0.95em; }
+    .input-area-modal input:focus { outline:none; border-color:#007bff; box-shadow:0 0 0 2px rgba(0,123,255,0.1); }
+    .send-btn-modal { background:#007bff; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:600; font-size:0.9em; }
+    .send-btn-modal:hover { background:#0056b3; }
+    .unread-badge { position:absolute; top:-8px; right:-8px; background:#f44336; color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:0.75em; font-weight:bold; border:2px solid white; }
+    #chat-panel-btn { position:relative; }
+    .operador-unread-badge { display:flex; background:#f44336; color:white; border-radius:50%; width:20px; height:20px; align-items:center; justify-content:center; font-size:0.7em; font-weight:bold; margin-left:8px; flex-shrink:0; }
+    @media (max-width:768px) { .admin-chat-modal { width:95%; height:90%; max-height:90vh; max-width:95vw; } }
+  </style>
+
+  <button id="toggle-right-panel-btn" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1999; padding: 12px 16px; background: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">📋 Mostrar Filtros</button>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <button id="toggle-events-panel-btn" style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #007bff; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,123,255,0.4); z-index: 2000; display: none; transition: all 0.3s;">📋</button>
+
+  <div id="events-container" style="display: none; position: fixed; top: 80px; left: auto; right: 280px; width: 490px; height: calc(100vh - 100px); background: white; border: 2px solid #007bff; border-radius: 8px; overflow-y: auto; z-index: 1999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <div style="padding: 15px; border-bottom: 2px solid #007bff; background: #f0f8ff; display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+      <h3 style="margin: 0; color: #007bff; font-size: 16px;">📋 Seguimiento de Eventos</h3>
+      <button id="close-events-panel-btn" style="background: none; border: none; color: #007bff; font-size: 20px; cursor: pointer;">✕</button>
+    </div>
+    <div style="padding: 12px 15px; border-bottom: 1px solid #ddd; background: #fff;">
+      <label style="font-size: 14px; font-weight: bold; color: #333;">Filtrar por Capa:</label>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="filter-all"   onclick="window.applyFilter('all')"   style="flex:1;padding:8px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;">Todas</button>
+        <button id="filter-norte" onclick="window.applyFilter('norte')" style="flex:1;padding:8px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;">Norte</button>
+        <button id="filter-sur"   onclick="window.applyFilter('sur')"   style="flex:1;padding:8px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;">Sur</button>
+      </div>
+    </div>
+    <div id="events-list-container" style="padding: 15px;"></div>
+  </div>
+
+  <template id="event-card-template">
+    <div class="event-card" style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;background:#f9f9f9;">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
+        <h4 style="margin:0;color:#333;font-size:15px;"><span class="event-camera">Cám. --</span> - <span class="event-location">--</span></h4>
+        <span class="event-status" style="background:#ffc107;color:white;padding:4px 8px;border-radius:3px;font-size:12px;font-weight:bold;">ABIERTO</span>
+      </div>
+      <div style="font-size:13px;color:#666;margin-bottom:10px;">
+        <div>Operador: <strong class="event-operator">--</strong></div>
+        <div>Creado: <strong class="event-created">--</strong></div>
+      </div>
+      <div style="border-top:1px solid #ddd;padding-top:10px;margin-bottom:10px;">
+        <div style="margin-bottom:8px;"><label style="font-size:13px;font-weight:bold;color:#333;">Hora Notificación:</label>
+          <div style="display:flex;gap:5px;">
+            <input type="time" class="event-notification-time" style="flex:1;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;">
+            <select class="event-notification-type" style="flex:1;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"><option value="">Tipo</option><option value="911">911</option><option value="operador">Operador</option><option value="patrulla">Patrulla</option><option value="multiagencia">Multiagencia</option></select>
           </div>
         </div>
-
-        <div id="input-area-modal" class="input-area-modal" style="display: none;">
-          <input type="text" id="message-input-modal" placeholder="Escribe un mensaje...">
-          <button id="send-message-modal" class="send-btn-modal">Enviar</button>
+        <div style="margin-bottom:8px;"><label style="font-size:13px;font-weight:bold;color:#333;">Inicio Seguimiento:</label><input type="time" class="event-follow-start-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+        <div style="margin-bottom:8px;"><label style="font-size:13px;font-weight:bold;color:#333;">Breve Informe:</label><textarea class="event-brief-report" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;height:60px;resize:vertical;"></textarea></div>
+        <div style="margin-bottom:8px;"><label style="font-size:13px;font-weight:bold;color:#333;">Observaciones:</label><textarea class="event-notes" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;height:60px;resize:vertical;"></textarea></div>
+        <div style="margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Policía - Hora:</label><input type="time" class="event-police-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Policía - Móvil:</label><input type="text" class="event-police-unit" placeholder="Ej: 45A" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
         </div>
+        <div style="margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Ambulancia - Hora:</label><input type="time" class="event-ambulance-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Ambulancia - Móvil:</label><input type="text" class="event-ambulance-unit" placeholder="Ej: AM1" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+        </div>
+        <div style="margin-bottom:8px;"><label style="font-size:13px;font-weight:bold;color:#333;">Médico que atendió:</label><input type="text" class="event-attending-doctor" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+        <div style="margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Retiro Ambulancia:</label><input type="time" class="event-ambulance-return-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+          <div><label style="font-size:12px;font-weight:bold;color:#333;">Retiro Policía:</label><input type="time" class="event-police-return-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+        </div>
+        <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:bold;color:#333;">Cierre del Evento:</label><input type="time" class="event-closure-time" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:bold;color:#333;">Observaciones Finales:</label><textarea class="event-final-notes" style="width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:3px;height:60px;resize:vertical;"></textarea></div>
+      </div>
+      <div style="border-top:1px solid #ddd;padding-top:10px;margin-bottom:10px;max-height:150px;overflow-y:auto;background:#f5f5f5;border-radius:3px;padding:8px;">
+        <div style="font-size:12px;font-weight:bold;color:#666;margin-bottom:5px;">📝 Historial:</div>
+        <div class="event-history" style="font-size:12px;color:#555;"></div>
+      </div>
+      <div class="event-admin-messages" style="border-top:1px solid #ddd;padding-top:8px;margin-bottom:10px;max-height:120px;overflow-y:auto;background:#e3f2fd;border-radius:3px;padding:8px;display:none;">
+        <div style="font-size:12px;font-weight:bold;color:#1976d2;margin-bottom:5px;">💬 Admin:</div>
+        <div class="event-messages-list" style="font-size:12px;color:#555;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="close-event-btn" style="flex:1;padding:8px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;">Cerrar Evento</button>
+        <button class="remove-event-btn" style="flex:0;width:40px;padding:8px;background:#6c757d;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:14px;" title="Limpiar evento de la vista">🗑️</button>
+        <button class="expand-event-btn" style="flex:1;padding:8px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;">+</button>
       </div>
     </div>
-  </div>
-</div>
+  </template>
 
-<!-- Estilos del Modal de Chat -->
-<style>
-  .admin-chat-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 850px;
-    height: 700px;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-    z-index: 999;
-    overflow: hidden;
-    cursor: move;
-  }
+  <script>let emergenciaZoomActiva = false;</script>
 
-  .admin-chat-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: #e0e0e0;
-    color: #666;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
+  <script src="js/eventos-operadores.js?v=202602201400"></script>
+  <script src="script.js?v=20260309001"></script>
 
-  .admin-chat-close:hover {
-    background: #d0d0d0;
-    color: #333;
-  }
+  <!-- ============================================================
+       INFORME DE SEGURIDAD POR BARRIO - JS
+       Cargado DESPUÉS de script.js para tener acceso a todas
+       las variables y funciones globales (allSiniestrosData, etc.)
+       ============================================================ -->
+  <script>
+  // ============================================================
+  // INFORME DE SEGURIDAD POR BARRIO
+  // ============================================================
 
-  .pin-modal-admin {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1001;
-    border-radius: 12px;
-  }
+  let _informeTabActual = 'resumen';
+  let _informeBarrioActual = '';
+  let _informeCapasActivas = [];
 
-  .pin-box {
-    background: white;
-    padding: 40px;
-    border-radius: 8px;
-    text-align: center;
-    max-width: 450px;
-  }
-
-  .pin-box h3 {
-    margin-bottom: 10px;
-    color: #333;
-  }
-
-  .pin-box p {
-    color: #666;
-    margin-bottom: 20px;
-    font-size: 0.95em;
-  }
-
-  .admin-pin-input {
-    font-size: 2.2em;
-    letter-spacing: 15px;
-    text-align: center;
-    padding: 20px;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    width: 100%;
-    font-weight: bold;
-    margin-bottom: 15px;
-    -webkit-text-security: disc;
-  }
-
-  .admin-pin-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-
-  .admin-pin-input.error {
-    border-color: #f44336;
-    animation: shake 0.3s;
-  }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
-  }
-
-  .pin-btn-submit,
-  .pin-btn-cancel {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  .pin-btn-submit {
-    background: #007bff;
-    color: white;
-  }
-
-  .pin-btn-submit:hover {
-    background: #0056b3;
-  }
-
-  .pin-btn-cancel {
-    background: #e0e0e0;
-    color: #333;
-  }
-
-  .pin-btn-cancel:hover {
-    background: #d0d0d0;
-  }
-
-  .admin-chat-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding-top: 30px;
-  }
-
-  .admin-chat-header {
-    background: #f5f5f5;
-    color: #333;
-    padding: 12px 16px;
-    text-align: center;
-    cursor: move;
-    user-select: none;
-    border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px 8px 0 0;
-  }
-
-  .admin-chat-header h2 {
-    margin: 0;
-    font-size: 1em;
-    font-weight: 600;
-  }
-
-  .admin-chat-body {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .operadores-sidebar {
-    width: 45%;
-    background: #f5f5f5;
-    border-right: 1px solid #ddd;
-    overflow-y: auto;
-    padding: 10px;
-  }
-
-  .operadores-sidebar h4 {
-    margin: 0 0 12px 0;
-    color: #333;
-    font-size: 1.05em;
-    font-weight: 600;
-  }
-
-  .operador-btn-modal {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 6px;
-    border: none;
-    background: white;
-    border-left: 3px solid #ddd;
-    cursor: pointer;
-    text-align: left;
-    border-radius: 3px;
-    transition: all 0.2s;
-    color: #333;
-    font-size: 0.95em;
-  }
-
-  .operador-btn-modal:hover {
-    background: #f9f9f9;
-    color: #000;
-  }
-
-  .operador-btn-modal.active {
-    background: #e3f2fd;
-    color: #0056b3;
-    border-left-color: #007bff;
-  }
-
-  .operador-btn-modal-name {
-    font-weight: 600;
-    font-size: 0.95em;
-    display: block;
-    color: inherit;
-  }
-
-  .operador-btn-modal-status {
-    font-size: 0.85em;
-    opacity: 0.7;
-    color: inherit;
-  }
-
-  .chat-area-modal {
-    width: 55%;
-    display: flex;
-    flex-direction: column;
-    background: white;
-  }
-
-  .chat-header-modal {
-    padding: 10px 12px;
-    background: #fafafa;
-    border-bottom: 1px solid #e0e0e0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .chat-header-modal h3 {
-    margin: 0;
-    font-size: 0.95em;
-    color: #333;
-  }
-
-  .status-indicator {
-    font-size: 0.85em;
-    opacity: 0.8;
-  }
-
-  .messages-modal {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-    background: white;
-  }
-
-  .message-modal {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.95em;
-    max-width: 85%;
-  }
-
-  .message-modal.admin {
-    background: #e3f2fd;
-    border-left: 3px solid #007bff;
-    margin-left: auto;
-    text-align: right;
-  }
-
-  .message-modal.operador {
-    background: #f5f5f5;
-    border-left: 3px solid #999;
-    margin-right: auto;
-  }
-
-  .message-modal.system {
-    background: #fff3cd;
-    border-left: 3px solid #ffc107;
-    margin: 10px auto;
-    text-align: center;
-    font-style: italic;
-    color: #856404;
-  }
-
-  .message-time-modal {
-    font-size: 0.9em;
-    opacity: 0.6;
-    margin-top: 8px;
-  }
-
-  .empty-messages {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #999;
-    text-align: center;
-  }
-
-  .input-area-modal {
-    padding: 12px;
-    background: #fafafa;
-    border-top: 1px solid #e0e0e0;
-    display: flex;
-    gap: 8px;
-    min-height: 50px;
-  }
-
-  .input-area-modal input {
-    flex: 1;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.95em;
-    resize: none;
-  }
-
-  .input-area-modal input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-  }
-
-  .send-btn-modal {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9em;
-  }
-
-  .send-btn-modal:hover {
-    background: #0056b3;
-  }
-
-  /* ===== BADGES DE MENSAJES NO LEÍDOS ===== */
-  .unread-badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #f44336;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75em;
-    font-weight: bold;
-    border: 2px solid white;
-  }
-
-  #chat-panel-btn {
-    position: relative;
-  }
-
-  .operador-unread-badge {
-    display: flex;
-    background: #f44336;
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7em;
-    font-weight: bold;
-    margin-left: 8px;
-    flex-shrink: 0;
-  }
-
-  .operador-btn-modal {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  @media (max-width: 1600px) {
-    .admin-chat-modal {
-      width: 800px;
-      height: 650px;
+  // --- ABRIR / CERRAR ---
+  function abrirInformeBarrio() {
+    const modal = document.getElementById('informe-barrio-modal');
+    modal.style.display = 'flex';
+    _poblarSelectorBarrios();
+    const barrioGlobal = document.getElementById('barrio-filter')?.value;
+    if (barrioGlobal && barrioGlobal !== 'all') {
+      document.getElementById('informe-barrio-select').value = barrioGlobal;
+      renderInformeBarrio();
     }
   }
 
-  @media (max-width: 1024px) {
-    .admin-chat-modal {
-      width: 700px;
-      height: 600px;
+  function cerrarInformeBarrio() {
+    document.getElementById('informe-barrio-modal').style.display = 'none';
+    _limpiarCapasInforme();
+  }
+
+  // --- POBLAR SELECT ---
+  function _poblarSelectorBarrios() {
+    const sel = document.getElementById('informe-barrio-select');
+    if (sel.options.length > 1) return;
+    if (!barriosData?.features) return;
+    barriosData.features.map(f => f.properties.soc_fomen).sort().forEach(nombre => {
+      const opt = document.createElement('option');
+      opt.value = nombre; opt.textContent = nombre;
+      sel.appendChild(opt);
+    });
+  }
+
+  // --- RENDER PRINCIPAL ---
+  async function renderInformeBarrio() {
+    const sel    = document.getElementById('informe-barrio-select');
+    const barrio = sel.value;
+    if (!barrio) return;
+
+    _informeBarrioActual = barrio;
+    _informeTabActual    = 'resumen';
+
+    document.getElementById('btn-informe-ver-mapa').style.display   = 'inline-block';
+    document.getElementById('btn-informe-camaras').style.display     = 'inline-block';
+
+    document.querySelectorAll('.informe-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.informe-tab[data-tab="resumen"]')?.classList.add('active');
+
+    const cont = document.getElementById('informe-barrio-content');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">⏳ Calculando análisis...</div>';
+
+    // Pre-cachear colegios en window._colegiosGeoJSON si ya están en el script principal
+    if (!window._colegiosGeoJSON && window.colegiosData?.features) {
+      window._colegiosGeoJSON = window.colegiosData;
+    }
+
+    await Promise.all([
+      typeof loadSiniestrosData    === 'function' ? loadSiniestrosData()    : Promise.resolve(),
+      typeof loadBaseCSVData       === 'function' ? loadBaseCSVData()       : Promise.resolve(),
+      typeof loadRoboAutomotorData === 'function' ? loadRoboAutomotorData() : Promise.resolve(),
+      // Cargar colegios si no están en memoria todavía
+      (!window._colegiosGeoJSON && !window.colegiosData)
+        ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve()
+    ]);
+
+    // Sincronizar nuevamente por si se cargaron durante el await
+    if (!window._colegiosGeoJSON && window.colegiosData?.features) {
+      window._colegiosGeoJSON = window.colegiosData;
+    }
+
+    const datos = _calcularDatosBarrio(barrio);
+    _mostrarBadgeCriticidad(datos.criticidad);
+    _renderTab(datos, _informeTabActual);
+  }
+
+  // --- CÁLCULO REAL ---
+  function _calcularDatosBarrio(nombreBarrio) {
+    const barrioFeature = barriosData?.features?.find(f => f.properties.soc_fomen === nombreBarrio);
+    if (!barrioFeature) return _datosVacios(nombreBarrio);
+    const geo = barrioFeature.geometry;
+
+    // SINIESTROS
+    const siniestrosBarrio = (allSiniestrosData?.features || []).filter(f => {
+      if (!f.geometry?.coordinates) return false;
+      return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), geo.coordinates);
+    });
+
+    const partCount = {};
+    siniestrosBarrio.forEach(s => {
+      (s.properties.participantes_codigos || '').split('/').forEach(p => { if (p) partCount[p] = (partCount[p]||0)+1; });
+    });
+    const participantes = Object.entries(partCount).map(([cod,cant]) => ({cod, nombre: participantMapping[cod]||cod, cant})).sort((a,b)=>b.cant-a.cant).slice(0,6);
+
+    const causaCount = {};
+    siniestrosBarrio.forEach(s => { const c=s.properties.causa; if(c) causaCount[c]=(causaCount[c]||0)+1; });
+    const causas = Object.entries(causaCount).map(([cod,cant]) => ({cod, nombre: causeMapping[cod]||cod, cant})).sort((a,b)=>b.cant-a.cant).slice(0,6);
+
+    const locCount = {};
+    siniestrosBarrio.forEach(s => {
+      const dir = s.properties.direccion||'Sin dirección';
+      const lat = s.geometry.coordinates[1]; const lng = s.geometry.coordinates[0];
+      const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      if (!locCount[key]) locCount[key] = {dir,lat,lng,cant:0};
+      locCount[key].cant++;
+    });
+    const puntosCriticos = Object.values(locCount).sort((a,b)=>b.cant-a.cant).slice(0,8);
+
+    const horCount = {};
+    siniestrosBarrio.forEach(s => { const h=parseInt(s.properties.hora?.split(':')[0]||-1); if(h>=0) horCount[h]=(horCount[h]||0)+1; });
+    const horMax = Object.entries(horCount).sort((a,b)=>b[1]-a[1])[0];
+    const horarioCritico = horMax ? `${horMax[0].toString().padStart(2,'0')}:00 – ${(+horMax[0]+2).toString().padStart(2,'0')}:00` : 'No determinado';
+
+    const diaCount = {};
+    const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    siniestrosBarrio.forEach(s => {
+      const f=s.properties.fecha;
+      if (f && f.split('/').length===3) {
+        const parts=f.split('/'); let y=parseInt(parts[2]); if(y<100) y+=2000;
+        const d=new Date(y,parseInt(parts[1])-1,parseInt(parts[0])).getDay();
+        diaCount[dias[d]]=(diaCount[dias[d]]||0)+1;
+      }
+    });
+    const diaMax = Object.entries(diaCount).sort((a,b)=>b[1]-a[1])[0];
+    const nsd = siniestrosBarrio.filter(s=>s.properties.causa==='NSD').length;
+
+    // CÁMARAS PÚBLICAS
+    const camarasBarrio = (allCamerasData||[]).filter(c => {
+      const lat=parseFloat(String(c.Latitud).replace(',','.')), lng=parseFloat(String(c.Longitud).replace(',','.'));
+      if(isNaN(lat)||isNaN(lng)) return false;
+      return isLatLngInMultiPolygon(L.latLng(lat,lng), geo.coordinates);
+    });
+
+    // CÁMARAS PRIVADAS
+    const camarasPrivBarrio = (allCamarasPrivadasData||[]).filter(c => isLatLngInMultiPolygon(c.latlng, geo.coordinates));
+
+    // % siniestros sin cámara
+    let sinSinCamara = 0;
+    siniestrosBarrio.forEach(s => {
+      const ll = L.latLng(s.geometry.coordinates[1], s.geometry.coordinates[0]);
+      const tieneCam = camarasBarrio.some(c => {
+        const cLat=parseFloat(String(c.Latitud).replace(',','.')), cLng=parseFloat(String(c.Longitud).replace(',','.'));
+        return !isNaN(cLat) && ll.distanceTo(L.latLng(cLat,cLng))<=100;
+      });
+      if(!tieneCam) sinSinCamara++;
+    });
+    const pctSiniConCam = siniestrosBarrio.length>0 ? Math.round(((siniestrosBarrio.length-sinSinCamara)/siniestrosBarrio.length)*100) : 0;
+
+    let areaCamKm2=0;
+    try { areaCamKm2=turf.area(geo)/1000000; } catch(e){}
+    const densidadCamaras = areaCamKm2>0 ? (camarasBarrio.length/areaCamKm2).toFixed(1) : 0;
+    const coberturaEst = areaCamKm2>0 ? Math.min(Math.round((camarasBarrio.length*Math.PI*0.01)/areaCamKm2*100),100) : 0;
+
+    // ROBOS
+    const robosBarrio = (allRoboAutomotorData||[]).filter(r => {
+      const coordsStr=r['Longitud y Latitud']; if(!coordsStr) return false;
+      const parts=coordsStr.split(',').map(s=>s.trim()); if(parts.length!==2) return false;
+      const lat=parseFloat(parts[0]),lng=parseFloat(parts[1]); if(isNaN(lat)||isNaN(lng)) return false;
+      return isLatLngInMultiPolygon(L.latLng(lat,lng), geo.coordinates);
+    });
+
+    // COLEGIOS — usar datos en memoria si existen, si no cargarlos y re-renderizar
+    let colegiosBarrio=0, colegiosSinCam=0;
+    const _fuenteColegios = window._colegiosGeoJSON?.features
+                          || window.colegiosData?.features
+                          || null;
+
+    const _contarColegios = (features) => {
+      const enBarrio = features.filter(f => {
+        if (!f.geometry?.coordinates) return false;
+        return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), geo.coordinates);
+      });
+      colegiosBarrio = enBarrio.length;
+      enBarrio.forEach(col => {
+        const ll = L.latLng(col.geometry.coordinates[1], col.geometry.coordinates[0]);
+        const tieneCam = camarasBarrio.some(c => {
+          const cLat = parseFloat(String(c.Latitud).replace(',','.')), cLng = parseFloat(String(c.Longitud).replace(',','.'));
+          return !isNaN(cLat) && ll.distanceTo(L.latLng(cLat, cLng)) <= 100;
+        });
+        if (!tieneCam) colegiosSinCam++;
+      });
+    };
+
+    if (_fuenteColegios) {
+      _contarColegios(_fuenteColegios);
+    } else {
+      // No están en memoria: cargar en background y re-renderizar al terminar
+      fetch('colegios_escuelas.geojson')
+        .then(r => r.json())
+        .then(data => {
+          window._colegiosGeoJSON = data;
+          if (_informeBarrioActual === nombreBarrio) {
+            const d2 = _calcularDatosBarrio(nombreBarrio);
+            _renderTab(d2, _informeTabActual);
+            _mostrarBadgeCriticidad(d2.criticidad);
+          }
+        })
+        .catch(() => {});
+    }
+
+    const criticidad = Math.min(Math.round((siniestrosBarrio.length/10)*2+(robosBarrio.length/5)*1.5+(sinSinCamara/Math.max(siniestrosBarrio.length,1))*30+(colegiosSinCam*5)),100);
+    const recomendaciones = _generarRecomendaciones({nombreBarrio,siniestros:siniestrosBarrio.length,causas,participantes,camaras:camarasBarrio.length,cobertura:coberturaEst,nsd,colegiosSinCam,robos:robosBarrio.length,sinSinCamara,horarioCritico,diaMax:diaMax?.[0]||'No determinado'});
+
+    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature};
+  }
+
+  function _datosVacios(nombre) {
+    return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[]};
+  }
+
+  // --- RECOMENDACIONES AUTOMÁTICAS ---
+  function _generarRecomendaciones(d) {
+    const recs=[];
+    if(d.sinSinCamara>0) recs.push(`📷 Instalar ${Math.ceil(d.sinSinCamara/3)} cámaras adicionales: ${d.sinSinCamara} siniestros ocurrieron fuera del radio de 100m de cualquier cámara pública.`);
+    if(d.cobertura<60) recs.push(`📡 Cobertura del ${d.cobertura}%, por debajo del mínimo recomendado (70%). Ejecutar análisis predictivo para identificar ubicaciones óptimas.`);
+    const causaPrincipal=d.causas[0];
+    if(causaPrincipal){
+      const acc={'D':'Campaña de concientización sobre uso del celular al conducir.','EV':'Instalar radares de velocidad en tramos críticos.','NR':'Reforzar señalización de prioridad y demarcación en cruces.','VS':'Sincronizar semáforos y agregar señal de alerta en cruces críticos.','PI':'Mejorar infraestructura peatonal (refugios, cuenta regresiva, reductores).','NSD':'Ampliar cámaras para reducir siniestros sin causa determinada.'};
+      recs.push(`🚦 Causa principal "${causaPrincipal.nombre}": ${acc[causaPrincipal.cod]||`Focalizar operativos en "${causaPrincipal.nombre}" (${causaPrincipal.cant} casos).`}`);
+    }
+    if(d.horarioCritico&&d.diaMax) recs.push(`🕐 Reforzar patrullaje en horario ${d.horarioCritico} los días ${d.diaMax}, que concentran la mayor siniestralidad del barrio.`);
+    if(d.colegiosSinCam>0) recs.push(`🏫 ${d.colegiosSinCam} colegio(s) sin cámara pública a 100m. Priorizar en horarios de entrada/salida (7:00–8:30 y 16:30–17:30).`);
+    if(d.robos>5) recs.push(`🚗 ${d.robos} eventos de robo automotor. Coordinar operativos LPR en accesos al barrio y reforzar vigilancia en puntos de concentración.`);
+    if(d.nsd>0) recs.push(`🔍 ${d.nsd} siniestros sin causa determinada (NSD). Revisar cobertura de cámara en esos puntos específicos.`);
+    if(recs.length===0) recs.push('✅ El barrio presenta indicadores dentro del rango normal. Mantener estrategias actuales y monitoreo periódico.');
+    return recs;
+  }
+
+  // --- BADGE CRITICIDAD ---
+  function _mostrarBadgeCriticidad(val) {
+    const badge=document.getElementById('informe-criticidad-badge');
+    let cls,label;
+    if(val>=80){cls='badge-critico';label=`⚠ Crítico (${val})`;}
+    else if(val>=60){cls='badge-alto';label=`↑ Alto (${val})`;}
+    else if(val>=40){cls='badge-moderado';label=`~ Moderado (${val})`;}
+    else{cls='badge-bajo';label=`✓ Bajo (${val})`;}
+    badge.className=cls; badge.textContent=label; badge.style.display='inline-block';
+  }
+
+  // --- SWITCH TAB ---
+  function switchInformeTab(tab,btn) {
+    _informeTabActual=tab;
+    document.querySelectorAll('.informe-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    const datos=_calcularDatosBarrio(_informeBarrioActual);
+    _renderTab(datos,tab);
+  }
+
+  // --- RENDER DE CADA TAB ---
+  function _renderTab(d,tab) {
+    const cont=document.getElementById('informe-barrio-content');
+    if(!d.nombre){cont.innerHTML='<p style="color:#94a3b8;text-align:center;padding:40px;">Seleccioná un barrio</p>';return;}
+    switch(tab){
+      case 'resumen':         cont.innerHTML=_htmlResumen(d);         break;
+      case 'siniestros':      cont.innerHTML=_htmlSiniestros(d);      break;
+      case 'camaras':         cont.innerHTML=_htmlCamaras(d);         break;
+      case 'escolares':       cont.innerHTML=_htmlEscolares(d);       break;
+      case 'recomendaciones': cont.innerHTML=_htmlRecomendaciones(d); break;
     }
   }
 
-  @media (max-width: 768px) {
-    .admin-chat-modal {
-      width: 95%;
-      height: 90%;
-      max-height: 90vh;
-      max-width: 95vw;
-    }
+  // --- TAB RESUMEN ---
+  function _htmlResumen(d) {
+    const pctCob=d.cobertura;
+    const cobColor=pctCob>=70?'#059669':pctCob>=50?'#d97706':'#dc2626';
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;">
+        ${_metric('⚠','Siniestros',d.siniestros,'','#dc2626')}
+        ${_metric('📷','Cámaras públicas',d.camarasPublicas,'','#1d4ed8')}
+        ${_metric('🔒','Cámaras privadas',d.camarasPrivadas,'','#7c3aed')}
+        ${_metric('%','Cobertura cámaras',pctCob,'%',cobColor)}
+        ${_metric('◌','Sin cobertura',d.sinSinCamara,' sin.','#d97706')}
+        ${_metric('🚗','Robos automotor',d.robos,'','#b91c1c')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>📍 Puntos críticos (top 5)</h4>
+          <table class="informe-tabla">
+            <thead><tr><th>#</th><th>Intersección</th><th style="text-align:right">Siniestros</th></tr></thead>
+            <tbody>
+              ${d.puntosCriticos.slice(0,5).map((p,i)=>`
+                <tr>
+                  <td><span style="background:${['#fde8e8','#fef3c7','#dbeafe'][i]||'#f1f5f9'};color:${['#9b1c1c','#92400e','#1e40af'][i]||'#334155'};width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</span></td>
+                  <td style="font-size:13px">${p.dir}</td>
+                  <td style="text-align:right;font-weight:700;color:#dc2626;font-size:14px">${p.cant}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="informe-card">
+          <h4>📊 Cobertura de vigilancia</h4>
+          ${_progressBar('Cámaras públicas (100m)',pctCob,cobColor)}
+          ${_progressBar('Siniestros con cámara cercana',d.pctSiniConCam,'#3b82f6')}
+          ${_progressBar('Colegios con cámara cercana',d.colegios>0?Math.round(((d.colegios-d.colegiosSinCam)/d.colegios)*100):0,'#0f6e56')}
+          <div style="margin-top:16px;padding:12px 14px;background:#f8fafc;border-radius:8px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:#64748b">Día más crítico</span><strong>${d.diaMaxSiniestros}</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#64748b">Horario pico</span><strong>${d.horarioCritico}</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="informe-card" style="background:#fffbeb;border-color:#fbbf24;">
+        <h4>🔎 Síntesis del barrio ${d.nombre}</h4>
+        <p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px;">
+          El barrio registró <strong>${d.siniestros}</strong> siniestros con una cobertura del <strong>${pctCob}%</strong>.
+          ${d.sinSinCamara>0?`<strong>${d.sinSinCamara} siniestros</strong> ocurrieron fuera del radio de cámara pública.`:'Todos los siniestros tienen cobertura de cámara cercana.'}
+          ${d.causas[0]?`La causa principal fue <strong>${d.causas[0].nombre}</strong> (${d.causas[0].cant} casos)`:''}.
+          Horario de mayor riesgo: <strong>${d.horarioCritico}</strong> los días <strong>${d.diaMaxSiniestros}</strong>.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-accion" onclick="informeAccion('siniestros_noche')">🌙 Siniestros nocturnos</button>
+          <button class="btn-accion" onclick="informeAccion('siniestros_hora_pico')">🕐 Hora pico</button>
+          <button class="btn-accion" onclick="informeAccion('evolucion_temporal_siniestros')">📈 Evolución temporal</button>
+        </div>
+      </div>`;
   }
-</style>
 
-<!-- BOTÓN TOGGLE PANEL DERECHO (solo móvil) -->
-<button id="toggle-right-panel-btn" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1999; padding: 12px 16px; background: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">📋 Mostrar Filtros</button>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-<script src="firebase-config.js"></script>
-
-<!-- NOTA: Los eventos son creados por Capa Norte/Sur (operadors) en operador-interface.html -->
-<!-- El admin solo hace SEGUIMIENTO de eventos en este panel -->
-
-<!-- BOTÓN FLOTANTE PARA ABRIR PANEL DE EVENTOS -->
-<button id="toggle-events-panel-btn" style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #007bff; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,123,255,0.4); z-index: 2000; display: none; transition: all 0.3s;">
-  📋
-</button>
-
-<!-- CONTENEDOR DE EVENTOS -->
-<div id="events-container" style="display: none; position: fixed; top: 80px; left: auto; right: 280px; width: 490px; height: calc(100vh - 100px); background: white; border: 2px solid #007bff; border-radius: 8px; overflow-y: auto; z-index: 1999; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-  
-  <div style="padding: 15px; border-bottom: 2px solid #007bff; background: #f0f8ff; display: flex; justify-content: space-between; align-items: center; cursor: grab;">
-    <h3 style="margin: 0; color: #007bff; font-size: 16px;">📋 Seguimiento de Eventos</h3>
-    <button id="close-events-panel-btn" style="background: none; border: none; color: #007bff; font-size: 20px; cursor: pointer;">✕</button>
-  </div>
-  
-  <!-- FILTRO POR CAPA - Botones en lugar de select -->
-  <div style="padding: 12px 15px; border-bottom: 1px solid #ddd; background: #fff;">
-    <label style="font-size: 14px; font-weight: bold; color: #333;">Filtrar por Capa:</label>
-    <div style="display: flex; gap: 8px; margin-top: 8px;">
-      <button id="filter-all" onclick="window.applyFilter('all')" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
-        Todas
-      </button>
-      <button id="filter-norte" onclick="window.applyFilter('norte')" style="flex: 1; padding: 8px; background: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
-        Norte
-      </button>
-      <button id="filter-sur" onclick="window.applyFilter('sur')" style="flex: 1; padding: 8px; background: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
-        Sur
-      </button>
-    </div>
-  </div>
-  
-  <div id="events-list-container" style="padding: 15px;">
-    <!-- Las tarjetas de eventos reportadas por Capa Norte y Sur se cargarán aquí -->
-  </div>
-  
-</div>
-
-<!-- TARJETA DE EVENTO (template) -->
-<template id="event-card-template">
-  <div class="event-card" style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f9f9f9;">
-    
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-      <h4 style="margin: 0; color: #333; font-size: 15px;">
-        <span class="event-camera">Cám. --</span> - <span class="event-location">--</span>
-      </h4>
-      <span class="event-status" style="background: #ffc107; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">ABIERTO</span>
-    </div>
-    
-    <div style="font-size: 13px; color: #666; margin-bottom: 10px;">
-      <div>Operador: <strong class="event-operator">--</strong></div>
-      <div>Creado: <strong class="event-created">--</strong></div>
-    </div>
-    
-    <!-- FORMULARIO EDITABLE -->
-    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px;">
-      
-      <div style="margin-bottom: 8px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Hora Notificación:</label>
-        <div style="display: flex; gap: 5px;">
-          <input type="time" class="event-notification-time" style="flex: 1; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-          <select class="event-notification-type" style="flex: 1; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-            <option value="">Tipo</option>
-            <option value="911">911</option>
-            <option value="operador">Operador</option>
-            <option value="patrulla">Patrulla</option>
-            <option value="multiagencia">Multiagencia</option>
-          </select>
+  // --- TAB SINIESTROS ---
+  function _htmlSiniestros(d) {
+    const maxCausa=Math.max(...(d.causas.map(c=>c.cant)||[1]));
+    const maxPart=Math.max(...(d.participantes.map(p=>p.cant)||[1]));
+    const cC=['#e24b4a','#ba7517','#534ab7','#0f6e56','#888780','#1d9e75'];
+    const cP=['#378add','#1d9e75','#d85a30','#ba7517','#534ab7','#e24b4a'];
+    return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>👥 Participantes</h4>
+          ${d.participantes.map((p,i)=>_causaBar(p.nombre,p.cant,maxPart,cP[i%cP.length])).join('')}
+          ${d.participantes.length===0?'<p style="color:#94a3b8;font-size:13px">Sin datos</p>':''}
+        </div>
+        <div class="informe-card">
+          <h4>🔍 Causas principales</h4>
+          ${d.causas.map((c,i)=>_causaBar(c.nombre,c.cant,maxCausa,cC[i%cC.length])).join('')}
+          ${d.causas.length===0?'<p style="color:#94a3b8;font-size:13px">Sin datos</p>':''}
         </div>
       </div>
-      
-      <div style="margin-bottom: 8px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Inicio Seguimiento:</label>
-        <input type="time" class="event-follow-start-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
+      <div class="informe-card">
+        <h4>📌 Todos los puntos críticos</h4>
+        <table class="informe-tabla">
+          <thead><tr><th>#</th><th>Intersección</th><th style="text-align:right">Siniestros</th><th></th></tr></thead>
+          <tbody>
+            ${d.puntosCriticos.map((p,i)=>`
+              <tr>
+                <td><span style="background:${i<3?['#fde8e8','#fef3c7','#dbeafe'][i]:'#f1f5f9'};color:${i<3?['#9b1c1c','#92400e','#1e40af'][i]:'#334155'};width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</span></td>
+                <td style="font-size:13px">${p.dir}</td>
+                <td style="text-align:right;font-weight:700;color:#dc2626;font-size:14px">${p.cant}</td>
+                <td><button class="btn-accion" style="font-size:12px;padding:4px 10px" onclick="informeZoomPunto(${p.lat},${p.lng})">🗺️</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
       </div>
-      
-      <div style="margin-bottom: 8px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Breve Informe:</label>
-        <textarea class="event-brief-report" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
-      </div>
-      
-      <div style="margin-bottom: 8px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Observaciones:</label>
-        <textarea class="event-notes" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
-      </div>
-      
-      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Policía - Hora:</label>
-          <input type="time" class="event-police-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Policía - Móvil:</label>
-          <input type="text" class="event-police-unit" placeholder="Ej: 45A" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Ambulancia - Hora:</label>
-          <input type="time" class="event-ambulance-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Ambulancia - Móvil:</label>
-          <input type="text" class="event-ambulance-unit" placeholder="Ej: AM1" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 8px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Médico que atendió:</label>
-        <input type="text" class="event-attending-doctor" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-      </div>
-      
-      <div style="margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Retiro Ambulancia:</label>
-          <input type="time" class="event-ambulance-return-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-        <div>
-          <label style="font-size: 12px; font-weight: bold; color: #333;">Retiro Policía:</label>
-          <input type="time" class="event-police-return-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 12px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Cierre del Evento:</label>
-        <input type="time" class="event-closure-time" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px;">
-      </div>
-      
-      <div style="margin-bottom: 12px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">Observaciones Finales:</label>
-        <textarea class="event-final-notes" style="width: 100%; padding: 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; height: 60px; resize: vertical;"></textarea>
-      </div>
-      
-    </div>
-    
-    <!-- HISTORIAL DE CAMBIOS -->
-    <div style="border-top: 1px solid #ddd; padding-top: 10px; margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: #f5f5f5; border-radius: 3px; padding: 8px;">
-      <div style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px;">📝 Historial:</div>
-      <div class="event-history" style="font-size: 12px; color: #555;"></div>
-    </div>
-    
-    <!-- RESPUESTAS DEL ADMIN -->
-    <div class="event-admin-messages" style="border-top: 1px solid #ddd; padding-top: 8px; margin-bottom: 10px; max-height: 120px; overflow-y: auto; background: #e3f2fd; border-radius: 3px; padding: 8px; display: none;">
-      <div style="font-size: 12px; font-weight: bold; color: #1976d2; margin-bottom: 5px;">💬 Admin:</div>
-      <div class="event-messages-list" style="font-size: 12px; color: #555;"></div>
-    </div>
-    
-    <!-- BOTONES DE ACCIÓN -->
-    <div style="display: flex; gap: 8px;">
-      <button class="close-event-btn" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Cerrar Evento</button>
-      <button class="remove-event-btn" style="flex: 0; width: 40px; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;" title="Limpiar evento de la vista">🗑️</button>
-      <button class="expand-event-btn" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">+</button>
-    </div>
-    
-  </div>
-</template>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-accion" onclick="informeAccion('esquinas_mas_siniestros')">🏆 Top esquinas</button>
+        <button class="btn-accion" onclick="informeAccion('siniestros_noche')">🌙 Nocturnos</button>
+        <button class="btn-accion" onclick="informeAccion('siniestros_hora_pico')">🕐 Hora pico</button>
+        <button class="btn-accion" onclick="informeAccion('esquinas_peligrosas_peatones_ciclistas')">🚶 Peatones/Ciclistas</button>
+      </div>`;
+  }
 
-<script>
-  let emergenciaZoomActiva = false;
-</script>
+  // --- TAB CÁMARAS ---
+  function _htmlCamaras(d) {
+    const cobColor=d.cobertura>=70?'#059669':d.cobertura>=50?'#d97706':'#dc2626';
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
+        ${_metric('📷','Cámaras públicas',d.camarasPublicas,'','#1d4ed8')}
+        ${_metric('🔒','Cámaras privadas',d.camarasPrivadas,'','#7c3aed')}
+        ${_metric('%','Cobertura est.',d.cobertura,'%',cobColor)}
+        ${_metric('◌','Sin cobertura',d.sinSinCamara,'','#d97706')}
+      </div>
+      <div class="informe-card">
+        <h4>📡 Análisis de cobertura</h4>
+        ${_progressBar('Cobertura geográfica estimada (100m/cámara)',d.cobertura,cobColor)}
+        ${_progressBar('Siniestros con cámara a 100m',d.pctSiniConCam,'#3b82f6')}
+        <div style="margin-top:14px;padding:12px;background:${d.cobertura<60?'#fef3c7':'#f0fdf4'};border-radius:8px;font-size:12px;color:${d.cobertura<60?'#92400e':'#065f46'};">
+          <strong>${d.cobertura<60?'⚠ Cobertura insuficiente':d.cobertura<80?'~ Cobertura aceptable':'✓ Buena cobertura'}:</strong>
+          ${d.cobertura<60?` El ${100-d.cobertura}% del barrio sin cobertura. Se estiman ~${Math.ceil(d.sinSinCamara/3)} cámaras adicionales necesarias.`:` Red actual cubre el ${d.cobertura}%. Hay ${d.sinSinCamara} siniestros en zonas sin cobertura.`}
+        </div>
+      </div>
+      <div class="informe-card">
+        <h4>📊 Métricas</h4>
+        <table class="informe-tabla">
+          <tr><td style="color:#64748b">Área del barrio</td><td style="text-align:right;font-weight:600">${d.areaCamKm2} km²</td></tr>
+          <tr><td style="color:#64748b">Densidad cámaras públicas</td><td style="text-align:right;font-weight:600">${d.densidadCamaras} cám/km²</td></tr>
+          <tr><td style="color:#64748b">Total cámaras (público+privado)</td><td style="text-align:right;font-weight:600">${d.camarasPublicas+d.camarasPrivadas}</td></tr>
+          <tr><td style="color:#64748b">Siniestros sin cobertura</td><td style="text-align:right;font-weight:600;color:#dc2626">${d.sinSinCamara}</td></tr>
+          <tr><td style="color:#64748b">% siniestros sin cobertura</td><td style="text-align:right;font-weight:600;color:#dc2626">${d.siniestros>0?Math.round(d.sinSinCamara/d.siniestros*100):0}%</td></tr>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-accion" onclick="informeAccion('zonas_ciegas')">◌ Ver zonas ciegas</button>
+        <button class="btn-accion" onclick="informeAccion('camaras_sin_siniestros')">🛡️ Cámaras sin siniestros</button>
+        <button class="btn-accion" onclick="informeAccion('densidad_camaras_vs_siniestros')">📊 Densidad vs siniestros</button>
+        <button class="btn-accion" onclick="informeProponerCamaras()">🎯 Proponer ubicaciones</button>
+      </div>`;
+  }
 
-<script src="js/eventos-operadores.js?v=202602201400"></script>
-<script src="script.js?v=20260309001"></script>
+  // --- TAB ESCOLARES ---
+  function _htmlEscolares(d) {
+    const pctCol=d.colegios>0?Math.round(((d.colegios-d.colegiosSinCam)/d.colegios)*100):0;
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;">
+        ${_metric('🏫','Colegios en barrio',d.colegios,'','#0f6e56')}
+        ${_metric('📷','Con cámara a 100m',d.colegios-d.colegiosSinCam,'','#1d4ed8')}
+        ${_metric('!','Sin cámara cercana',d.colegiosSinCam,'','#dc2626')}
+        ${_metric('%','Cobertura colegios',pctCol,'%',pctCol>=80?'#059669':'#d97706')}
+      </div>
+      <div class="informe-card">
+        <h4>🎒 Cobertura de corredores escolares</h4>
+        ${_progressBar('Colegios con cámara pública a 100m',pctCol,pctCol>=80?'#059669':'#d97706')}
+        <div style="margin-top:14px;padding:14px;background:${pctCol<70?'#fef3c7':'#f0fdf4'};border-radius:8px;font-size:13px;color:${pctCol<70?'#92400e':'#065f46'}">
+          ${d.colegiosSinCam>0?`⚠ <strong>${d.colegiosSinCam} colegio(s)</strong> sin cámara pública a 100m. Riesgo elevado en horarios de entrada y salida escolar.`:'✓ Todos los colegios del barrio cuentan con al menos una cámara pública a 100m.'}
+        </div>
+      </div>
+      <div class="informe-card">
+        <h4>🕐 Horarios críticos</h4>
+        <table class="informe-tabla">
+          <tr><td style="color:#64748b">Entrada</td><td style="text-align:right;font-weight:600">07:00 – 08:30</td></tr>
+          <tr><td style="color:#64748b">Salida</td><td style="text-align:right;font-weight:600">16:30 – 17:30</td></tr>
+          <tr><td style="color:#64748b">Participantes en riesgo</td><td style="text-align:right;font-weight:600">Peatones y ciclistas</td></tr>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-accion" onclick="informeAccion('siniestros_corredores_escolares')">🎒 Siniestros en horario escolar</button>
+        <button class="btn-accion" onclick="informeAccion('esquinas_peligrosas_peatones_ciclistas')">🚶 Esquinas peligrosas</button>
+        <button class="btn-accion" onclick="informeAccion('cobertura_colegios')">📷 Ver cobertura colegios</button>
+      </div>`;
+  }
+
+  // --- TAB RECOMENDACIONES ---
+  function _htmlRecomendaciones(d) {
+    const crit=_getCriticidadInfo(d.criticidad);
+    return `
+      <div style="padding:14px 18px;background:#f8fafc;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;gap:14px;">
+        <span class="${crit.cls}">${crit.label} (${d.criticidad}/100)</span>
+        <span style="font-size:14px;color:#64748b">${d.nombre} · ${d.siniestros} siniestros · ${d.cobertura}% cobertura</span>
+      </div>
+      ${d.recomendaciones.map((rec,i)=>`
+        <div class="informe-rec ${i===0?'urgente':''}">
+          <div class="rec-num" style="background:${i===0?'#fde8e8':i<3?'#fef3c7':'#f0fdf4'};color:${i===0?'#9b1c1c':i<3?'#92400e':'#065f46'}">${i+1}</div>
+          <div style="flex:1">
+            <p>${rec}</p>
+            ${i===0?'<span style="display:inline-block;margin-top:6px;font-size:12px;padding:3px 10px;background:#fde8e8;color:#9b1c1c;border-radius:4px">Acción prioritaria</span>':''}
+          </div>
+        </div>`).join('')}
+      <div style="margin-top:18px;padding:16px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
+        <p style="margin:0 0 12px;font-size:14px;color:#1e40af;font-weight:600">🎯 Acciones rápidas para ${d.nombre}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-accion" onclick="informeProponerCamaras()">📷 Análisis predictivo de cobertura</button>
+          <button class="btn-accion" onclick="informeAccion('patrullaje_sugerido')">🚓 Generar ruta de patrullaje</button>
+          <button class="btn-accion" onclick="informeAccion('robos_zonas_sin_camaras')">🚗 Robos sin cobertura</button>
+        </div>
+      </div>`;
+  }
+
+  // --- ACCIONES ---
+  function informeVerEnMapa() {
+    if(!_informeBarrioActual) return;
+    const sel=document.getElementById('barrio-filter');
+    if(sel){sel.value=_informeBarrioActual;sel.dispatchEvent(new Event('change'));}
+    cerrarInformeBarrio();
+  }
+
+  function informeProponerCamaras() {
+    if(!_informeBarrioActual) return;
+    const sel=document.getElementById('barrio-filter');
+    if(sel){sel.value=_informeBarrioActual;sel.dispatchEvent(new Event('change'));}
+    cerrarInformeBarrio();
+    setTimeout(()=>{
+      document.getElementById('consultas-panel').style.display='block';
+      document.querySelector('[data-consulta="mejora_predictiva_cobertura"]')?.click();
+    },400);
+  }
+
+  function informeAccion(tipo) {
+    const barrio=_informeBarrioActual;
+    if(!barrio) return;
+    const selGlobal=document.getElementById('barrio-filter');
+    if(selGlobal){selGlobal.value=barrio;selGlobal.dispatchEvent(new Event('change'));}
+    cerrarInformeBarrio();
+    setTimeout(()=>{
+      if(tipo==='cobertura_colegios'){
+        const cb=document.getElementById('colegios-cobertura-checkbox');
+        if(cb&&!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change'));}
+        return;
+      }
+      const btnConsulta=document.querySelector(`[data-consulta="${tipo}"]`);
+      if(btnConsulta){document.getElementById('consultas-panel').style.display='block';btnConsulta.click();}
+    },400);
+  }
+
+  function informeZoomPunto(lat,lng) {
+    cerrarInformeBarrio();
+    setTimeout(()=>mymap.setView([lat,lng],17),200);
+  }
+
+  // --- HELPERS HTML ---
+  function _metric(icon,label,value,unit,color) {
+    return `<div class="informe-metric"><div class="label">${icon} ${label}</div><div class="value" style="color:${color}">${value}<span class="unit">${unit}</span></div></div>`;
+  }
+
+  function _progressBar(label,pct,color) {
+    const p=Math.max(0,Math.min(100,pct));
+    return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="color:#64748b">${label}</span><span style="font-weight:600;color:${color}">${p}%</span></div><div class="informe-progress-track"><div class="informe-progress-bar" style="width:${p}%;background:${color}"></div></div></div>`;
+  }
+
+  function _causaBar(nombre,cant,maxVal,color) {
+    const pct=maxVal>0?Math.round((cant/maxVal)*100):0;
+    return `<div class="causa-row"><div class="causa-label">${nombre}</div><div class="causa-track"><div class="causa-fill" style="width:${pct}%;background:${color}">${pct>15?`<span>${cant}</span>`:''}</div></div><div class="causa-pct">${cant}</div></div>`;
+  }
+
+  function _getCriticidadInfo(val) {
+    if(val>=80) return {cls:'badge-critico',label:'⚠ Crítico'};
+    if(val>=60) return {cls:'badge-alto',label:'↑ Alto'};
+    if(val>=40) return {cls:'badge-moderado',label:'~ Moderado'};
+    return {cls:'badge-bajo',label:'✓ Bajo'};
+  }
+
+  function _limpiarCapasInforme() {
+    _informeCapasActivas.forEach(l=>{try{mymap.removeLayer(l);}catch(e){}});
+    _informeCapasActivas=[];
+  }
+
+  // --- DRAG & DROP DEL MODAL ---
+  document.addEventListener('DOMContentLoaded',()=>{
+    const modal  = document.getElementById('informe-barrio-inner');
+    const header = document.getElementById('informe-barrio-header');
+    if(!modal||!header) return;
+    let isDragging=false,offsetX=0,offsetY=0;
+    header.addEventListener('mousedown',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.closest('button')) return;
+      isDragging=true;
+      const rect=modal.getBoundingClientRect();
+      offsetX=e.clientX-rect.left; offsetY=e.clientY-rect.top;
+      modal.style.transition='none';
+    });
+    document.addEventListener('mousemove',e=>{
+      if(!isDragging) return;
+      const wrapper=document.getElementById('informe-barrio-modal');
+      let x=e.clientX-offsetX, y=e.clientY-offsetY;
+      x=Math.max(0,Math.min(x,window.innerWidth-modal.offsetWidth));
+      y=Math.max(0,Math.min(y,window.innerHeight-modal.offsetHeight));
+      wrapper.style.alignItems='flex-start';
+      wrapper.style.justifyContent='flex-start';
+      wrapper.style.paddingTop=`${y}px`;
+      wrapper.style.paddingLeft=`${x}px`;
+    });
+    document.addEventListener('mouseup',()=>{isDragging=false;modal.style.transition='';});
+  });
+
+  // --- INICIALIZAR BOTÓN (llamado desde iniciarApp en script.js) ---
+  window.initInformeBarrioBtn = function() {
+    const btn = document.getElementById('informe-barrio-btn');
+    if(btn) btn.style.display = 'block';
+  };
+  </script>
 
 </body>
 </html>

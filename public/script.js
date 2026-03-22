@@ -284,6 +284,9 @@ function iniciarApp() {
   }, 300);
   
   // 🔐 SETUP: Botón Panel de Chat para Administrativo
+  // Reemplazá ESE BLOQUE por este:
+// ============================================================
+ 
   if (window.USER_IS_ADMIN) {
     const chatPanelBtn = document.getElementById('chat-panel-btn');
     if (chatPanelBtn) {
@@ -293,7 +296,17 @@ function iniciarApp() {
       };
       console.log('✅ Botón Panel de Chat habilitado para administrativo');
     }
+ 
+    // ✅ NUEVA LÍNEA — habilitar botón de informe por barrio
+    if (typeof window.initInformeBarrioBtn === 'function') {
+      window.initInformeBarrioBtn();
+    }
   }
+ 
+// ============================================================
+// ESO ES TODO. Solo agregás las 4 líneas del comentario
+// "NUEVA LÍNEA" dentro del bloque if (window.USER_IS_ADMIN).
+// ============================================================
   
   // 🎯 Inicializar sistema de eventos para capas norte/sur y admin
   if (window.currentUser && (window.USER_LAYER === 'norte' || window.USER_LAYER === 'sur' || window.USER_IS_ADMIN)) {
