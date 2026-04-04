@@ -1990,8 +1990,48 @@ fetch('barrios.geojson')
             option.textContent = barrio;
             barrioFilterSelect.appendChild(option);
         });
+        
+        // 🎨 CARGAR ZONAS GEOGRÁFICAS EN LA CAPA
+        drawZoneLayer();
     })
     .catch(error => console.error('Error al cargar barrios.geojson:', error));
+
+// 🎨 FUNCIÓN PARA DIBUJAR LOS BARRIOS COLOREADOS POR ZONA
+function drawZoneLayer() {
+    if (!barriosData || !barriosData.features) {
+        console.error('❌ barriosData no cargado');
+        return;
+    }
+    
+    zoneColorLayer.clearLayers();
+    
+    barriosData.features.forEach(feature => {
+        const barrioName = feature.properties?.soc_fomen || '';
+        const zone = getZoneNameForBarrio(barrioName);
+        const style = zoneColors[zone];
+        
+        if (!style) {
+            console.warn(`⚠️ No hay color definido para la zona: ${zone}`);
+            return;
+        }
+        
+        const geoJsonLayer = L.geoJSON(feature, {
+            style: style,
+            onEachFeature: (feature, layer) => {
+                // Popup con nombre del barrio y su zona
+                const popup = `<b>${barrioName}</b><br>Zona: <b>${zone}</b>`;
+                layer.bindPopup(popup);
+                
+                // Tooltip al hover
+                layer.bindTooltip(barrioName, { permanent: false, direction: 'center' });
+            }
+        });
+        
+        zoneColorLayer.addLayer(geoJsonLayer);
+    });
+    
+    console.log('✅ Capa de zonas dibujada correctamente');
+}
 
 barrioFilterSelect.addEventListener('change', () => {
     if (selectedBarrioLayer) {
@@ -2123,6 +2163,69 @@ let siniestrosLayerGroup = L.layerGroup().addTo(mymap);
 // ============================================
 
 const heatLayer = L.heatLayer([], { radius: 25 });
+
+// 🎨 CAPA DE COLORES POR ZONA GEOGRÁFICA - Mucho más claro y visual
+const zoneColorLayer = L.layerGroup();
+
+// Tabla de colores para cada zona
+const zoneColors = {
+  'Norte': { color: '#0066FF', fillColor: '#0066FF', fillOpacity: 0.3, weight: 3 },  // Azul
+  'Sur': { color: '#FF0000', fillColor: '#FF0000', fillOpacity: 0.3, weight: 3 },    // Rojo
+  'Centro': { color: '#FF1493', fillColor: '#FF1493', fillOpacity: 0.3, weight: 3 }, // Rosa
+  'Oeste': { color: '#00AA00', fillColor: '#00AA00', fillOpacity: 0.3, weight: 3 }   // Verde
+};
+
+// Función para obtener zona de un barrio
+const getZoneNameForBarrio = (barrioName) => {
+  if (!barrioName) return 'Oeste';
+  // Normalizar: convertir a minúsculas y remover acentos
+  const lower = barrioName.toLowerCase()
+    .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u');
+  
+  // NORTE: Barrios hacia el norte de la ciudad
+  const norte = [
+    'constitucion', 'estrada', 'zacagnini', 'parque luro', 'aeroparque', 'la florida',
+    'los tilos', 'estacion camet', 'camet felix', 'felix u.', 'dos de abril', 'parque camet',
+    'fray luis beltran', 'virgen de lujan', 'malvinas argentinas', 'lopez de gomara',
+    'los pinares', 'villa primera', 'estacion norte', 'nueve de julio', 'sarmiento',
+    'mitre', 'roca norte', 'alem norte', 'san martin norte',
+    'parque montemar', 'el grosellar', 'las margaritas', 'el casal'
+  ];
+  
+  // SUR: Barrios hacia el sur (Punta Mogotes, Chapadmalal y alrededores del sur extremo)
+  const sur = [
+    'puerto', 'punta mogotes', 'faro norte', 'alfar',
+    'del puerto', 'punta mogotes oeste', 'colinas de peralta ramos', 'el progreso',
+    'peralta ramos oeste', 'juramento', 'serena', 'acantilados',
+    'cabo corrientes', 'punta mogotes alta', 'corrientes', 'balneario sur', 'playa serena',
+    'marquesado', 'san eduardo del mar', 'san eduardo de chapadmalal', 'arroyo chapadmalal',
+    'playa chapadmalal', 'playa los lobos', 'san patricio', 'san jacinto',
+    'bosque peralta ramos', 'el jardin de peralta ramos', 'santa rosa del mar',
+    'quebradas de peralta ramos',
+    'termas huinco', 'termas  huinco', 'nuevo golf', 'parque independencia', 'loma del golf', 'lomas del golf', 'santa celina',
+    'general san martin', 'florencio sanchez', 'villa lourdes', 'las avenidas',
+    'cerrito y san salvador', 'cerrito sur', 'el jardin de stella maris'
+  ];
+  
+  // CENTRO: Barrios céntricos
+  const centro = [
+    'centro', 'la perla', 'nueva pompeya', 'don bosco',
+    'area centro', 'plaza peralta ramos', 'san fernando',
+    'bolivar', 'bv maritima', 'mitre centro', 'roca centro',
+    'los andes', 'bernardino rivadavia', 'estacion terminal', 'san juan',
+    'primera junta', 'san jose', 'funes', 'san lorenzo',
+    'divino rostro', 'general roca',
+    'pinos de anchorena', 'santa monica', 'playa grande', 'lomas de stella maris',
+    'los troncos', 'leandro l alem', 'leandro n. alem', 'll alem', 'alem sur', 'san carlos'
+  ];
+  
+  // Clasificar
+  if (norte.some(n => lower.includes(n))) return 'Norte';
+  if (sur.some(s => lower.includes(s))) return 'Sur';
+  if (centro.some(c => lower.includes(c))) return 'Centro';
+  return 'Oeste';
+};
+
 const siniestroIcon = L.divIcon({
     className: 'custom-div-icon',
     html: '<i class="fi fi-rr-triangle-warning" style="font-size: 24px; color: #ffc107;"></i>',
@@ -2256,6 +2359,8 @@ function updateSiniestrosLayers(dataToDisplay, totalCount, markerColor = null) {
         mymap.removeLayer(heatLayer);
     }
 }
+
+
 
 
 
@@ -4857,6 +4962,21 @@ document.getElementById('alertas-checkbox').addEventListener('change', e => {
     }
 });
 
+// 🎨 EVENT LISTENER PARA MOSTRAR/OCULTAR ZONAS GEOGRÁFICAS
+document.getElementById('show-zones-checkbox').addEventListener('change', e => {
+    if (e.target.checked) {
+        if (!mymap.hasLayer(zoneColorLayer)) {
+            mymap.addLayer(zoneColorLayer);
+            console.log('📍 Zonas geográficas mostradas');
+        }
+    } else {
+        if (mymap.hasLayer(zoneColorLayer)) {
+            mymap.removeLayer(zoneColorLayer);
+            console.log('📍 Zonas geográficas ocultadas');
+        }
+    }
+});
+
 document.getElementById('camaras-checkbox').addEventListener('change', e => {
     if (e.target.checked) {
         // Only load and apply if not already loaded and visible
@@ -7153,10 +7273,53 @@ case 'siniestros_noche': {
       // 3. Analizar Prevalencia por Zona
       const getZoneForBarrio = (barrioName) => {
         if (!barrioName) return 'Desconocida';
-        const lower = barrioName.toLowerCase();
-        if (['centro', 'la perla', 'nueva pompeya', 'don bosco', 'vieja terminal'].some(c => lower.includes(c))) return 'Centro';
-        if (['puerto', 'punta mogotes', 'faro norte', 'los troncos'].some(p => lower.includes(p))) return 'Sur';
-        if (['constitución', 'estrada', 'zacagnini', 'parque luro'].some(n => lower.includes(n))) return 'Norte';
+        // Normalizar: convertir a minúsculas y remover acentos
+        const lower = barrioName.toLowerCase()
+          .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u');
+        
+        // NORTE: Barrios al norte
+        const norte = [
+          'constitucion', 'estrada', 'zacagnini', 'parque luro', 'aeroparque', 'la florida',
+          'los tilos', 'estacion camet', 'camet felix', 'felix u.', 'dos de abril', 'parque camet',
+          'fray luis beltran', 'virgen de lujan', 'malvinas argentinas', 'lopez de gomara',
+          'los pinares', 'villa primera', 'estacion norte', 'nueve de julio', 'sarmiento',
+          'mitre', 'roca norte', 'alem norte', 'san martin norte',
+          'parque montemar', 'el grosellar', 'las margaritas', 'el casal'
+        ];
+        
+        // SUR: Barrios al sur
+        const sur = [
+          'puerto', 'punta mogotes', 'faro norte', 'alfar',
+          'del puerto', 'punta mogotes oeste', 'colinas de peralta ramos', 'el progreso',
+          'peralta ramos oeste', 'juramento', 'serena', 'acantilados',
+          'cabo corrientes', 'punta mogotes alta', 'corrientes', 'balneario sur', 'playa serena',
+          'marquesado', 'san eduardo del mar', 'san eduardo de chapadmalal', 'arroyo chapadmalal',
+          'playa chapadmalal', 'playa los lobos', 'san patricio', 'san jacinto',
+          'bosque peralta ramos', 'el jardin de peralta ramos', 'santa rosa del mar',
+          'quebradas de peralta ramos',
+          'termas huinco', 'termas  huinco', 'nuevo golf', 'parque independencia', 'loma del golf', 'lomas del golf', 'santa celina',
+          'general san martin', 'florencio sanchez', 'villa lourdes', 'las avenidas',
+          'cerrito y san salvador', 'cerrito sur', 'el jardin de stella maris'
+        ];
+        
+        // CENTRO: Barrios centrales
+        const centro = [
+          'centro', 'la perla', 'nueva pompeya', 'don bosco',
+          'area centro', 'plaza peralta ramos', 'san fernando',
+          'bolivar', 'bv maritima', 'mitre centro', 'roca centro',
+          'los andes', 'bernardino rivadavia', 'estacion terminal', 'san juan',
+          'primera junta', 'san jose', 'funes', 'san lorenzo',
+          'divino rostro', 'general roca',
+          'pinos de anchorena', 'santa monica', 'playa grande', 'lomas de stella maris',
+          'los troncos', 'leandro l alem', 'leandro n. alem', 'll alem', 'alem sur', 'san carlos'
+        ];
+        
+        // Clasificar
+        if (norte.some(n => lower.includes(n))) return 'Norte';
+        if (sur.some(s => lower.includes(s))) return 'Sur';
+        if (centro.some(c => lower.includes(c))) return 'Centro';
+        
+        // Todo lo demás es OESTE
         return 'Oeste';
       };
       const prevalence = {};
