@@ -6,310 +6,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -57.55307,
-          -37.98596
-        ]
-      },
-      "properties": {
-        "titulo": "Realizaron trabajos de mantenimiento en la Plaza Pueyrredon",
-        "direccion": "Chacabuco y Dorrego",
-        "link": "https://www.lacapitalmdp.com/realizaron-trabajos-de-mantenimiento-en-la-plaza-pueyrredon/",
-        "timestamp": 1770314385712
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.8467752,
-          -38.2319049
-        ]
-      },
-      "properties": {
-        "titulo": "Planificación de una “masacre escolar”: investigan la posible captación de los adolescentes",
-        "direccion": "Miramar y Jujuy",
-        "link": "https://quedigital.com.ar/judiciales/planificacion-de-una-masacre-escolar-investigan-la-posible-captacion-de-los-adolescentes/",
-        "timestamp": 1770314393075
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.55463,
-          -37.99312
-        ]
-      },
-      "properties": {
-        "titulo": "Alarma en el centro de Mar del Plata por un incendio en un edificio ocupado",
-        "direccion": "Ocurrió en España casi 25",
-        "link": "https://quedigital.com.ar/policiales/alarma-en-el-centro-por-un-incendio-mar-del-plata-en-una-casa-ocupada/",
-        "timestamp": 1770314393319
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.559305,
-          -37.972783
-        ]
-      },
-      "properties": {
-        "titulo": "Recuperaron elementos sustraidos de un automóvil y aprehenden al autor",
-        "direccion": "Falkner y Tejedor",
-        "link": "https://www.infobrisas.com/noticias/2026/02/11/90141-recuperaron-elementos-sustraidos-de-un-automovil-y-aprehenden-al-autor",
-        "timestamp": 1770926847425
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "Tragedia en Ruta 2: un muerto y dos heridos tras un choque frontal",
-        "direccion": "Ruta 2",
-        "link": "https://www.lacapitalmdp.com/tragedia-en-ruta-2-un-muerto-y-dos-heridos-tras-un-choque-frontal/",
-        "timestamp": 1771089730832
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "Un muerto y dos heridos por un choque frontal en Ruta 2",
-        "direccion": "Ruta 2",
-        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/un-muerto-y-dos-heridos-por-un-choque-frontal-en-ruta-2",
-        "timestamp": 1771092729489
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "La familia del joven que murió en un choque en la Ruta 2: “Fue una pesadilla”",
-        "direccion": "Ruta 2",
-        "link": "https://www.lacapitalmdp.com/la-familia-del-joven-que-murio-en-un-choque-en-la-ruta-2-fue-una-pesadilla/",
-        "timestamp": 1771167730348
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5439453,
-          -38.0396486
-        ]
-      },
-      "properties": {
-        "titulo": "Tragedia en la ruta 88: un hombre murió tras un choque provocado por un carpincho",
-        "direccion": "Ruta 88",
-        "link": "https://www.lacapitalmdp.com/tragedia-en-la-ruta-88-un-hombre-murio-tras-un-choque-provocado-por-un-carpincho/",
-        "timestamp": 1771171631114
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5843013,
-          -37.9827793
-        ]
-      },
-      "properties": {
-        "titulo": "La familia del joven que chocó en la Ruta 2: “Fue una pesadilla”",
-        "direccion": "Ruta 2",
-        "link": "https://www.lacapitalmdp.com/la-familia-del-joven-que-choco-en-la-ruta-2-fue-una-pesadilla/",
-        "timestamp": 1771172232430
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5439453,
-          -38.0396486
-        ]
-      },
-      "properties": {
-        "titulo": "Un hombre murió en la Ruta 88 tras un choque provocado por un carpincho",
-        "direccion": "Ruta 88",
-        "link": "https://www.lacapitalmdp.com/un-hombre-murio-en-la-ruta-88-tras-un-choque-provocado-por-un-carpincho/",
-        "timestamp": 1771172530873
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5904048,
-          -37.9762537
-        ]
-      },
-      "properties": {
-        "titulo": "Desarticulan un loteo ilegal de terrenos al costado de la Ruta 226: seis imputados",
-        "direccion": "Ruta 226",
-        "link": "https://quedigital.com.ar/policiales/desarticulan-un-loteo-ilegal-de-terrenos-al-costado-de-la-ruta-226-seis-imputados/",
-        "timestamp": 1771361284650
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.570886,
-          -38.042646
-        ]
-      },
-      "properties": {
-        "titulo": "Más tomas: desactivaron un intento de usurpación en el barrio El Martillo",
-        "direccion": "Camusso y Arana y Goiri",
-        "link": "https://www.infobrisas.com/noticias/2026/02/17/90340-mas-tomas-desactivaron-un-intento-de-usurpacion-en-el-barrio-el-martillo",
-        "timestamp": 1771402541042
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5677716,
-          -38.0146843
-        ]
-      },
-      "properties": {
-        "titulo": "Intentó huir en una Amarok sin patente y descubrieron que tenía prohibido manejar",
-        "direccion": "Independencia y Almafuerte",
-        "link": "https://ahoramardelplata.com.ar/ultimas-noticias/intento-huir-en-una-amarok-sin-patente-y-descubrieron-que-tenia-prohibido-manejar",
-        "timestamp": 1771419805154
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5724457,
-          -38.0189526
-        ]
-      },
-      "properties": {
-        "titulo": "Persecución policial, choque y vuelco en el barrio San José",
-        "direccion": "Diagonal Canosa y Solís",
-        "link": "https://www.lacapitalmdp.com/lo-persiguio-la-policia-por-sospechar-que-robaba-autos-y-volco/",
-        "timestamp": 1771450177936
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5480888,
-          -37.9974955
-        ]
-      },
-      "properties": {
-        "titulo": "Ciclistas cansados de los robos se manifestaron en el centro de Mar del Plata",
-        "direccion": "Luro y Mitre para exigir medidas",
-        "link": "https://loquepasa.net/ciclistas-cansados-de-los-robos-se-manifestaron-en-el-centro-de-mar-del-plata/",
-        "timestamp": 1771457141543
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.590759,
-          -37.990824
-        ]
-      },
-      "properties": {
-        "titulo": "Barrio Bernardino Rivadavia: un hombre murió carbonizado en un incendio",
-        "direccion": "Alvarado y Castelli",
-        "link": "https://www.lacapitalmdp.com/barrio-bernardino-rivadavia-un-hombre-murio-carbonizado-en-un-incendio/",
-        "timestamp": 1771505278763
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5795132,
-          -37.9976442
-        ]
-      },
-      "properties": {
-        "titulo": "Encontraron a un cuerpo carbonizado tras un incendio en una casa",
-        "direccion": "Jara y Alvarado",
-        "link": "https://quedigital.com.ar/policiales/encontraron-a-un-cuerpo-carbonizado-tras-un-incendio-en-una-casa/",
-        "timestamp": 1771507974062
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5795132,
-          -37.9976442
-        ]
-      },
-      "properties": {
-        "titulo": "Encontraron un cuerpo carbonizado tras un incendio en una casa",
-        "direccion": "Jara y Alvarado",
-        "link": "https://quedigital.com.ar/policiales/encontraron-un-cuerpo-carbonizado-tras-un-incendio-en-una-casa/",
-        "timestamp": 1771508871481
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -57.5687344,
-          -38.0177738
-        ]
-      },
-      "properties": {
-        "titulo": "Robo, persecución, choque y vuelco: detuvieron a un joven",
-        "direccion": "Vieytes y Catamarca y terminó en",
-        "link": "https://quedigital.com.ar/policiales/robo-persecucion-y-vuelco-detuvieron-a-un-joven/",
-        "timestamp": 1771525073200
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           -57.5504,
           -37.98962
         ]
@@ -367,6 +63,182 @@
         "direccion": "San Luis y Rodríguez Peña tras huir",
         "link": "https://www.lacapitalmdp.com/el-barrio-primera-junta-escenario-de-un-nuevo-siniestro-vial-grave-en-menos-de-un-mes/",
         "timestamp": 1773946992712
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6265499,
+          -37.9682608
+        ]
+      },
+      "properties": {
+        "titulo": "Se entregó el tercer implicado en el crimen de Gascón y Buenos Aires",
+        "direccion": "Gascón y Buenos Aires aparece primero",
+        "link": "https://quedigital.com.ar/policiales/se-entrego-el-tercer-implicado-en-el-crimen-de-gascon-y-buenos-aires/",
+        "timestamp": 1775305780684
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843013,
+          -37.9827793
+        ]
+      },
+      "properties": {
+        "titulo": "Murió un hombre de 52 años tras ser atropellado en la Ruta 2",
+        "direccion": "Ruta 2",
+        "link": "https://quedigital.com.ar/policiales/murio-un-hombre-de-52-anos-tras-ser-atropellado-en-la-ruta-2/",
+        "timestamp": 1775305780941
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5843871,
+          -37.9827381
+        ]
+      },
+      "properties": {
+        "titulo": "Persiguieron y redujeron a golpes a un hombre por intentar robar en una casa",
+        "direccion": "Champagnat y Belgrano",
+        "link": "https://quedigital.com.ar/policiales/persiguieron-y-redujeron-a-golpes-a-un-hombre-por-intentar-robar-en-una-casa/",
+        "timestamp": 1775305781163
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6265499,
+          -37.9682608
+        ]
+      },
+      "properties": {
+        "titulo": "Homicidio en Gascón y Buenos Aires: detuvieron a dos de los tres agresores",
+        "direccion": "Homicidio en Gascón y Buenos Aires",
+        "link": "https://quedigital.com.ar/policiales/homicidio-en-gascon-y-buenos-aires-detuvieron-a-dos-de-los-tres-agresores/",
+        "timestamp": 1775305781443
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5512,
+          -37.95554
+        ]
+      },
+      "properties": {
+        "titulo": "Murió el hombre que chocó con un auto tras robar una moto",
+        "direccion": "Marcos Sastre y Alice",
+        "link": "https://quedigital.com.ar/policiales/murio-el-hombre-que-choco-con-un-auto-tras-robar-una-moto/",
+        "timestamp": 1775554276741
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5684114,
+          -38.0154924
+        ]
+      },
+      "properties": {
+        "titulo": "Tres años de prisión en suspenso para conductor que atropelló, mató y escapó",
+        "direccion": "Independencia y Laprida",
+        "link": "https://quedigital.com.ar/judiciales/tres-anos-de-prision-en-suspenso-para-conductor-que-atropello-mato-y-escapo/",
+        "timestamp": 1775561232620
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.61648,
+          -37.966535
+        ]
+      },
+      "properties": {
+        "titulo": "Un adolescente de 14 años fue demorado por conducir una moto robada",
+        "direccion": "Portugal y Belgrano",
+        "link": "https://www.lacapitalmdp.com/un-adolescente-de-14-anos-fue-demorado-por-conducir-una-moto-robada/",
+        "timestamp": 1775565069093
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5441867,
+          -38.0030656
+        ]
+      },
+      "properties": {
+        "titulo": "Generaban disturbios en el centro, una mujer se escondió en un comercio y quiso agredir a la Policía",
+        "direccion": "Entre Ríos y Belgrano",
+        "link": "https://ahoramardelplata.com.ar/policiales/generaban-disturbios-en-el-centro-una-mujer-se-escondio-en-un-comercio-y-quiso-agredir-a-la-policia",
+        "timestamp": 1775585471390
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.554833,
+          -37.967229
+        ]
+      },
+      "properties": {
+        "titulo": "Choque entre una moto y un auto dejó una mujer herida",
+        "direccion": "López de Gomara y Tejedor",
+        "link": "https://www.lacapitalmdp.com/choque-entre-una-moto-y-un-auto-dejo-una-mujer-herida/",
+        "timestamp": 1775651806298
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.554833,
+          -37.967229
+        ]
+      },
+      "properties": {
+        "titulo": "Una mujer herida tras un choque entre un auto y una moto ",
+        "direccion": "Tejedor y López de Gómara",
+        "link": "https://quedigital.com.ar/policiales/una-mujer-herida-tras-un-choque-entre-un-auto-y-una-moto-3/",
+        "timestamp": 1775651812828
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6292045,
+          -37.96112
+        ]
+      },
+      "properties": {
+        "titulo": "Un robo comando a una concesionaria fue el origen de la persecución y el choque de Prefectura",
+        "direccion": "Moreno y Carrillo",
+        "link": "https://www.lacapitalmdp.com/un-robo-comando-a-una-concesionaria-fue-el-origen-de-la-persecucion-y-el-choque-de-prefectura/",
+        "timestamp": 1775749925682
       }
     }
   ]

@@ -7,7 +7,7 @@ parent_dir = os.path.dirname(base_dir)  # Subir un nivel desde scripts/
 
 # ✅ Corregido: los archivos están en public/, un nivel arriba de scripts/
 archivo_camaras = os.path.join(parent_dir, 'public', 'Camaras.CSV1 (1).csv')
-archivo_siniestros = os.path.join(parent_dir, 'public', 'SINIESTROS.csv')
+archivo_siniestros = os.path.join(parent_dir, 'data', 'SINIESTROS.csv')
 archivo_salida = os.path.join(parent_dir, 'public', 'siniestros_con_ubicacion.geojson')
 
 print("📁 Directorio actual:", os.getcwd())
@@ -20,7 +20,7 @@ print("────────────────────────�
 # --- 1. Leer las ubicaciones de las cámaras ---
 camaras = {}
 try:
-    with open(archivo_camaras, mode='r', encoding='latin-1') as infile:
+    with open(archivo_camaras, mode='r', encoding='utf-8-sig') as infile:
         reader = csv.reader(infile)
         header_camaras = next(reader)  # Omitir cabecera
         for row in reader:
@@ -43,7 +43,7 @@ print(f"✅ Cámaras cargadas: {len(camaras)}")
 # --- 2. Procesar los siniestros ---
 features = []
 try:
-    with open(archivo_siniestros, mode='r', encoding='latin-1') as infile:
+    with open(archivo_siniestros, mode='r', encoding='utf-8-sig') as infile:
         reader = csv.reader(infile)
         header_siniestros = next(reader)  # Omitir cabecera
         for row in reader:

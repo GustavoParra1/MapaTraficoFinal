@@ -186,18 +186,18 @@ async function loadEventosFromFirestore() {
         const eventData = doc.data();
         console.log(`   - Evento encontrado: ${eventData.id}, createdAt: ${eventData.createdAt}, archivado: ${eventData.archived}`);
         
-        // REGLA 1: Si está archivado, NUNCA mostrar (prioridad absoluta)
-        if (eventData.archived === true) {
-          console.log(`   - ❌ Ignorando (archivado): ${eventData.id}`);
-          return;
-        }
+        // REGLA 1: Permitir eventos archivados - comentada para mostrar todo
+        //if (eventData.archived === true) {
+        //  console.log(`   - ❌ Ignorando (archivado): ${eventData.id}`);
+        //  return;
+        //}
         
-        // REGLA 2: Si no está archivado, mostrar solo si fue actualizado en últimas 24h
-        const lastStatusDate = new Date(eventData.lastSentToAdmin || eventData.updatedAt || eventData.createdAt);
-        if (lastStatusDate < oneDayAgo) {
-          console.log(`   - ⏰ Ignorando (muy antiguo): ${eventData.id}`);
-          return;
-        }
+        // REGLA 2: Permitir también eventos antiguos - comentada para mostrar todo
+        //const lastStatusDate = new Date(eventData.lastSentToAdmin || eventData.updatedAt || eventData.createdAt);
+        //if (lastStatusDate < oneDayAgo) {
+        //  console.log(`   - ⏰ Ignorando (muy antiguo): ${eventData.id}`);
+        //  return;
+        //}
         
         console.log(`   - ✅ Agregando evento: ${eventData.id}`);
         validEvents[eventData.id] = eventData;

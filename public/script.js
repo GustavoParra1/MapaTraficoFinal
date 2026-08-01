@@ -1,4 +1,51 @@
 // ============================
+// VALIDACIÓN ESTRICTA DE ARCHIVOS DE SINIESTROS
+// ============================
+function validarArchivoSiniestros(datos) {
+  // Columnas obligatorias
+  const columnasObligatorias = [
+    'lat', 'lng', 'nombre', 'hora', 'descripcion_tipo', 'fecha',
+    'causa', 'participantes', 'descripcion', 'barrio'
+  ];
+  // Códigos válidos
+  const codigosCausa = Object.keys(causeMapping);
+  const codigosParticipante = Object.keys(participantMapping);
+
+  // Validar columnas
+  const columnasArchivo = Object.keys(datos[0] || {});
+  for (const col of columnasObligatorias) {
+    if (!columnasArchivo.includes(col)) {
+      alert(`❌ El archivo no tiene la columna obligatoria: "${col}".\nCorrige el archivo antes de subir.`);
+      return false;
+    }
+  }
+
+  // Validar valores de cada fila
+  for (let i = 0; i < datos.length; i++) {
+    const fila = datos[i];
+    // Causa
+    if (!codigosCausa.includes(fila.causa)) {
+      alert(`❌ Fila ${i + 1}: causa inválida "${fila.causa}".\nUsa solo los códigos permitidos: ${codigosCausa.join(', ')}`);
+      return false;
+    }
+    // Participantes (puede ser lista separada por / o ,)
+    let participantes = fila.participantes;
+    if (typeof participantes === 'string') {
+      participantes = participantes.split(/[\/,]/).map(p => p.trim()).filter(Boolean);
+    }
+    for (const p of participantes) {
+      if (!codigosParticipante.includes(p)) {
+        alert(`❌ Fila ${i + 1}: participante inválido "${p}".\nUsa solo los códigos permitidos: ${codigosParticipante.join(', ')}`);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+// Antes de procesar los datos cargados, validar:
+// if (!validarArchivoSiniestros(datos)) return;
+// ...seguir con la carga solo si pasa la validación...
+// ============================
 // VARIABLES GLOBALES CHAT BASE
 // ============================
 let chatMovilActual = null;
@@ -1328,38 +1375,102 @@ window._scriptLoaded = true;
 
 // Mapeos de datos para filtros y popups
 const participantMapping = {
-    'A': 'Auto',
-    'M': 'Moto',
-    'B': 'Ciclista',
-    'P': 'Peatón',
-    'COL': 'Colectivo',
-    'CAM': 'Camión',
-    'CTA': 'Carga/Transporte',
-    'MI': 'Monopatín',
-    'TAXI': 'Taxi',
-    'POLICIA': 'Policía',
-    'AMB': 'Ambulancia',
-    'C': 'Carga',
-    'PERRO': 'Animal',
-    'CABALLO': 'Animal',
-    'MONOPATIN': 'Monopatín',
-    '?': 'Desconocido'
+  A: "Auto",
+  M: "Moto",
+  P: "Peatón",
+  CAM: "Camión",
+  B: "Bicicleta",
+  COL: "Colectivo",
+  CTA: "Camioneta",
+  BOMBEROS: "Bomberos",
+  PERRO: "Perro",
+  POL: "Policía",           // Código oficial "POL" (antes decía "POLICIA", que no coincidía con el dato real)
+  MONOPATIN: "Monopatín",
+  AMB: "Ambulancia",
+  PATRULLA: "Patrulla",
+  CABALLO: "Caballo",
+  TAXI: "Taxi",             // Faltaba: 4 siniestros reales con este código
+  CARTONERO: "Cartonero",   // Faltaba: código real y legítimo (no es un error de tipeo)
+  '?': "No se determina",   // Código oficial: 57 siniestros reales usan este código
+  OTRO: "Otro"              // Código real "otro" (minúscula en el CSV): 4 casos
 };
+
+// ============================================
+// Sinónimos: se detectaron variantes de escritura del MISMO código dentro
+// del CSV real de siniestros (ej: "POLICIA", "POLICÍA" y "POL" conviviendo
+// para lo mismo). Se unifican con su código oficial según el diccionario
+// de códigos provisto. Solo se incluyen los casos confirmados o de alta
+// confianza; los códigos genuinamente ambiguos (MI, C) se dejan sin tocar
+// — ver nota más abajo.
+// ============================================
+const participantSynonyms = {
+  'POLICIA': 'POL',   // 13 casos — variante sin tilde del código oficial "POL"
+  'POLICÍA': 'POL',   // 8 casos — variante con tilde del código oficial "POL"
+  'CATA': 'CTA',       // 10 casos — error de tipeo de "CTA" (Camioneta); ej: "CATA/A"
+  'BICI': 'B',         // 1 caso — error de tipeo de "B" (Bicicleta); ej: "CTA/BICI"
+  'CAMAB': 'CAM',      // 1 caso — probable error de tipeo de "CAM" (Camión); ej: "A/CAMAB"
+  'T': 'TAXI'          // 1 caso — probable abreviatura de "TAXI"; ej: "A/T"
+  // NOTA: "MI" (2 casos, "MI/MI") y "C" (1 caso, "C/M") no están en el
+  // diccionario oficial de códigos y no se pudo determinar con confianza
+  // qué representan — se muestran tal cual en el filtro para que el
+  // equipo de datos los revise en el CSV de origen.
+  // "PERSECUCION" (1 caso) parece un valor de la columna de CAUSA cargado
+  // por error en la columna de PARTICIPANTES — se deja tal cual también.
+};
+
+function normalizeParticipantCode(raw) {
+  if (!raw) return raw;
+  const upper = raw.toString().trim().toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(participantMapping, upper)) return upper;
+  if (Object.prototype.hasOwnProperty.call(participantSynonyms, upper)) return participantSynonyms[upper];
+  return raw.toString().trim();
+}
 const causeMapping = {
-    'D': 'Despiste',
-    'NSD': 'No se determina',
-    'VS': 'Velocidad',
-    'PC': 'Pérdida de control',
-    'MR': 'Marcha atrás',
-    'PI': 'Peatón imprudente',
-    'A': 'Abandono',
-    'G': 'Giro indebido',
-    'NR': 'No respeta prioridad',
-    'FV': 'Fuga y vuelco',
-    'EV': 'Exceso de velocidad',
-    'IC': 'Intervención de terceros',
-    'GIRO': 'Giro indebido'
+  A: "Alcohol",
+  AV: "Atropello Voluntario",   // Corregido: antes decía "Avería" por error
+  D: "Distracción",
+  DESCOMPENSAN: "Descompensación",
+  DF: "Distancia de Frenado",
+  EV: "Exceso de Velocidad",
+  FV: "Falla en la Vía",
+  G: "Giro",                     // Ajustado a tu definición oficial (antes "Giro prohibido")
+  IC: "Invasión de Carril",
+  MR: "Maniobra Riesgosa",
+  NR: "No Respeta Prioridad de Paso",
+  NSD: "No se pudo Determinar",
+  P: "Peatón",                   // No estaba en tu lista nueva, lo mantengo por ahora
+  PC: "Pérdida de Control",
+  PERSECUCION: "Persecución",    // Clave sin tilde, como en tu lista oficial
+  PI: "Peatón Imprudente",
+  VS: "Violación de Semáforo",
+  '?': "Desconocido"             // No estaba en tu lista nueva, lo mantengo por ahora
 };
+
+// ============================================
+// Sinónimos y normalización de causas: unifica variantes de escritura
+// del mismo código real de causa detectadas en el CSV.
+// ============================================
+const causeSynonyms = {
+  'GIRO': 'G'   // 5 casos — alguien tipeó la palabra completa en vez del código "G"
+  // NOTA: "NC" (2 casos) no está en el diccionario oficial y no se pudo
+  // determinar con confianza qué representa — se muestra tal cual en el
+  // filtro para que se revise en el CSV de origen.
+};
+ 
+function normalizeCauseCode(raw) {
+  if (!raw) return raw;
+  const upper = raw.toString().trim().toUpperCase();
+ 
+  // Caso especial: "PERSECUCIÓN" tiene variantes con tilde bien escrita
+  // y con un byte corrupto e irrecuperable que ya viene roto del CSV origen.
+  // Se detectan ambas por prefijo/sufijo en vez de comparar el string exacto.
+  if (upper.startsWith('PERSECUCI') && upper.endsWith('N')) return 'PERSECUCION';
+ 
+  if (Object.prototype.hasOwnProperty.call(causeMapping, upper)) return upper;
+  if (Object.prototype.hasOwnProperty.call(causeSynonyms, upper)) return causeSynonyms[upper];
+  return raw.toString().trim();
+}
+ 
 
 let allSiniestrosData; // Variable para almacenar los datos de siniestros
 
@@ -1927,18 +2038,45 @@ const semaforoIcon = L.icon({
     popupAnchor: [0, -32]
 });
 
+let allSemaforosData = null;
+
+function updateSemaforosLayer() {
+    if (!allSemaforosData) return;
+
+    semaforosLayer.clearLayers();
+
+    // Respetar el/los barrio(s) seleccionado(s) en "Filtrar por Barrio"
+    const barrioFeatureSemaforos = typeof getSelectedBarrioFeatureCombinada === 'function'
+        ? getSelectedBarrioFeatureCombinada()
+        : null;
+
+    const featuresFiltradas = barrioFeatureSemaforos
+        ? {
+            type: 'FeatureCollection',
+            features: allSemaforosData.features.filter(f => {
+                if (!f.geometry || !f.geometry.coordinates) return false;
+                const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                return isLatLngInMultiPolygon(latlng, barrioFeatureSemaforos.geometry.coordinates);
+            })
+        }
+        : allSemaforosData;
+
+    L.geoJSON(featuresFiltradas, {
+        coordsToLatLng: coords => new L.LatLng(coords[1], coords[0]),
+        pointToLayer: (feature, latlng) => L.marker(latlng, {icon: semaforoIcon}),
+        onEachFeature: (feature, layer) => {
+            if (feature.properties && feature.properties.id) {
+                layer.bindPopup('ID: ' + feature.properties.id);
+            }
+        }
+    }).addTo(semaforosLayer);
+}
+
 fetch('map.geojson')
     .then(response => response.json())
     .then(data => {
-        L.geoJSON(data, {
-            coordsToLatLng: coords => new L.LatLng(coords[1], coords[0]),
-            pointToLayer: (feature, latlng) => L.marker(latlng, {icon: semaforoIcon}),
-            onEachFeature: (feature, layer) => {
-                if (feature.properties && feature.properties.id) {
-                    layer.bindPopup('ID: ' + feature.properties.id);
-                }
-            }
-        }).addTo(semaforosLayer);
+        allSemaforosData = data;
+        updateSemaforosLayer();
         if (document.getElementById('semaforos-checkbox').checked) {
             mymap.addLayer(semaforosLayer);
         }
@@ -1949,6 +2087,41 @@ fetch('map.geojson')
 const barrioFilterSelect = document.getElementById('barrio-filter');
 let barriosData;
 let selectedBarrioLayer = null;
+
+// ============================================
+// Helper: resolver la selección múltiple del filtro "Filtrar por Barrio"
+// como una única "feature" (para no tener que tocar todo el código que
+// ya sabe trabajar con "un barrio seleccionado"). Si hay 2+ barrios
+// seleccionados, se combinan sus polígonos en un solo MultiPolygon.
+// Devuelve null si no hay ningún barrio seleccionado (= "Todos los Barrios").
+// ============================================
+function getSelectedBarrioFeatureCombinada() {
+    if (!barrioFilterSelect || !barriosData) return null;
+
+    const nombresSeleccionados = Array.from(barrioFilterSelect.selectedOptions)
+        .map(opt => opt.value)
+        .filter(v => v && v !== 'all');
+
+    if (nombresSeleccionados.length === 0) return null;
+
+    const features = barriosData.features.filter(f => nombresSeleccionados.includes(f.properties.soc_fomen));
+    if (features.length === 0) return null;
+    if (features.length === 1) return features[0];
+
+    // Combinar las geometrías MultiPolygon de todos los barrios seleccionados en una sola
+    const coordsCombinadas = [];
+    features.forEach(f => {
+        if (f.geometry && f.geometry.coordinates) {
+            f.geometry.coordinates.forEach(polygon => coordsCombinadas.push(polygon));
+        }
+    });
+
+    return {
+        type: 'Feature',
+        properties: { soc_fomen: nombresSeleccionados.join(', ') },
+        geometry: { type: 'MultiPolygon', coordinates: coordsCombinadas }
+    };
+}
 
 // Función para verificar si un punto (lat, lng) está dentro de un polígono GeoJSON
 function isLatLngInMultiPolygon(latlng, multiPolygonCoords) {
@@ -1978,6 +2151,148 @@ function isLatLngInMultiPolygon(latlng, multiPolygonCoords) {
     return false;
 }
 
+// ============================================
+// Helper: construir una fecha legible para robos
+// El CSV de robo automotor no tiene columna "Fecha", solo "año" y "mes" (sin día)
+// ============================================
+const MESES_ES_ROBO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function getFechaLegibleRobo(robo) {
+    if (!robo) return 'N/A';
+    const año = robo['año'];
+    const mesNum = parseInt(robo['mes'], 10);
+    if (!año) return 'N/A';
+    if (mesNum >= 1 && mesNum <= 12) {
+        return `${MESES_ES_ROBO[mesNum - 1]} ${año}`;
+    }
+    return `${año}`;
+}
+
+
+// ============================================
+// Detalle de incidentes de un punto de patrullaje (tabla emergente)
+// ============================================
+window.__patrullajeIncidentesStore = {};
+
+// ============================================
+// Helper: copiar coordenadas al portapapeles con feedback visual
+// (navigator.clipboard puede fallar silenciosamente en algunos contextos,
+// por eso tiene un método alternativo y confirma visualmente el resultado)
+// ============================================
+function copiarCoordenadasPatrullaje(lat, lon, btnEl) {
+    const texto = `${lat},${lon}`;
+
+    const mostrarExito = () => {
+        if (!btnEl) return;
+        const textoOriginal = btnEl.innerHTML;
+        const colorOriginal = btnEl.style.background;
+        btnEl.innerHTML = '✅ ¡Copiado!';
+        btnEl.style.background = '#28a745';
+        setTimeout(() => {
+            btnEl.innerHTML = textoOriginal;
+            btnEl.style.background = colorOriginal;
+        }, 1500);
+    };
+
+    const mostrarError = () => {
+        if (!btnEl) return;
+        const textoOriginal = btnEl.innerHTML;
+        const colorOriginal = btnEl.style.background;
+        btnEl.innerHTML = '❌ No se pudo copiar';
+        btnEl.style.background = '#dc3545';
+        setTimeout(() => {
+            btnEl.innerHTML = textoOriginal;
+            btnEl.style.background = colorOriginal;
+        }, 2000);
+    };
+
+    // Método 1: API moderna del portapapeles (requiere contexto seguro/HTTPS)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(mostrarExito).catch(() => {
+            copiarConFallback(texto, mostrarExito, mostrarError);
+        });
+    } else {
+        copiarConFallback(texto, mostrarExito, mostrarError);
+    }
+}
+
+function copiarConFallback(texto, onExito, onError) {
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const exito = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (exito) {
+            onExito();
+        } else {
+            onError();
+        }
+    } catch (e) {
+        onError();
+    }
+}
+
+
+function mostrarDetalleIncidentesPatrullaje(key) {
+    const data = window.__patrullajeIncidentesStore[key];
+    if (!data) return;
+
+    const { incidentes, barrio, label } = data;
+
+    let filasHTML = incidentes.map(inc => {
+        if (inc.tipo === 'siniestro') {
+            return `
+              <tr>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">⚠️ Siniestro</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.direccion || 'N/A'}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.fecha || 'N/A'}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.hora || 'N/A'}</td>
+              </tr>`;
+        } else {
+            return `
+              <tr>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">🚗 Robo</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.direccion || 'N/A'}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.fecha || 'N/A'}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.resultado || 'N/A'}</td>
+              </tr>`;
+        }
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'detalle-incidentes-overlay';
+    overlay.style.cssText = `
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.5); z-index: 10000;
+      display:flex; align-items:center; justify-content:center;
+    `;
+    overlay.innerHTML = `
+      <div style="background:#fff; width:min(700px, 92%); max-height:80vh; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 8px 30px rgba(0,0,0,0.3);">
+        <div style="background:#212529; color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+          <strong>📋 Detalle de incidentes — ${label} (${barrio})</strong>
+          <span style="cursor:pointer; font-size:20px; line-height:1;" onclick="document.getElementById('detalle-incidentes-overlay').remove()">&times;</span>
+        </div>
+        <div style="padding:12px 16px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.85em;">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #dee2e6;">Tipo</th>
+                <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #dee2e6;">Dirección</th>
+                <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #dee2e6;">Fecha</th>
+                <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #dee2e6;">Hora / Resultado</th>
+              </tr>
+            </thead>
+            <tbody>${filasHTML}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+}
 
 fetch('barrios.geojson')
     .then(response => response.json())
@@ -2034,27 +2349,35 @@ function drawZoneLayer() {
 }
 
 barrioFilterSelect.addEventListener('change', () => {
+    // Si "Todos los Barrios" quedó marcada junto con barrios específicos
+    // (puede pasar si se clickea con Ctrl presionado), forzamos que actúe
+    // como un reset exclusivo: deja solo "Todos los Barrios" seleccionada.
+    const opciones = Array.from(barrioFilterSelect.options);
+    const opcionTodos = opciones.find(o => o.value === 'all');
+    const otrasSeleccionadas = opciones.some(o => o.value !== 'all' && o.selected);
+    if (opcionTodos && opcionTodos.selected && otrasSeleccionadas) {
+        opciones.forEach(o => { o.selected = (o.value === 'all'); });
+    }
+
     if (selectedBarrioLayer) {
         mymap.removeLayer(selectedBarrioLayer);
         selectedBarrioLayer = null;
     }
 
-    const selectedBarrioName = barrioFilterSelect.value;
-    let currentSelectedBarrioFeature = null; // Declare here
-    if (selectedBarrioName === 'all') {
+    updateSemaforosLayer();
+
+    const currentSelectedBarrioFeature = getSelectedBarrioFeatureCombinada();
+    if (!currentSelectedBarrioFeature) {
         mymap.setView([-38.00042, -57.5562], 12); // Vista inicial
     } else {
-        currentSelectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-        if (currentSelectedBarrioFeature) {
-            selectedBarrioLayer = L.geoJSON(currentSelectedBarrioFeature, {
-                style: {
-                    color: "#ff7800",
-                    weight: 5,
-                    opacity: 0.65
-                }
-            }).addTo(mymap);
-            mymap.fitBounds(selectedBarrioLayer.getBounds());
-        }
+        selectedBarrioLayer = L.geoJSON(currentSelectedBarrioFeature, {
+            style: {
+                color: "#ff7800",
+                weight: 5,
+                opacity: 0.65
+            }
+        }).addTo(mymap);
+        mymap.fitBounds(selectedBarrioLayer.getBounds());
     }
     // Re-aplicar filtros existentes
     applySiniestrosFilters();
@@ -2071,6 +2394,22 @@ barrioFilterSelect.addEventListener('change', () => {
     // NEW: Calculate and display uncovered percentage if checkbox is checked
     if (document.getElementById('zonas-sin-cobertura-negativo-checkbox').checked) {
         calculateAndDisplaySimpleUncoveredPercentage(currentSelectedBarrioFeature);
+    }
+
+    // Re-aplicar filtro de barrio a las capas de Corredores Escolares / Colegios / Cobertura Escolar si están activas
+    const _corredoresCb = document.getElementById('corredores-escolares-checkbox');
+    if (_corredoresCb && _corredoresCb.checked && typeof window.renderCorredoresEscolares === 'function') {
+        window.renderCorredoresEscolares();
+        if (typeof window.mostrarCamarasEnCorredores === 'function') window.mostrarCamarasEnCorredores();
+        if (typeof window.mostrarEstadisticasCorredores === 'function') window.mostrarEstadisticasCorredores();
+    }
+    const _colegiosCb = document.getElementById('colegios-checkbox');
+    if (_colegiosCb && _colegiosCb.checked && typeof window.renderColegios === 'function') {
+        window.renderColegios();
+    }
+    const _coberturaEscolarCb = document.getElementById('colegios-cobertura-checkbox');
+    if (_coberturaEscolarCb && _coberturaEscolarCb.checked && typeof mostrarCoberturaEscolar === 'function') {
+        mostrarCoberturaEscolar();
     }
 });
 
@@ -2228,7 +2567,7 @@ const getZoneNameForBarrio = (barrioName) => {
 
 const siniestroIcon = L.divIcon({
     className: 'custom-div-icon',
-    html: '<i class="fi fi-rr-triangle-warning" style="font-size: 24px; color: #ffc107;"></i>',
+    html: '<i class="fi fi-rr-triangle-warning" style="font-size: 24px; color: #FF6600;"></i>',
     iconSize: [24, 24],
     iconAnchor: [12, 24]
 });
@@ -2297,6 +2636,7 @@ function updateSiniestrosLayers(dataToDisplay, totalCount, markerColor = null) {
     }
 
     const heatPoints = [];
+    const coordOccurrences = {}; // Detecta siniestros con coordenadas idénticas (misma esquina)
     const geoJsonLayer = L.geoJSON(dataToDisplay, {
         coordsToLatLng: coords => new L.LatLng(coords[1], coords[0]),
         pointToLayer: (feature, latlng) => {
@@ -2306,12 +2646,28 @@ function updateSiniestrosLayers(dataToDisplay, totalCount, markerColor = null) {
                       "Dirección:", feature.properties?.direccion);
       
           if (feature.geometry && feature.geometry.coordinates) {
-              // Agrega el punto a heatPoints para el mapa de calor
+              // Agrega el punto a heatPoints (coordenada real, sin offset) para el mapa de calor
               heatPoints.push([latlng.lat, latlng.lng]);
+          }
+
+          // Si varios siniestros comparten exactamente la misma coordenada (ej: misma
+          // esquina geocodificada), sus íconos quedan apilados y parecen un solo marcador.
+          // Los separamos levemente en un pequeño círculo para que todos sean visibles.
+          const coordKey = `${latlng.lat.toFixed(6)},${latlng.lng.toFixed(6)}`;
+          const ocurrencia = coordOccurrences[coordKey] || 0;
+          coordOccurrences[coordKey] = ocurrencia + 1;
+
+          let latlngDibujo = latlng;
+          if (ocurrencia > 0) {
+              const anguloRad = (ocurrencia * 137.5) * (Math.PI / 180); // ángulo áureo: distribución pareja
+              const radioMetros = 6 + ocurrencia * 2;
+              const deltaLat = (radioMetros / 111320) * Math.cos(anguloRad);
+              const deltaLon = (radioMetros / (111320 * Math.cos(latlng.lat * Math.PI / 180))) * Math.sin(anguloRad);
+              latlngDibujo = L.latLng(latlng.lat + deltaLat, latlng.lng + deltaLon);
           }
       
           // Usar el color proporcionado, o el color por defecto (amarillo)
-          const iconColor = markerColor || '#ffc107';
+          const iconColor = markerColor || '#FF6600';
           const customIcon = L.divIcon({
               className: 'custom-div-icon',
               html: `<i class="fi fi-rr-triangle-warning" style="font-size: 24px; color: ${iconColor};"></i>`,
@@ -2320,7 +2676,7 @@ function updateSiniestrosLayers(dataToDisplay, totalCount, markerColor = null) {
           });
       
           // 🟠 ESTE ES EL MARCADOR QUE LUEGO QUEDA PEGADO
-          return L.marker(latlng, { icon: customIcon });
+          return L.marker(latlngDibujo, { icon: customIcon });
       },
         onEachFeature: (feature, layer) => {
             if (feature.properties) {
@@ -2591,54 +2947,69 @@ function limpiarCallesSegurasEnMapa() {
 
 function populateSiniestrosFilters(data) {
   const years = new Set();
+  const presentParticipants = new Set();
+  const presentCauses = new Set();
 
   data.features.forEach(feature => {
-      if (feature.properties && feature.properties.fecha && feature.properties.fecha.split('/').length === 3) {
-          const year = feature.properties.fecha.split('/').pop();
-          years.add(year.length === 2 ? '20' + year : year);
+    if (feature.properties) {
+      // Año
+      if (feature.properties.fecha && feature.properties.fecha.split('/').length === 3) {
+        const year = feature.properties.fecha.split('/').pop();
+        years.add(year.length === 2 ? '20' + year : year);
       }
+      // Participantes (acepta 'participantes_codigos', 'participantes' o 'Participante')
+      let part = feature.properties.participantes_codigos || feature.properties.participantes || feature.properties.Participante;
+      if (part && part !== 'N/A' && part !== '-' && part.trim() !== '') {
+        part.toString().split(/[\/,&;]/).map(p => p.trim()).filter(code => code && code !== 'N' && code !== 'N/A' && code !== '-').forEach(code => presentParticipants.add(normalizeParticipantCode(code)));
+      }
+      // Causas
+      let causa = feature.properties.causa || feature.properties.tipo;
+      if (causa) {
+  presentCauses.add(normalizeCauseCode(causa));
+}
+    }
   });
 
   const sortedYears = Array.from(years).sort((a, b) => b - a);
 
   yearFilterSelect.innerHTML = '<option value="all">Todos los Años</option>';
   sortedYears.forEach(year => {
-      const option = document.createElement('option');
-      option.value = year;
-      option.textContent = year;
-      yearFilterSelect.appendChild(option);
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    yearFilterSelect.appendChild(option);
   });
 
   // === Participantes ===
   participantFilterSelect.innerHTML = '<option value="all">Todos los Participantes</option>';
-  for (const code in participantMapping) {
-      const option = document.createElement('option');
-      option.value = code;
-      option.textContent = participantMapping[code];
-      participantFilterSelect.appendChild(option);
-  }
+  Array.from(presentParticipants).sort().forEach(code => {
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = participantMapping[code] || code;
+    participantFilterSelect.appendChild(option);
+  });
 
   // === Causas ===
   causeFilterSelect.innerHTML = '<option value="all">Todas las Causas</option>';
-  for (const code in causeMapping) {
-      const option = document.createElement('option');
-      option.value = code;
-      option.textContent = causeMapping[code];
-      causeFilterSelect.appendChild(option);
-  }
+  Array.from(presentCauses).sort().forEach(code => {
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = causeMapping[code] || code;
+    causeFilterSelect.appendChild(option);
+  });
 
   // === Horarios ===
   startHourFilterSelect.innerHTML = '<option value="all">Todas</option>';
   endHourFilterSelect.innerHTML = '<option value="all">Todas</option>';
 
   for (let i = 0; i < 24; i++) {
-      const hourString = i.toString().padStart(2, '0');
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `${hourString}:00`;
+    const hourString = i.toString().padStart(2, '0');
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = `${hourString}:00`;
 
-      startHourFilterSelect.appendChild(option.cloneNode(true));
-      endHourFilterSelect.appendChild(option);
+    startHourFilterSelect.appendChild(option.cloneNode(true));
+    endHourFilterSelect.appendChild(option);
   }
 }
 
@@ -2865,41 +3236,48 @@ function applySiniestrosFilters() {
     const selectedStartHour = startHourFilterSelect.value;
     const selectedEndHour = endHourFilterSelect.value;
     const streetSearchTerm = normalizeString(streetFilterInput.value);
-    const selectedBarrioName = barrioFilterSelect.value;
 
-    let selectedBarrioFeature = null;
-    if (selectedBarrioName !== 'all' && barriosData) {
-        selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-    }
+    const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
     const filteredFeatures = allSiniestrosData.features.filter(feature => {
-        const props = feature.properties;
-        if (!props || !feature.geometry || !feature.geometry.coordinates) return false;
+      const props = feature.properties;
+      if (!props || !feature.geometry || !feature.geometry.coordinates) return false;
 
-        const yearMatch = selectedYear === 'all' || (props.fecha && props.fecha.split('/').length === 3 && (props.fecha.split('/')[2].length === 2 ? '20' + props.fecha.split('/')[2] : props.fecha.split('/')[2]) === selectedYear);
-        const participantMatch = selectedParticipant === 'all' || (props.participantes_codigos && props.participantes_codigos.split('/').includes(selectedParticipant));
-        const causeMatch = selectedCause === 'all' || (props.causa && props.causa === selectedCause);
-        const streetMatch = !streetSearchTerm || (props.direccion && normalizeString(props.direccion).includes(streetSearchTerm));
+      const yearMatch = selectedYear === 'all' || (props.fecha && props.fecha.split('/').length === 3 && (props.fecha.split('/')[2].length === 2 ? '20' + props.fecha.split('/')[2] : props.fecha.split('/')[2]) === selectedYear);
+
+      // Participantes: acepta 'participantes_codigos', 'participantes' o 'Participante'
+      let participantesRaw = props.participantes_codigos || props.participantes || props.Participante;
+      let participantesArr = participantesRaw ? participantesRaw.toString().split(/[\/,&;]/).map(p => normalizeParticipantCode(p)).filter(Boolean) : [];
+      const participantMatch = selectedParticipant === 'all' || participantesArr.includes(selectedParticipant);
+
+      const causeMatch = selectedCause === 'all' || (props.causa && normalizeCauseCode(props.causa) === selectedCause);
+      const streetMatch = !streetSearchTerm || (props.direccion && normalizeString(props.direccion).includes(streetSearchTerm));
         
-        let hourMatch = true;
-        if (selectedStartHour !== 'all' || selectedEndHour !== 'all') {
-            if (props.hora && props.hora.includes(':')) {
-                const featureHour = parseInt(props.hora.split(':')[0], 10);
-                const startHour = selectedStartHour !== 'all' ? parseInt(selectedStartHour, 10) : 0;
-                const endHour = selectedEndHour !== 'all' ? parseInt(selectedEndHour, 10) : 23;
-                hourMatch = featureHour >= startHour && featureHour <= endHour;
-            } else {
-                hourMatch = false;
-            }
+      let hourMatch = true;
+      if (selectedStartHour !== 'all' || selectedEndHour !== 'all') {
+        if (props.hora && props.hora.includes(':')) {
+          const featureHour = parseInt(props.hora.split(':')[0], 10);
+          const startHour = selectedStartHour !== 'all' ? parseInt(selectedStartHour, 10) : 0;
+          const endHour = selectedEndHour !== 'all' ? parseInt(selectedEndHour, 10) : 23;
+          if (startHour <= endHour) {
+            // Rango normal dentro del mismo día (ej: 08:00 a 18:00)
+            hourMatch = featureHour >= startHour && featureHour <= endHour;
+          } else {
+            // Rango que cruza la medianoche (ej: 22:00 a 07:00)
+            hourMatch = featureHour >= startHour || featureHour <= endHour;
+          }
+        } else {
+          hourMatch = false;
         }
+      }
 
-        let barrioMatch = true;
-        if (selectedBarrioFeature) {
-            const latlng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
-            barrioMatch = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
-        }
+      let barrioMatch = true;
+      if (selectedBarrioFeature) {
+        const latlng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
+        barrioMatch = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
+      }
 
-        return yearMatch && participantMatch && causeMatch && hourMatch && streetMatch && barrioMatch;
+      return yearMatch && participantMatch && causeMatch && hourMatch && streetMatch && barrioMatch;
     });
 
     // Determinar si el mapa de calor debe estar activo
@@ -3057,12 +3435,7 @@ function applyAforosFilters() {
     const selectedYear = aforoYearFilter.value;
     const startHour = aforoStartHourFilter.value;
     const endHour = aforoEndHourFilter.value;
-    const selectedBarrioName = barrioFilterSelect.value;
-
-    let selectedBarrioFeature = null;
-    if (selectedBarrioName !== 'all' && barriosData) {
-        selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-    }
+    const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
     let filteredFlujo = allFlujoData;
 
@@ -3074,14 +3447,28 @@ function applyAforosFilters() {
         });
     }
 
-    if (startHour !== 'all') {
+    if (startHour !== 'all' && endHour !== 'all') {
+        const startHourNum = parseInt(startHour, 10);
+        const endHourNum = parseInt(endHour, 10);
+        if (startHourNum <= endHourNum) {
+            // Rango normal dentro del mismo día (ej: 08:00 a 18:00)
+            filteredFlujo = filteredFlujo.filter(flujo => {
+                const horaPart = parseInt(flujo.HORA.split(' ')[0], 10);
+                return horaPart >= startHourNum && horaPart <= endHourNum;
+            });
+        } else {
+            // Rango que cruza la medianoche (ej: 22:00 a 07:00)
+            filteredFlujo = filteredFlujo.filter(flujo => {
+                const horaPart = parseInt(flujo.HORA.split(' ')[0], 10);
+                return horaPart >= startHourNum || horaPart <= endHourNum;
+            });
+        }
+    } else if (startHour !== 'all') {
         filteredFlujo = filteredFlujo.filter(flujo => {
             const horaPart = parseInt(flujo.HORA.split(' ')[0], 10);
             return horaPart >= parseInt(startHour, 10);
         });
-    }
-
-    if (endHour !== 'all') {
+    } else if (endHour !== 'all') {
         filteredFlujo = filteredFlujo.filter(flujo => {
             const horaPart = parseInt(flujo.HORA.split(' ')[0], 10);
             return horaPart <= parseInt(endHour, 10);
@@ -3134,11 +3521,7 @@ function applyCamarasFilters() {
     if (!allCamerasData) return;
     camarasLayer.clearLayers();
 
-    const selectedBarrioName = barrioFilterSelect.value;
-    let selectedBarrioFeature = null;
-    if (selectedBarrioName !== 'all' && barriosData) {
-      selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-    }
+    const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
     // Filtrado por línea de colectivo usando distancia al recorrido Y asociación por tabla
     let filteredCameras = allCamerasData;
@@ -3244,11 +3627,7 @@ function applyCamarasPrivadasFilters() {
     if (!allCamarasPrivadasData) return;
     camarasPrivadasLayer.clearLayers();
 
-    const selectedBarrioName = barrioFilterSelect.value;
-    let selectedBarrioFeature = null;
-    if (selectedBarrioName !== 'all' && barriosData) {
-        selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-    }
+    const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
     allCamarasPrivadasData.forEach(camara => {
         let shouldDisplay = true;
@@ -3792,22 +4171,40 @@ function displayBusRoute() {
         geojsonData = null;
       }
 
-      // 2. Dibujar la trayectoria si existe el geojson
+      // 2. Dibujar la trayectoria si existe el geojson (un color distinto por cada ramal)
       let routeLatLngs = [];
+      const _coloresRamales = ['#ff6600', '#1976d2', '#43a047', '#8e24aa', '#e53935', '#00838f', '#f9a825'];
+      const _colorPorRamal = {};
+      let _siguienteColorIdx = 0;
+      function _colorDeRamal(ramal) {
+        const clave = ramal || '__default__';
+        if (!_colorPorRamal[clave]) {
+          _colorPorRamal[clave] = _coloresRamales[_siguienteColorIdx % _coloresRamales.length];
+          _siguienteColorIdx++;
+        }
+        return _colorPorRamal[clave];
+      }
       if (geojsonData && geojsonData.features && geojsonData.features.length > 0) {
-        geojsonData.features.forEach(feature => {
-          if (feature.geometry.type === 'LineString') {
-            const latlngs = feature.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            routeLatLngs = routeLatLngs.concat(latlngs);
-            const polyline = L.polyline(latlngs, {
-              color: '#ff6600',
-              weight: 5,
-              opacity: 0.8
-            });
-            polyline.bindPopup(`<b>Línea ${selectedLine}</b>`);
-            busRoutesLayer.addLayer(polyline);
-          }
+        const lineFeatures = geojsonData.features.filter(f => f.geometry.type === 'LineString');
+        // Dibujar los ramales más largos primero y los más cortos al final,
+        // así los ramales cortos (que suelen compartir calle con un tramo de otro
+        // ramal más largo, ej. "Santa Rosa C" dentro de "Santa Rosa A") quedan
+        // arriba en vez de taparse.
+        lineFeatures.sort((a, b) => b.geometry.coordinates.length - a.geometry.coordinates.length);
+        lineFeatures.forEach(feature => {
+          const latlngs = feature.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+          routeLatLngs = routeLatLngs.concat(latlngs);
+          const ramal = feature.properties && feature.properties.ramal;
+          const polyline = L.polyline(latlngs, {
+            color: _colorDeRamal(ramal),
+            weight: 5,
+            opacity: 0.85
+          });
+          const etiqueta = ramal ? `Línea ${selectedLine} - ${ramal}` : `Línea ${selectedLine}`;
+          polyline.bindPopup(`<b>${etiqueta}</b>`);
+          busRoutesLayer.addLayer(polyline);
         });
+
       }
 
       // 3. Marcar las cámaras asociadas a la línea
@@ -3864,8 +4261,37 @@ function displayBusRoute() {
 
       mymap.addLayer(busRoutesLayer);
       busRouteCheckbox.checked = true;
+
+      // Leyenda de colores por ramal (solo si hay más de uno)
+      if (window._busRouteLegend) {
+        mymap.removeControl(window._busRouteLegend);
+        window._busRouteLegend = null;
+      }
+      const ramalesUsados = Object.keys(_colorPorRamal);
+      if (ramalesUsados.length > 1) {
+        const legend = L.control({ position: 'bottomleft' });
+        legend.onAdd = function() {
+          const div = L.DomUtil.create('div', 'bus-route-legend');
+          div.style.background = 'white';
+          div.style.padding = '8px 10px';
+          div.style.borderRadius = '6px';
+          div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+          div.style.fontSize = '12px';
+          div.style.lineHeight = '1.6';
+          let html = `<b>Línea ${selectedLine} - ramales</b><br>`;
+          ramalesUsados.forEach(ramal => {
+            const color = _colorPorRamal[ramal];
+            html += `<span style="display:inline-block;width:12px;height:12px;background:${color};border-radius:2px;margin-right:6px;"></span>${ramal}<br>`;
+          });
+          div.innerHTML = html;
+          return div;
+        };
+        legend.addTo(mymap);
+        window._busRouteLegend = legend;
+      }
     });
 }
+
 
 busLineSearch.addEventListener('input', () => {
     const searchTerm = busLineSearch.value.toLowerCase();
@@ -3880,8 +4306,10 @@ showBusRouteButton.addEventListener('click', displayBusRoute);
 busRouteCheckbox.addEventListener('change', (e) => {
     if (e.target.checked) {
         mymap.addLayer(busRoutesLayer);
+        if (window._busRouteLegend) window._busRouteLegend.addTo(mymap);
     } else {
         mymap.removeLayer(busRoutesLayer);
+        if (window._busRouteLegend) mymap.removeControl(window._busRouteLegend);
     }
 });
 
@@ -3951,6 +4379,9 @@ function populateLprSelector() {
     
     console.log(`🎯 Cámaras LPR encontradas: ${lprCameras.length}`, lprCameras.map(c => `${c['N CAMARA']} (${c.LPR})`).join(', '));
 
+    // 🔧 GUARDAR la selección anterior para restaurarla después
+    const previousSelection = lprCameraSelect.value;
+    
     lprCameraSelect.innerHTML = '<option value="">Seleccione una cámara LPR</option>';
     lprCameras.forEach(camera => {
         const option = document.createElement('option');
@@ -3959,6 +4390,12 @@ function populateLprSelector() {
         option.textContent = `${camera['N CAMARA']} - ${camera[direccionHeaderKey]} (${lprLabel})`;
         lprCameraSelect.appendChild(option);
     });
+    
+    // ✅ RESTAURAR la selección anterior si existía
+    if (previousSelection && Array.from(lprCameraSelect.options).some(opt => opt.value === previousSelection)) {
+        lprCameraSelect.value = previousSelection;
+        console.log(`✅ Selección restaurada: ${previousSelection}`);
+    }
     
     console.log(`✅ Selector LPR populado con ${lprCameras.length} cámaras`);
 }
@@ -4213,7 +4650,7 @@ function loadRoboAutomotorData() {
     if (allRoboAutomotorData) {
         return Promise.resolve();
     }
-    return fetch('robo automotor - Hoja\u00A01.csv')
+    return fetch('robo_automotor.csv')
         .then(response => response.text())
         .then(csvText => {
             const lines = csvText.trim().split(/\r\n|\n/);
@@ -4251,8 +4688,9 @@ function updateRoboAutomotorLayer(data) {
         if (coordsStr) {
             const parts = coordsStr.split(',').map(s => s.trim());
             if (parts.length === 2) {
-                const lat = parseFloat(parts[0]);
-                const lon = parseFloat(parts[1]);
+                // La columna "Longitud y Latitud" trae primero la longitud y luego la latitud
+                const lon = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
 
                 if (!isNaN(lat) && !isNaN(lon)) {
                     heatPoints.push([lat, lon]);
@@ -4280,8 +4718,8 @@ function processAndDisplayRobos(data) {
         if (coordsStr) {
             const parts = coordsStr.split(',').map(s => s.trim());
             if (parts.length === 2) {
-                const lat = parseFloat(parts[0]);
-                const lon = parseFloat(parts[1]);
+                const lon = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
                 if (!isNaN(lat) && !isNaN(lon)) {
                     const key = `${lat},${lon}`;
                     if (!locationCounts.has(key)) {
@@ -4312,8 +4750,8 @@ function processAndDisplayRobos(data) {
         if (!coordsStr) return true;
         const parts = coordsStr.split(',').map(s => s.trim());
         if (parts.length !== 2) return true;
-        const lat = parseFloat(parts[0]);
-        const lon = parseFloat(parts[1]);
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return true;
         const key = `${lat},${lon}`;
         return !topLocationKeys.has(key);
@@ -4326,7 +4764,6 @@ function applyRoboAutomotorFilters() {
     if (!allRoboAutomotorData) return;
 
     const selectedYear = roboAutomotorYearFilter.value;
-    const selectedBarrioName = barrioFilterSelect.value;
     const resultadoFilter = document.getElementById('robo-resultado-filter');
     const selectedResultadoCategory = resultadoFilter ? resultadoFilter.value : 'Todos los Resultados';
 
@@ -4339,10 +4776,7 @@ function applyRoboAutomotorFilters() {
         'LPR Detencion': ['LPR - Vehiculo Interceptado']
     };
 
-    let selectedBarrioFeature = null;
-    if (selectedBarrioName !== 'all' && barriosData) {
-        selectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-    }
+    const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
     let filteredData = allRoboAutomotorData;
 
@@ -4366,8 +4800,8 @@ function applyRoboAutomotorFilters() {
             if (!coordsStr) return false;
             const parts = coordsStr.split(',').map(s => s.trim());
             if (parts.length !== 2) return false;
-            const lat = parseFloat(parts[0]);
-            const lon = parseFloat(parts[1]);
+            const lon = parseFloat(parts[0]);
+            const lat = parseFloat(parts[1]);
             if (isNaN(lat) || isNaN(lon)) return false;
             
             const latlng = L.latLng(lat, lon);
@@ -4649,29 +5083,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de Corredores Escolares ---
     const corredoresEscolaresCheckbox = document.getElementById('corredores-escolares-checkbox');
     let corredoresEscolaresDataLoaded = false;
+    let _corredoresEscolaresRawData = null;
+
+    function _filtrarCorredoresPorBarrio(featuresCorredores) {
+        const combinado = getSelectedBarrioFeatureCombinada();
+        if (!combinado) return featuresCorredores;
+        return featuresCorredores.filter(f => {
+            if (!f.geometry?.coordinates) return false;
+            let coords = [];
+            if (f.geometry.type === 'LineString') coords = f.geometry.coordinates;
+            else if (f.geometry.type === 'Polygon') coords = f.geometry.coordinates[0] || [];
+            return coords.some(c => isLatLngInMultiPolygon(L.latLng(c[1], c[0]), combinado.geometry.coordinates));
+        });
+    }
+
+    function renderCorredoresEscolares() {
+        corredoresEscolaresLayer.clearLayers();
+        if (!_corredoresEscolaresRawData) return;
+        const featuresFiltradas = _filtrarCorredoresPorBarrio(_corredoresEscolaresRawData.features);
+        L.geoJSON({ type: 'FeatureCollection', features: featuresFiltradas }, {
+            style: {
+                color: "#008000", // Color verde para corredores escolares
+                weight: 7,       // Trazo ligeramente más ancho
+                opacity: 0.8     // Un poco más opaco para resaltar
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    let popupContent = `<b>${feature.properties.Name || 'Corredor'}</b>`;
+                    if (feature.properties.description) {
+                        popupContent += `<br>${feature.properties.description}`;
+                    }
+                    layer.bindPopup(popupContent);
+                }
+            }
+        }).addTo(corredoresEscolaresLayer);
+    }
+    window.renderCorredoresEscolares = renderCorredoresEscolares;
 
     function loadCorredoresEscolaresData() {
-        if (corredoresEscolaresDataLoaded) return Promise.resolve();
+        if (corredoresEscolaresDataLoaded) { renderCorredoresEscolares(); return Promise.resolve(); }
         return fetch('corredores_escolares.geojson')
             .then(response => response.json())
             .then(data => {
-                L.geoJSON(data, {
-                    style: {
-                        color: "#008000", // Color verde para corredores escolares
-                        weight: 7,       // Trazo ligeramente más ancho
-                        opacity: 0.8     // Un poco más opaco para resaltar
-                    },
-                    onEachFeature: (feature, layer) => {
-                        if (feature.properties) {
-                            let popupContent = `<b>${feature.properties.Name || 'Corredor'}</b>`;
-                            if (feature.properties.description) {
-                                popupContent += `<br>${feature.properties.description}`;
-                            }
-                            layer.bindPopup(popupContent);
-                        }
-                    }
-                }).addTo(corredoresEscolaresLayer);
+                _corredoresEscolaresRawData = data;
                 corredoresEscolaresDataLoaded = true;
+                renderCorredoresEscolares();
                 console.log("✅ Datos de Corredores Escolares cargados.");
             })
             .catch(error => console.error('Error al cargar corredores_escolares.geojson:', error));
@@ -4682,7 +5138,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Cargar datos de corredores si aún no están cargados
             const corredoresResponse = await fetch('corredores_escolares.geojson');
-            const corredoresData = await corredoresResponse.json();
+            const corredoresDataCompleto = await corredoresResponse.json();
+            const corredoresData = { features: _filtrarCorredoresPorBarrio(corredoresDataCompleto.features || []) };
             
             // Obtener cámaras del array allCamerasData
             const camaras = allCamerasData || [];
@@ -4743,6 +5200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error al calcular estadísticas de corredores:', error);
         }
     }
+    window.mostrarEstadisticasCorredores = mostrarEstadisticasCorredores;
 
     // Función para mostrar las cámaras que están en los corredores escolares
     async function mostrarCamarasEnCorredores() {
@@ -4751,7 +5209,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Cargar datos de corredores
             const corredoresResponse = await fetch('corredores_escolares.geojson');
-            const corredoresData = await corredoresResponse.json();
+            const corredoresDataCompleto = await corredoresResponse.json();
+            const corredoresData = { features: _filtrarCorredoresPorBarrio(corredoresDataCompleto.features || []) };
             
             // Obtener cámaras del array allCamerasData
             const camaras = allCamerasData || [];
@@ -4817,6 +5276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error al mostrar cámaras en corredores:', error);
         }
     }
+    window.mostrarCamarasEnCorredores = mostrarCamarasEnCorredores;
 
     if (corredoresEscolaresCheckbox) {
         corredoresEscolaresCheckbox.addEventListener('change', (e) => {
@@ -4842,6 +5302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de Colegios ---
     const colegiosCheckbox = document.getElementById('colegios-checkbox');
     let colegiosDataLoaded = false;
+    let _colegiosRawData = null;
     const colegioIcon = L.icon({
         iconUrl: 'https://img.icons8.com/color/48/school-building.png',
         iconSize: [32, 32],
@@ -4849,20 +5310,35 @@ document.addEventListener('DOMContentLoaded', () => {
         popupAnchor: [0, -32]
     });
 
+    function renderColegios() {
+        colegiosLayer.clearLayers();
+        if (!_colegiosRawData) return;
+        const combinado = getSelectedBarrioFeatureCombinada();
+        const featuresFiltradas = combinado
+            ? _colegiosRawData.features.filter(f => {
+                if (!f.geometry?.coordinates) return false;
+                return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), combinado.geometry.coordinates);
+              })
+            : _colegiosRawData.features;
+        L.geoJSON({ type: 'FeatureCollection', features: featuresFiltradas }, {
+            pointToLayer: (feature, latlng) => L.marker(latlng, { icon: colegioIcon }),
+            onEachFeature: (feature, layer) => {
+                if (feature.properties && feature.properties.Name) {
+                    layer.bindPopup(`<b>${feature.properties.Name}</b>`);
+                }
+            }
+        }).addTo(colegiosLayer);
+    }
+    window.renderColegios = renderColegios;
+
     function loadColegiosData() {
-        if (colegiosDataLoaded) return Promise.resolve();
+        if (colegiosDataLoaded) { renderColegios(); return Promise.resolve(); }
         return fetch('colegios_escuelas.geojson')
             .then(response => response.json())
             .then(data => {
-                L.geoJSON(data, {
-                    pointToLayer: (feature, latlng) => L.marker(latlng, { icon: colegioIcon }),
-                    onEachFeature: (feature, layer) => {
-                        if (feature.properties && feature.properties.Name) {
-                            layer.bindPopup(`<b>${feature.properties.Name}</b>`);
-                        }
-                    }
-                }).addTo(colegiosLayer);
+                _colegiosRawData = data;
                 colegiosDataLoaded = true;
+                renderColegios();
                 console.log("✅ Datos de Colegios cargados.");
             })
             .catch(error => console.error('Error al cargar colegios_escuelas.geojson:', error));
@@ -5009,11 +5485,7 @@ document.getElementById('camaras-privadas-checkbox').addEventListener('change', 
 document.getElementById('zonas-sin-cobertura-checkbox').addEventListener('change', e => {
     if (e.target.checked) {
         loadBaseCSVData().then(() => { // Ensure camera data is loaded
-            const selectedBarrioName = barrioFilterSelect.value;
-            let currentSelectedBarrioFeature = null;
-            if (selectedBarrioName !== 'all' && barriosData) {
-                currentSelectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-            }
+            const currentSelectedBarrioFeature = getSelectedBarrioFeatureCombinada();
             drawCameraCoverage(currentSelectedBarrioFeature); // Pass the current selected barrio
             mymap.addLayer(cameraCoverageLayer);
         });
@@ -5040,11 +5512,7 @@ document.getElementById('aforos-checkbox').addEventListener('change', e => {
 
 document.getElementById('zonas-sin-cobertura-negativo-checkbox').addEventListener('change', e => {
     if (e.target.checked) {
-        const selectedBarrioName = barrioFilterSelect.value;
-        let currentSelectedBarrioFeature = null;
-        if (selectedBarrioName !== 'all' && barriosData) {
-            currentSelectedBarrioFeature = barriosData.features.find(feature => feature.properties.soc_fomen === selectedBarrioName);
-        }
+        const currentSelectedBarrioFeature = getSelectedBarrioFeatureCombinada();
         calculateAndDisplaySimpleUncoveredPercentage(currentSelectedBarrioFeature);
     } else {
         if (uncoveredPercentageLabel) {
@@ -5143,6 +5611,15 @@ document.getElementById('clear-filters-btn').addEventListener('click', () => {
       if (el) el.value = (el.tagName === 'INPUT' ? '' : 'all');
   });
 
+  // Limpiar explícitamente el resaltado naranja del/los barrio(s) seleccionados,
+  // ya que setear .value='all' arriba NO dispara el evento 'change' del selector.
+  if (selectedBarrioLayer) {
+      mymap.removeLayer(selectedBarrioLayer);
+      selectedBarrioLayer = null;
+  }
+  updateSemaforosLayer();
+  mymap.setView([-38.00042, -57.5562], 12); // Vista inicial
+
   // Eliminar resultados de búsqueda de dirección
   if (typeof searchResultLayer !== "undefined") {
       searchResultLayer.clearLayers();
@@ -5173,6 +5650,45 @@ document.getElementById('clear-filters-btn').addEventListener('click', () => {
           mymap.removeLayer(layer);
       }
   });
+
+  // --------------------------------------------
+  // 2b. DESACTIVAR CORREDORES ESCOLARES / COLEGIOS / COBERTURA ESCOLAR
+  // Estos checkboxes manejan el alta/baja de su capa dentro de su propio
+  // listener 'change', por lo que no alcanza con poner checked=false:
+  // hay que desmarcar y disparar el evento 'change' para que se ejecute
+  // esa lógica y la capa se quite realmente del mapa.
+  // --------------------------------------------
+  const escolarCheckboxIds = [
+      'colegios-cobertura-checkbox', // primero: si estaba activo, además apaga camaras/colegios
+      'corredores-escolares-checkbox',
+      'colegios-checkbox'
+  ];
+
+  escolarCheckboxIds.forEach(id => {
+      const cb = document.getElementById(id);
+      if (cb && cb.checked) {
+          cb.checked = false;
+          cb.dispatchEvent(new Event('change'));
+      }
+  });
+
+  // Por las dudas, asegurar que las capas queden removidas del mapa
+  if (typeof corredoresEscolaresLayer !== 'undefined' && mymap.hasLayer(corredoresEscolaresLayer)) {
+      mymap.removeLayer(corredoresEscolaresLayer);
+  }
+  if (typeof colegiosLayer !== 'undefined' && mymap.hasLayer(colegiosLayer)) {
+      mymap.removeLayer(colegiosLayer);
+  }
+  if (typeof colegiosCoberturaLayer !== 'undefined' && mymap.hasLayer(colegiosCoberturaLayer)) {
+      mymap.removeLayer(colegiosCoberturaLayer);
+  }
+  if (typeof colegiosPorcentajeLayer !== 'undefined' && mymap.hasLayer(colegiosPorcentajeLayer)) {
+      mymap.removeLayer(colegiosPorcentajeLayer);
+  }
+
+  // Ocultar paneles explicativos asociados si quedaron abiertos
+  const infoCoberturaEscolar = document.getElementById('info-cobertura-escolar');
+  if (infoCoberturaEscolar) infoCoberturaEscolar.style.display = 'none';
 
   // Paneles asociados
   document.getElementById('robo-automotor-filters').style.display = 'none';
@@ -5811,7 +6327,23 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
   switch (consulta) {
     case 'siniestros_por_dia': {
         await loadSiniestrosData(); // Asegurarse de que los datos de siniestros estén cargados
-        const siniestrosByDay = calculateSiniestrosByDayOfWeek(allSiniestrosData.features);
+
+        // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+        const _combinadoPorDia = getSelectedBarrioFeatureCombinada();
+        const selectedBarrioNamePorDia = _combinadoPorDia ? _combinadoPorDia.properties.soc_fomen : 'all';
+        let featuresParaPorDia = allSiniestrosData.features;
+        if (selectedBarrioNamePorDia !== 'all') {
+          const barrioFeaturePorDia = _combinadoPorDia;
+          if (barrioFeaturePorDia) {
+            featuresParaPorDia = featuresParaPorDia.filter(f => {
+              if (!f.geometry?.coordinates) return false;
+              const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+              return isLatLngInMultiPolygon(latlng, barrioFeaturePorDia.geometry.coordinates);
+            });
+          }
+        }
+
+        const siniestrosByDay = calculateSiniestrosByDayOfWeek(featuresParaPorDia);
         
         // Asegurarse de que la capa de siniestros esté visible
         const siniestrosCheckbox = document.getElementById('siniestros-checkbox');
@@ -5824,7 +6356,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         const maxSiniestros = Math.max(...siniestrosByDay.map(d => d.count), 1);
         
         // Generar HTML con gráfico de barras
-        let htmlDays = '<h5>📊 Siniestros por Día de la Semana</h5>';
+        let htmlDays = `<h5>📊 Siniestros por Día de la Semana${selectedBarrioNamePorDia !== 'all' ? ` — Barrio: ${selectedBarrioNamePorDia}` : ''}</h5>`;
         
         siniestrosByDay.forEach(item => {
             const percentage = (item.count / maxSiniestros) * 100;
@@ -5901,6 +6433,18 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         const numRutas = parseInt(document.getElementById('num-rutas-input')?.value || 3);
         const turnoSeleccionado = document.getElementById('turno-patrullaje')?.value || 'all';
         const diasSeleccionados = document.getElementById('dias-patrullaje')?.value || 'all';
+
+        // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+        const _combinadoPatrol = getSelectedBarrioFeatureCombinada();
+        const selectedBarrioNamePatrol = _combinadoPatrol ? _combinadoPatrol.properties.soc_fomen : 'all';
+        let barrioFeaturePatrol = null;
+        if (selectedBarrioNamePatrol !== 'all') {
+          barrioFeaturePatrol = _combinadoPatrol;
+          if (!barrioFeaturePatrol) {
+            resultadosDiv.innerHTML = '❌ Barrio no encontrado.';
+            return;
+          }
+        }
     
         // ============================================
         // PASO 2: FILTRAR INCIDENTES POR HORARIO Y DÍA
@@ -5933,6 +6477,12 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           
           if (cumpleTurno && cumpleDias) {
             const [lon, lat] = s.geometry.coordinates;
+
+            // Filtro de barrio seleccionado
+            if (barrioFeaturePatrol && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeaturePatrol.geometry.coordinates)) {
+              return;
+            }
+
             todosIncidentes.push({
               lat: lat,
               lon: lon,
@@ -5953,9 +6503,14 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           const parts = coordsStr.split(',').map(s => s.trim());
           if (parts.length !== 2) return;
           
-          const lat = parseFloat(parts[0]);
-          const lon = parseFloat(parts[1]);
+          const lon = parseFloat(parts[0]);
+          const lat = parseFloat(parts[1]);
           if (isNaN(lat) || isNaN(lon)) return;
+
+          // Filtro de barrio seleccionado
+          if (barrioFeaturePatrol && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeaturePatrol.geometry.coordinates)) {
+            return;
+          }
           
           // Para robos, no hay filtro de hora (puedes agregarlo si tienes ese dato)
           const resultado = r.Resultado?.trim() || '';
@@ -5967,12 +6522,14 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
             tipo: 'robo',
             gravedad: sinIntervencion ? 2.0 : 1.3,
             direccion: `${r['Direccion 0'] || ''} ${r['Direccion'] || ''}`.trim(),
-            fecha: r.Fecha
+            fecha: getFechaLegibleRobo(r),
+            resultado: resultado || 'N/A'
           });
         });
     
         if (todosIncidentes.length === 0) {
-          resultadosDiv.innerHTML = '⚠️ No se encontraron incidentes para los filtros seleccionados.';
+          const zonaMsg = selectedBarrioNamePatrol !== 'all' ? ` en el barrio ${selectedBarrioNamePatrol}` : '';
+          resultadosDiv.innerHTML = `⚠️ No se encontraron incidentes${zonaMsg} para los filtros seleccionados.`;
           return;
         }
     
@@ -6243,6 +6800,14 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           zIndexOffset: 5000 - idx
         });
 
+        // Guardar los incidentes de este punto para la tabla de detalle
+        const detalleKey = `r${ruta.id}_p${idx}`;
+        window.__patrullajeIncidentesStore[detalleKey] = {
+          incidentes: punto.incidentes,
+          barrio: punto.barrio,
+          label: esInicio ? 'INICIO' : esFin ? 'FIN' : `Punto ${idx + 1}`
+        };
+
         const popupContent = `
           <div style="min-width: 220px;">
             <h6 style="margin: 0 0 8px 0; color: ${color};">
@@ -6258,12 +6823,14 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
             <p style="margin: 5px 0; font-size: 0.85em; color: #666;">
               Coordenadas: ${punto.centroLat.toFixed(5)}, ${punto.centroLon.toFixed(5)}
             </p>
-            ${!esInicio && !esFin ? `
-              <button onclick="navigator.clipboard.writeText('${punto.centroLat},${punto.centroLon}')" 
-                      style="width: 100%; padding: 5px; margin-top: 5px; background: ${color}; color: white; border: none; border-radius: 3px; cursor: pointer;">
-                📋 Copiar coordenadas
-              </button>
-            ` : ''}
+            <button onclick="mostrarDetalleIncidentesPatrullaje('${detalleKey}')" 
+                    style="width: 100%; padding: 5px; margin-top: 5px; background: #212529; color: white; border: none; border-radius: 3px; cursor: pointer;">
+              📋 Ver detalle de los ${punto.incidentes.length} incidentes
+            </button>
+            <button onclick="copiarCoordenadasPatrullaje(${punto.centroLat}, ${punto.centroLon}, this)" 
+                    style="width: 100%; padding: 5px; margin-top: 5px; background: ${color}; color: white; border: none; border-radius: 3px; cursor: pointer;">
+              📋 Copiar coordenadas
+            </button>
           </div>
         `;
 
@@ -6289,11 +6856,12 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
     // PASO 6: GENERAR REPORTE HTML
     // ============================================
     let reporteHTML = `
-      <h5>🚓 Rutas de Patrullaje Óptimas Generadas</h5>
+      <h5>🚓 Rutas de Patrullaje Óptimas Generadas${selectedBarrioNamePatrol !== 'all' ? ` — Barrio: ${selectedBarrioNamePatrol}` : ''}</h5>
       
       <div style="background: #e7f3ff; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #0056b3;">
         <p style="margin: 5px 0;"><b>📊 Parámetros de análisis:</b></p>
         <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
+          <li><b>Zona:</b> ${selectedBarrioNamePatrol !== 'all' ? selectedBarrioNamePatrol : 'Toda la ciudad'}</li>
           <li><b>Incidentes analizados:</b> ${todosIncidentes.length} (${todosIncidentes.filter(i => i.tipo === 'siniestro').length} siniestros + ${todosIncidentes.filter(i => i.tipo === 'robo').length} robos)</li>
           <li><b>Turno:</b> ${turnoSeleccionado === 'all' ? 'Todos' : turnoSeleccionado.charAt(0).toUpperCase() + turnoSeleccionado.slice(1)}</li>
           <li><b>Días:</b> ${diasSeleccionados === 'all' ? 'Todos' : diasSeleccionados === 'laborables' ? 'Laborables' : 'Fines de semana'}</li>
@@ -6579,13 +7147,28 @@ case "tendencia_no_prioridad": {
         resultadosDiv.innerHTML = '❌ No se pudieron cargar los datos de siniestros.';
         return;
       }
+
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoEvol = getSelectedBarrioFeatureCombinada();
+      const selectedBarrioNameEvol = _combinadoEvol ? _combinadoEvol.properties.soc_fomen : 'all';
+      let featuresParaEvolucion = allSiniestrosData.features;
+      if (selectedBarrioNameEvol !== 'all') {
+        const barrioFeatureEvol = _combinadoEvol;
+        if (barrioFeatureEvol) {
+          featuresParaEvolucion = featuresParaEvolucion.filter(f => {
+            if (!f.geometry?.coordinates) return false;
+            const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+            return isLatLngInMultiPolygon(latlng, barrioFeatureEvol.geometry.coordinates);
+          });
+        }
+      }
     
       // 1. Extraer y procesar datos por año y mes
       const datosPorPeriodo = new Map();
       let añoMinimo = Infinity;
       let añoMaximo = -Infinity;
     
-      allSiniestrosData.features.forEach(feature => {
+      featuresParaEvolucion.forEach(feature => {
         const fechaStr = feature.properties.fecha;
         if (!fechaStr || fechaStr.split('/').length !== 3) return;
         
@@ -6728,7 +7311,7 @@ case "tendencia_no_prioridad": {
     
       // 8. Generar reporte HTML
       let reporteHTML = `
-        <h5>📈 Evolución Temporal de Siniestros (${añoMinimo} - ${añoMaximo})</h5>
+        <h5>📈 Evolución Temporal de Siniestros (${añoMinimo} - ${añoMaximo})${selectedBarrioNameEvol !== 'all' ? ` — Barrio: ${selectedBarrioNameEvol}` : ''}</h5>
         
         <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #856404;">
           <p style="margin: 5px 0;"><b>📊 Período analizado:</b> ${periodosOrdenados.length} meses (${añoMinimo} - ${añoMaximo})</p>
@@ -6883,8 +7466,8 @@ case "tendencia_no_prioridad": {
         if (!coordsStr) return;
         const parts = coordsStr.split(',').map(s => s.trim());
         if (parts.length !== 2) return;
-        const lat = parseFloat(parts[0]);
-        const lon = parseFloat(parts[1]);
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return;
         
         const latlng = L.latLng(lat, lon);
@@ -6938,110 +7521,103 @@ case "tendencia_no_prioridad": {
     return;
   }
 
-  const diasNombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const diasCuentas = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0};
+  // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+  const _combinadoRoboMes = getSelectedBarrioFeatureCombinada();
+  const selectedBarrioNameRoboMes = _combinadoRoboMes ? _combinadoRoboMes.properties.soc_fomen : 'all';
+  let barrioFeatureRoboMes = null;
+  if (selectedBarrioNameRoboMes !== 'all') {
+    barrioFeatureRoboMes = _combinadoRoboMes;
+  }
+
+  const mesesNombresRobo = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  // 0 = Enero ... 11 = Diciembre
+  const mesesCuentas = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0};
   let robosSinFecha = 0;
 
   allRoboAutomotorData.forEach(robo => {
-    const fechaStr = robo.Fecha;
-    if (!fechaStr) {
+    const mesNum = parseInt(robo['mes'], 10);
+    if (!robo['año'] || isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
       robosSinFecha++;
       return;
     }
 
-    // Intentar parsear diferentes formatos de fecha
-    let fechaObj;
-    
-    // Formato DD/MM/YYYY o DD/MM/YY
-    if (fechaStr.includes('/')) {
-      const partes = fechaStr.split('/');
-      if (partes.length === 3) {
-        const dia = parseInt(partes[0], 10);
-        const mes = parseInt(partes[1], 10) - 1; // JS months are 0-indexed
-        let anio = parseInt(partes[2], 10);
-        
-        // Si el año es de 2 dígitos, convertir a 4
-        if (anio < 100) {
-          anio += 2000;
-        }
-        
-        fechaObj = new Date(anio, mes, dia);
-      }
+    // Si hay un barrio seleccionado, solo contar robos dentro de ese barrio
+    if (barrioFeatureRoboMes) {
+      const coordsStr = robo['Longitud y Latitud'];
+      if (!coordsStr) return;
+      const parts = coordsStr.split(',').map(s => s.trim());
+      if (parts.length !== 2) return;
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      if (isNaN(lat) || isNaN(lon)) return;
+      if (!isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureRoboMes.geometry.coordinates)) return;
     }
-    // Formato YYYY-MM-DD
-    else if (fechaStr.includes('-')) {
-      fechaObj = new Date(fechaStr);
-    }
-    
-    if (fechaObj && !isNaN(fechaObj.getTime())) {
-      const diaSemana = fechaObj.getDay();
-      diasCuentas[diaSemana]++;
-    } else {
-      robosSinFecha++;
-    }
+
+    mesesCuentas[mesNum - 1]++;
   });
 
-  // Encontrar el día con más y menos robos
-  let maxDia = 0, minDia = 0, maxCount = 0, minCount = Infinity;
-  for (let i = 0; i < 7; i++) {
-    if (diasCuentas[i] > maxCount) {
-      maxCount = diasCuentas[i];
-      maxDia = i;
+  // Encontrar el mes con más y menos robos
+  let maxMes = 0, minMes = 0, maxCount = 0, minCount = Infinity;
+  for (let i = 0; i < 12; i++) {
+    if (mesesCuentas[i] > maxCount) {
+      maxCount = mesesCuentas[i];
+      maxMes = i;
     }
-    if (diasCuentas[i] < minCount) {
-      minCount = diasCuentas[i];
-      minDia = i;
+    if (mesesCuentas[i] < minCount) {
+      minCount = mesesCuentas[i];
+      minMes = i;
     }
   }
 
-  // Calcular promedio diario
-  const totalRobos = Object.values(diasCuentas).reduce((a, b) => a + b, 0);
-  const promedioDiario = (totalRobos / 7).toFixed(1);
+  // Calcular promedio mensual
+  const totalRobos = Object.values(mesesCuentas).reduce((a, b) => a + b, 0);
+  const promedioMensual = (totalRobos / 12).toFixed(1);
 
   // Crear visualización
   let diasHTML = `
-    <h5>📅 Distribución de Robos Automotor por Día de la Semana:</h5>
+    <h5>📅 Distribución de Robos Automotor por Mes${selectedBarrioNameRoboMes !== 'all' ? ` — Barrio: ${selectedBarrioNameRoboMes}` : ''}:</h5>
     
     <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #856404;">
       <p style="margin: 5px 0;"><b>Total analizado:</b> ${totalRobos} robos</p>
-      <p style="margin: 5px 0;"><b>Promedio diario:</b> ${promedioDiario} robos/día</p>
-      ${robosSinFecha > 0 ? `<p style="margin: 5px 0; color: #856404;"><b>⚠️ Robos sin fecha:</b> ${robosSinFecha}</p>` : ''}
+      <p style="margin: 5px 0;"><b>Promedio mensual:</b> ${promedioMensual} robos/mes</p>
+      ${robosSinFecha > 0 ? `<p style="margin: 5px 0; color: #856404;"><b>⚠️ Robos sin año/mes registrado:</b> ${robosSinFecha}</p>` : ''}
     </div>
     
     <div style="max-height: 350px; overflow-y: auto;">
   `;
 
-  for (let i = 0; i < 7; i++) {
-    const porcentaje = maxCount > 0 ? (diasCuentas[i] / maxCount) * 100 : 0;
-    const porcentajeTotal = totalRobos > 0 ? (diasCuentas[i] / totalRobos) * 100 : 0;
+  for (let i = 0; i < 12; i++) {
+    const porcentaje = maxCount > 0 ? (mesesCuentas[i] / maxCount) * 100 : 0;
+    const porcentajeTotal = totalRobos > 0 ? (mesesCuentas[i] / totalRobos) * 100 : 0;
     
-    // Determinar color según si es el día más crítico, más tranquilo o intermedio
+    // Determinar color según si es el mes más crítico, más tranquilo o intermedio
     let color;
-    if (i === maxDia) {
-      color = '#dc3545'; // Rojo para el día más crítico
-    } else if (i === minDia) {
-      color = '#28a745'; // Verde para el día más tranquilo
+    if (i === maxMes) {
+      color = '#dc3545'; // Rojo para el mes más crítico
+    } else if (i === minMes) {
+      color = '#28a745'; // Verde para el mes más tranquilo
     } else {
-      color = '#ffc107'; // Amarillo para días intermedios
+      color = '#ffc107'; // Amarillo para meses intermedios
     }
     
-    // Determinar si es fin de semana
-    const esFinDeSemana = (i === 0 || i === 6);
+    // Temporada alta en Mar del Plata: Diciembre a Marzo
+    const esTemporadaAlta = (i === 11 || i === 0 || i === 1 || i === 2);
     
     diasHTML += `
-      <div style="margin-bottom: 12px; ${esFinDeSemana ? 'background: #f0f8ff; padding: 8px; border-radius: 4px;' : ''}">
+      <div style="margin-bottom: 12px; ${esTemporadaAlta ? 'background: #f0f8ff; padding: 8px; border-radius: 4px;' : ''}">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-          <span style="font-weight: ${i === maxDia || i === minDia ? 'bold' : 'normal'}; font-size: 0.95em;">
-            ${diasNombres[i]}${esFinDeSemana ? ' 🏖️' : ''}:
+          <span style="font-weight: ${i === maxMes || i === minMes ? 'bold' : 'normal'}; font-size: 0.95em;">
+            ${mesesNombresRobo[i]}${esTemporadaAlta ? ' 🏖️' : ''}:
           </span>
           <span style="font-weight: bold; color: ${color}; font-size: 0.95em;">
-            ${diasCuentas[i]} robos (${porcentajeTotal.toFixed(1)}%)
+            ${mesesCuentas[i]} robos (${porcentajeTotal.toFixed(1)}%)
           </span>
         </div>
         <div style="background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden; position: relative;">
           <div style="background: ${color}; width: ${porcentaje}%; height: 100%; transition: width 0.5s ease;"></div>
-          ${diasCuentas[i] > promedioDiario ? 
-            `<span style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.8em; color: #333;">▲ ${(diasCuentas[i] - promedioDiario).toFixed(0)} sobre promedio</span>` 
+          ${mesesCuentas[i] > promedioMensual ? 
+            `<span style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.8em; color: #333;">▲ ${(mesesCuentas[i] - promedioMensual).toFixed(0)} sobre promedio</span>` 
             : ''}
         </div>
       </div>
@@ -7050,28 +7626,28 @@ case "tendencia_no_prioridad": {
 
   diasHTML += '</div>';
 
-  // Análisis de tendencias fin de semana vs días hábiles
-  const robosSabadoDomingo = diasCuentas[0] + diasCuentas[6];
-  const robosEntreSemanaTotales = diasCuentas[1] + diasCuentas[2] + diasCuentas[3] + diasCuentas[4] + diasCuentas[5];
-  const promedioFinDeSemana = robosSabadoDomingo / 2;
-  const promedioEntreSemana = robosEntreSemanaTotales / 5;
+  // Análisis comparativo: temporada alta (Dic-Mar, turismo) vs resto del año
+  const robosTemporadaAlta = mesesCuentas[11] + mesesCuentas[0] + mesesCuentas[1] + mesesCuentas[2];
+  const robosRestoAño = totalRobos - robosTemporadaAlta;
+  const promedioTemporadaAlta = robosTemporadaAlta / 4;
+  const promedioRestoAño = robosRestoAño / 8;
 
   diasHTML += `
     <div style="margin-top: 15px; padding: 12px; background: #e9ecef; border-radius: 5px; border-left: 4px solid #6c757d;">
       <h6 style="margin-top: 0; margin-bottom: 8px; color: #495057;">📊 Análisis Comparativo:</h6>
       <div style="font-size: 0.9em; line-height: 1.6;">
-        <p style="margin: 5px 0;"><b style="color: #dc3545;">Día más crítico:</b> ${diasNombres[maxDia]} (${maxCount} robos)</p>
-        <p style="margin: 5px 0;"><b style="color: #28a745;">Día más tranquilo:</b> ${diasNombres[minDia]} (${minCount} robos)</p>
-        <p style="margin: 5px 0;"><b>Diferencia:</b> ${(maxCount - minCount)} robos (${((maxCount - minCount) / minCount * 100).toFixed(1)}% más)</p>
+        <p style="margin: 5px 0;"><b style="color: #dc3545;">Mes más crítico:</b> ${mesesNombresRobo[maxMes]} (${maxCount} robos)</p>
+        <p style="margin: 5px 0;"><b style="color: #28a745;">Mes más tranquilo:</b> ${mesesNombresRobo[minMes]} (${minCount} robos)</p>
+        <p style="margin: 5px 0;"><b>Diferencia:</b> ${(maxCount - minCount)} robos${minCount > 0 ? ` (${((maxCount - minCount) / minCount * 100).toFixed(1)}% más)` : ''}</p>
         
         <hr style="margin: 10px 0; border: none; border-top: 1px solid #ccc;">
         
-        <p style="margin: 5px 0;"><b>Promedio días hábiles (L-V):</b> ${promedioEntreSemana.toFixed(1)} robos/día</p>
-        <p style="margin: 5px 0;"><b>Promedio fin de semana (S-D):</b> ${promedioFinDeSemana.toFixed(1)} robos/día</p>
+        <p style="margin: 5px 0;"><b>Promedio temporada alta (Dic-Mar):</b> ${promedioTemporadaAlta.toFixed(1)} robos/mes</p>
+        <p style="margin: 5px 0;"><b>Promedio resto del año (Abr-Nov):</b> ${promedioRestoAño.toFixed(1)} robos/mes</p>
         <p style="margin: 5px 0;">
-          <b>Tendencia:</b> ${promedioFinDeSemana > promedioEntreSemana ? 
-            `<span style="color: #dc3545;">⬆️ ${((promedioFinDeSemana - promedioEntreSemana) / promedioEntreSemana * 100).toFixed(1)}% más robos en fin de semana</span>` : 
-            `<span style="color: #28a745;">⬇️ ${((promedioEntreSemana - promedioFinDeSemana) / promedioFinDeSemana * 100).toFixed(1)}% más robos en días hábiles</span>`
+          <b>Tendencia:</b> ${promedioTemporadaAlta > promedioRestoAño ? 
+            `<span style="color: #dc3545;">⬆️ ${promedioRestoAño > 0 ? ((promedioTemporadaAlta - promedioRestoAño) / promedioRestoAño * 100).toFixed(1) : '100'}% más robos en temporada alta</span>` : 
+            `<span style="color: #28a745;">⬇️ ${promedioTemporadaAlta > 0 ? ((promedioRestoAño - promedioTemporadaAlta) / promedioTemporadaAlta * 100).toFixed(1) : '100'}% más robos fuera de temporada alta</span>`
           }
         </p>
       </div>
@@ -7080,17 +7656,17 @@ case "tendencia_no_prioridad": {
     <div style="background: #d1e7dd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #0f5132;">
       <h6 style="margin-top: 0; margin-bottom: 5px; color: #0f5132;">💡 Utilidad Operativa:</h6>
       <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.85em; line-height: 1.5;">
-        <li>Planificar patrullajes preventivos en días críticos</li>
-        <li>Ajustar dotación de personal según patrones semanales</li>
-        <li>Coordinar operativos especiales en horarios de mayor riesgo</li>
-        <li>Optimizar recursos de vigilancia móvil</li>
+        <li>Reforzar patrullajes preventivos en los meses críticos identificados</li>
+        <li>Ajustar dotación de personal según la estacionalidad turística</li>
+        <li>Coordinar operativos especiales antes del inicio de temporada alta</li>
+        <li>Optimizar recursos de vigilancia móvil mes a mes</li>
       </ul>
     </div>
     
     <div style="background: #cff4fc; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #055160;">
       <p style="margin: 5px 0; font-size: 0.85em;">
-        <b>📌 Nota metodológica:</b> El análisis se basa en la fecha registrada de cada robo. 
-        ${robosSinFecha > 0 ? `Se excluyeron ${robosSinFecha} registros sin fecha válida del análisis.` : 'Todos los registros tienen fecha válida.'}
+        <b>📌 Nota metodológica:</b> El análisis se basa en año y mes registrados de cada robo (el dato de origen no incluye el día exacto). 
+        ${robosSinFecha > 0 ? `Se excluyeron ${robosSinFecha} registros sin año/mes válido del análisis.` : 'Todos los registros tienen año/mes válido.'}
       </p>
     </div>
   `;
@@ -7126,10 +7702,25 @@ case 'siniestros_noche': {
     
     await loadSiniestrosData();
     
-    const nocturnos = allSiniestrosData.features.filter(f => {
+    let nocturnos = allSiniestrosData.features.filter(f => {
       const hora = parseInt(f.properties.hora?.split(':')[0] || -1);
       return hora >= 22 || hora < 6;
     });
+
+    // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+    const _combinadoNoche = getSelectedBarrioFeatureCombinada();
+    const selectedBarrioNameNoche = _combinadoNoche ? _combinadoNoche.properties.soc_fomen : 'all';
+    let barrioFeatureNoche = null;
+    if (selectedBarrioNameNoche !== 'all') {
+      barrioFeatureNoche = _combinadoNoche;
+      if (barrioFeatureNoche) {
+        nocturnos = nocturnos.filter(f => {
+          if (!f.geometry?.coordinates) return false;
+          const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+          return isLatLngInMultiPolygon(latlng, barrioFeatureNoche.geometry.coordinates);
+        });
+      }
+    }
 
     processAndDisplaySiniestros(nocturnos);
 
@@ -7161,7 +7752,8 @@ case 'siniestros_noche': {
             if (props.participantes_codigos) {
                 const participantes = props.participantes_codigos.split('/');
                 participantes.forEach(p => {
-                    participantCounts[p] = (participantCounts[p] || 0) + 1;
+                    const pNorm = normalizeParticipantCode(p);
+                    participantCounts[pNorm] = (participantCounts[pNorm] || 0) + 1;
                 });
             }
 
@@ -7185,7 +7777,7 @@ case 'siniestros_noche': {
 
         // --- Generate HTML Report ---
         let reporteHTML = `
-          <h5>🌙 Análisis de Siniestralidad Nocturna (22-06hs)</h5>
+          <h5>🌙 Análisis de Siniestralidad Nocturna (22-06hs)${selectedBarrioNameNoche !== 'all' ? ` — Barrio: ${selectedBarrioNameNoche}` : ''}</h5>
           
           <div style="background: #e9ecef; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #6c757d;">
             <p style="margin: 5px 0;"><b>Total de siniestros nocturnos:</b> ${totalSiniestrosAnalizados}</p>
@@ -7596,10 +8188,25 @@ case 'siniestros_noche': {
       if (topSiniestrosContent) topSiniestrosContent.innerHTML = '';
       
       await loadSiniestrosData();
-      const horaPico = allSiniestrosData.features.filter(f => {
+      let horaPico = allSiniestrosData.features.filter(f => {
         const hora = parseInt(f.properties.hora?.split(':')[0] || -1);
         return (hora >= 7 && hora < 10) || (hora >= 17 && hora < 20);
       });
+
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoHoraPico = getSelectedBarrioFeatureCombinada();
+      const selectedBarrioNameHoraPico = _combinadoHoraPico ? _combinadoHoraPico.properties.soc_fomen : 'all';
+      let barrioFeatureHoraPico = null;
+      if (selectedBarrioNameHoraPico !== 'all') {
+        barrioFeatureHoraPico = _combinadoHoraPico;
+        if (barrioFeatureHoraPico) {
+          horaPico = horaPico.filter(f => {
+            if (!f.geometry?.coordinates) return false;
+            const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+            return isLatLngInMultiPolygon(latlng, barrioFeatureHoraPico.geometry.coordinates);
+          });
+        }
+      }
 
       processAndDisplaySiniestros(horaPico);
 
@@ -7627,7 +8234,8 @@ case 'siniestros_noche': {
 
           if (props.participantes_codigos) {
               props.participantes_codigos.split('/').forEach(p => {
-                  participantCounts[p] = (participantCounts[p] || 0) + 1;
+                  const pNorm = normalizeParticipantCode(p);
+                  participantCounts[pNorm] = (participantCounts[pNorm] || 0) + 1;
               });
           }
 
@@ -7648,7 +8256,7 @@ case 'siniestros_noche': {
       const topParticipantes = Object.entries(participantCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
       let reporteHTML = `
-        <h5>🕑 Análisis de Siniestralidad en Hora Pico (07-10 y 17-20hs)</h5>
+        <h5>🕑 Análisis de Siniestralidad en Hora Pico (07-10 y 17-20hs)${selectedBarrioNameHoraPico !== 'all' ? ` — Barrio: ${selectedBarrioNameHoraPico}` : ''}</h5>
         
         <div style="background: #e9ecef; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #6c757d;">
           <p style="margin: 5px 0;"><b>Total de siniestros en hora pico:</b> ${totalSiniestrosAnalizados}</p>
@@ -7705,6 +8313,10 @@ case 'siniestros_noche': {
     case 'esquinas_mas_siniestros': {
       await loadSiniestrosData();
       const locationData = new Map();
+
+      // Respetar el/los barrio(s) seleccionado(s) en "Filtrar por Barrio"
+      const barrioFeatureEsquinas = getSelectedBarrioFeatureCombinada();
+      const nombreBarrioEsquinas = barrioFeatureEsquinas ? barrioFeatureEsquinas.properties.soc_fomen : null;
       
       // 1. Agrupar siniestros por ubicación y contar causas
       allSiniestrosData.features.forEach(feature => {
@@ -7712,6 +8324,12 @@ case 'siniestros_noche': {
           const coords = feature.geometry.coordinates;
           const lat = coords[1];
           const lon = coords[0];
+
+          // Si hay un barrio seleccionado, saltear siniestros fuera de ese barrio
+          if (barrioFeatureEsquinas && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureEsquinas.geometry.coordinates)) {
+            return;
+          }
+
           const key = `${lat},${lon}`;
           
           if (!locationData.has(key)) {
@@ -7738,7 +8356,7 @@ case 'siniestros_noche': {
 
       // 3. Limpiar capa anterior y preparar HTML
       dangerousCornersLayer.clearLayers();
-      let esquinasHTML = '<h5>🏆 Top 10 Esquinas con Más Siniestros:</h5><div style="max-height: 300px; overflow-y: auto;"><ul style="padding-left: 0;">';
+      let esquinasHTML = `<h5>🏆 Top 10 Esquinas con Más Siniestros${nombreBarrioEsquinas ? ` — Barrio: ${nombreBarrioEsquinas}` : ''}:</h5><div style="max-height: 300px; overflow-y: auto;"><ul style="padding-left: 0;">`;
 
       // 4. Procesar cada ubicación del Top 10
       rankedLocations.forEach((loc, index) => {
@@ -7842,15 +8460,35 @@ case 'siniestros_noche': {
       }
 
       // Now filter and process the data
-      const robosConIntervencion = allRoboAutomotorData.filter(item => {
+      let robosConIntervencion = allRoboAutomotorData.filter(item => {
           const resultado = item.Resultado ? item.Resultado.trim() : '';
           return resultado === 'Detencion' || resultado === 'Secuestro De Vehiculo';
       });
 
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoHeatRobos = getSelectedBarrioFeatureCombinada();
+      const selectedBarrioNameHeatRobos = _combinadoHeatRobos ? _combinadoHeatRobos.properties.soc_fomen : 'all';
+      let barrioFeatureHeatRobos = null;
+      if (selectedBarrioNameHeatRobos !== 'all') {
+        barrioFeatureHeatRobos = _combinadoHeatRobos;
+        if (barrioFeatureHeatRobos) {
+          robosConIntervencion = robosConIntervencion.filter(item => {
+            const coordsStr = item['Longitud y Latitud'];
+            if (!coordsStr) return false;
+            const parts = coordsStr.split(',').map(s => s.trim());
+            if (parts.length !== 2) return false;
+            const lon = parseFloat(parts[0]);
+            const lat = parseFloat(parts[1]);
+            if (isNaN(lat) || isNaN(lon)) return false;
+            return isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureHeatRobos.geometry.coordinates);
+          });
+        }
+      }
+
       processAndDisplayRobos(robosConIntervencion);
       
       const resultadosHTML = `
-        <h5>🔥 Mapa de Calor: Robos con Intervención Policial</h5>
+        <h5>🔥 Mapa de Calor: Robos con Intervención Policial${selectedBarrioNameHeatRobos !== 'all' ? ` — Barrio: ${selectedBarrioNameHeatRobos}` : ''}</h5>
         
         <div style="background: #f8d7da; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #721c24;">
             <p style="margin: 5px 0;"><b>Total de casos analizados:</b> ${robosConIntervencion.length}</p>
@@ -7977,6 +8615,14 @@ case 'siniestros_noche': {
   
           camarasAisladasLayer.clearLayers();
           const camarasAisladas = [];
+
+          // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+          const _combinadoCamSinSin = getSelectedBarrioFeatureCombinada();
+          const selectedBarrioNameCamSinSin = _combinadoCamSinSin ? _combinadoCamSinSin.properties.soc_fomen : 'all';
+          let barrioFeatureCamSinSin = null;
+          if (selectedBarrioNameCamSinSin !== 'all') {
+            barrioFeatureCamSinSin = _combinadoCamSinSin;
+          }
   
           for (const camara of allCamerasData) {
             const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
@@ -7984,6 +8630,12 @@ case 'siniestros_noche': {
             if (isNaN(lat) || isNaN(lon)) continue;
   
             const camaraLatLng = L.latLng(lat, lon);
+
+            // Si hay un barrio seleccionado, saltear cámaras fuera de ese barrio
+            if (barrioFeatureCamSinSin && !isLatLngInMultiPolygon(camaraLatLng, barrioFeatureCamSinSin.geometry.coordinates)) {
+              continue;
+            }
+
             let tieneSiniestroCercano = false;
   
             for (const siniestro of allSiniestrosData.features) {
@@ -8006,7 +8658,7 @@ case 'siniestros_noche': {
           
           // MENSAJE MEJORADO CON EXPLICACIÓN DETALLADA
           resultadosDiv.innerHTML = `
-            <h5>🛡️ Cámaras sin Siniestros en su Área de Cobertura:</h5>
+            <h5>🛡️ Cámaras sin Siniestros en su Área de Cobertura${selectedBarrioNameCamSinSin !== 'all' ? ` — Barrio: ${selectedBarrioNameCamSinSin}` : ''}:</h5>
             <div style="background: #d1e7dd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #0f5132;">
               <p style="margin: 5px 0;"><b>Total encontrado:</b> ${camarasAisladasLayer.getLayers().length} cámaras</p>
             </div>
@@ -8070,20 +8722,14 @@ case 'siniestros_noche': {
         }
         console.log("Datos base cargados.");
 
-        const selectedBarrioName = barrioFilterSelect.value;
-        if (selectedBarrioName === 'all') {
-          console.log("No se seleccionó un barrio.");
-          resultadosDiv.innerHTML = 'ℹ️ Por favor, seleccione un barrio específico para analizar las zonas ciegas.';
-          return;
-        }
-        console.log(`Barrio seleccionado: ${selectedBarrioName}`);
-
-        const barrioFeature = barriosData.features.find(f => f.properties.soc_fomen === selectedBarrioName);
+        const barrioFeature = getSelectedBarrioFeatureCombinada();
         if (!barrioFeature) {
-          console.error("No se encontró el feature del barrio.");
-          resultadosDiv.innerHTML = '❌ Barrio no encontrado.';
+          console.log("No se seleccionó un barrio.");
+          resultadosDiv.innerHTML = 'ℹ️ Por favor, seleccione al menos un barrio específico para analizar las zonas ciegas.';
           return;
         }
+        const selectedBarrioName = barrioFeature.properties.soc_fomen;
+        console.log(`Barrio(s) seleccionado(s): ${selectedBarrioName}`);
         console.log("Feature del barrio encontrado:", barrioFeature);
 
         try {
@@ -8252,7 +8898,21 @@ case 'siniestros_noche': {
           lastQueryModifiedBaseLayer = true; // Flag to indicate this query filters the main layer
           await loadSiniestrosData();
           
-          const nsdSiniestros = allSiniestrosData.features.filter(f => f.properties.causa === 'NSD');
+          let nsdSiniestros = allSiniestrosData.features.filter(f => f.properties.causa === 'NSD');
+
+          // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+          const _combinadoNSD = getSelectedBarrioFeatureCombinada();
+          const selectedBarrioNameNSD = _combinadoNSD ? _combinadoNSD.properties.soc_fomen : 'all';
+          if (selectedBarrioNameNSD !== 'all') {
+            const barrioFeatureNSD = _combinadoNSD;
+            if (barrioFeatureNSD) {
+              nsdSiniestros = nsdSiniestros.filter(f => {
+                if (!f.geometry?.coordinates) return false;
+                const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                return isLatLngInMultiPolygon(latlng, barrioFeatureNSD.geometry.coordinates);
+              });
+            }
+          }
           
           processAndDisplaySiniestros(nsdSiniestros);
     
@@ -8264,7 +8924,7 @@ case 'siniestros_noche': {
             mymap.addLayer(topSiniestrosLabelsLayer);
           }
     
-          resultadosDiv.innerHTML = `✅ Se muestran <b>${nsdSiniestros.length}</b> siniestros con causa No Determinada (NSD).`;
+          resultadosDiv.innerHTML = `✅ Se muestran <b>${nsdSiniestros.length}</b> siniestros con causa No Determinada (NSD)${selectedBarrioNameNSD !== 'all' ? ` en el barrio <b>${selectedBarrioNameNSD}</b>` : ''}.`;
           break;
         }
     case 'visualizar_recorridos_colectivos': {
@@ -8362,9 +9022,23 @@ case 'siniestros_noche': {
           console.log("busCameraDetails size:", busCameraDetails.size);
           const radioBusqueda = 30; // 30 metros
   
+          // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+          const _combinadoParadas = getSelectedBarrioFeatureCombinada();
+          const selectedBarrioNameParadas = _combinadoParadas ? _combinadoParadas.properties.soc_fomen : 'all';
+          let barrioFeatureParadas = null;
+          if (selectedBarrioNameParadas !== 'all') {
+            barrioFeatureParadas = _combinadoParadas;
+          }
+
           for (const siniestro of allSiniestrosData.features) {
             if (!siniestro.geometry || !siniestro.geometry.coordinates) continue;
             const siniestroLatLng = L.latLng(siniestro.geometry.coordinates[1], siniestro.geometry.coordinates[0]);
+
+            // Si hay un barrio seleccionado, saltear siniestros fuera de ese barrio
+            if (barrioFeatureParadas && !isLatLngInMultiPolygon(siniestroLatLng, barrioFeatureParadas.geometry.coordinates)) {
+              continue;
+            }
+
             let foundNearBusCamera = false;
             let matchedBusCamDetails = null;
   
@@ -8396,7 +9070,7 @@ case 'siniestros_noche': {
             : 0;
           
           resultadosDiv.innerHTML = `
-            <h5>🚌 Siniestros en Recorridos de Transporte Público:</h5>
+            <h5>🚌 Siniestros en Recorridos de Transporte Público${selectedBarrioNameParadas !== 'all' ? ` — Barrio: ${selectedBarrioNameParadas}` : ''}:</h5>
             
             <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #856404;">
               <p style="margin: 5px 0;"><b>Total encontrado:</b> ${count} siniestros</p>
@@ -8490,9 +9164,24 @@ case 'siniestros_noche': {
         });
 
         const siniestrosPorCamara = new Map();
+
+        // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+        const _combinadoHotspot = getSelectedBarrioFeatureCombinada();
+        const selectedBarrioNameHotspot = _combinadoHotspot ? _combinadoHotspot.properties.soc_fomen : 'all';
+        let barrioFeatureHotspot = null;
+        if (selectedBarrioNameHotspot !== 'all') {
+          barrioFeatureHotspot = _combinadoHotspot;
+        }
+
         allSiniestrosData.features.forEach(siniestro => {
             if (!siniestro.geometry || !siniestro.geometry.coordinates) return;
             const siniestroLatLng = L.latLng(siniestro.geometry.coordinates[1], siniestro.geometry.coordinates[0]);
+
+            // Si hay un barrio seleccionado, saltear siniestros fuera de ese barrio
+            if (barrioFeatureHotspot && !isLatLngInMultiPolygon(siniestroLatLng, barrioFeatureHotspot.geometry.coordinates)) {
+              return;
+            }
+
             cameraLocations.forEach((camData, camId) => {
                 if (camData.latlng.distanceTo(siniestroLatLng) <= 50) {
                     siniestrosPorCamara.set(camId, (siniestrosPorCamara.get(camId) || 0) + 1);
@@ -8522,7 +9211,7 @@ case 'siniestros_noche': {
         }
 
         hotspotCameras.sort((a, b) => b.count - a.count);
-        let resultadosHTML = '<h5>Cámaras en Puntos Críticos (>20 Siniestros a 50m):</h5><ul>';
+        let resultadosHTML = `<h5>Cámaras en Puntos Críticos (>20 Siniestros a 50m)${selectedBarrioNameHotspot !== 'all' ? ` — Barrio: ${selectedBarrioNameHotspot}` : ''}:</h5><ul>`;
         
         hotspotCameras.forEach(hotspot => {
             resultadosHTML += `<li><span style="color: red; font-weight: bold;">Cámara ${hotspot.camId}:</span> <b>${hotspot.direccion}</b> - ${hotspot.count} siniestros</li>`;
@@ -8637,6 +9326,77 @@ case 'densidad_camaras_barrio': {
     `;
     
     resultadosDiv.innerHTML = densidadHTML;
+    break;
+  }
+  case 'densidad_camaras_este_barrio': {
+    resultadosDiv.innerHTML = '<em>Calculando densidad de cámaras del barrio...</em>';
+    await loadBaseCSVData();
+    if (!barriosData || !allCamerasData) {
+      resultadosDiv.innerHTML = '❌ No se pudieron cargar los datos necesarios.';
+      return;
+    }
+
+    const barrioFeatureDensidadEste = getSelectedBarrioFeatureCombinada();
+    if (!barrioFeatureDensidadEste) {
+      resultadosDiv.innerHTML = 'ℹ️ Por favor, seleccione un barrio para ver su densidad de cámaras.';
+      return;
+    }
+    const nombreBarrioDensidadEste = barrioFeatureDensidadEste.properties.soc_fomen;
+
+    // Densidad del barrio seleccionado
+    const areaKm2Este = turf.area(barrioFeatureDensidadEste) / 1000000;
+    let camarasCountEste = 0;
+    allCamerasData.forEach(camara => {
+      const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
+      const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
+      if (isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureDensidadEste.geometry.coordinates)) {
+        camarasCountEste++;
+      }
+    });
+    const densidadEste = areaKm2Este > 0 ? camarasCountEste / areaKm2Este : 0;
+
+    // Densidad promedio de la ciudad (barrios con al menos 1 cámara), para dar contexto comparativo
+    let sumaDensidades = 0;
+    let barriosConCamaras = 0;
+    barriosData.features.forEach(bf => {
+      const areaBf = turf.area(bf) / 1000000;
+      let camarasBf = 0;
+      allCamerasData.forEach(camara => {
+        const lat = parseFloat(String(camara.Latitud).replace(',', '.'));
+        const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
+        if (isLatLngInMultiPolygon(L.latLng(lat, lon), bf.geometry.coordinates)) {
+          camarasBf++;
+        }
+      });
+      if (camarasBf > 0 && areaBf > 0) {
+        sumaDensidades += camarasBf / areaBf;
+        barriosConCamaras++;
+      }
+    });
+    const densidadPromedioCiudad = barriosConCamaras > 0 ? sumaDensidades / barriosConCamaras : 0;
+
+    const diferenciaPct = densidadPromedioCiudad > 0
+      ? ((densidadEste - densidadPromedioCiudad) / densidadPromedioCiudad * 100)
+      : 0;
+    const porEncima = densidadEste >= densidadPromedioCiudad;
+
+    resultadosDiv.innerHTML = `
+      <h5>📊 Densidad de Cámaras — Barrio: ${nombreBarrioDensidadEste}</h5>
+      <div style="background: #e9ecef; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #457b9d;">
+        <p style="margin: 5px 0;"><b>Cámaras públicas en el barrio:</b> ${camarasCountEste}</p>
+        <p style="margin: 5px 0;"><b>Área del barrio:</b> ${areaKm2Este.toFixed(2)} km²</p>
+        <p style="margin: 5px 0;"><b>Densidad:</b> <span style="font-weight: bold; color: #2a9d8f;">${densidadEste.toFixed(2)} cámaras/km²</span></p>
+      </div>
+      <div style="background: ${porEncima ? '#d1e7dd' : '#fff3cd'}; padding: 10px; border-radius: 5px; border-left: 4px solid ${porEncima ? '#0f5132' : '#856404'};">
+        <p style="margin: 5px 0; font-size: 0.9em;">
+          <b>Comparación con el promedio de la ciudad</b> (${densidadPromedioCiudad.toFixed(2)} cámaras/km²):
+          ${camarasCountEste === 0
+            ? 'este barrio no tiene cámaras públicas instaladas.'
+            : `este barrio está <b>${Math.abs(diferenciaPct).toFixed(0)}% ${porEncima ? 'por encima' : 'por debajo'}</b> del promedio de la ciudad.`
+          }
+        </p>
+      </div>
+    `;
     break;
   }
   case 'densidad_camaras_vs_siniestros': {
@@ -8911,14 +9671,40 @@ case 'robos_zonas_sin_camaras': {
       const radioCobertura = 100; // 100 metros de radio de cobertura de cámara
       let robosSinCobertura = 0;
       let robosConCobertura = 0;
+
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoZC = getSelectedBarrioFeatureCombinada();
+      const selectedBarrioNameZC = _combinadoZC ? _combinadoZC.properties.soc_fomen : 'all';
+      let barrioFeatureZC = null;
+      if (selectedBarrioNameZC !== 'all') {
+        barrioFeatureZC = _combinadoZC;
+        if (!barrioFeatureZC) {
+          resultadosDiv.innerHTML = '❌ Barrio no encontrado.';
+          return;
+        }
+      }
   
       // **MODIFICACIÓN CLAVE: Filtrar solo robos con intervención policial**
-      const robosConIntervencion = allRoboAutomotorData.filter(robo => {
+      let robosConIntervencion = allRoboAutomotorData.filter(robo => {
         const resultado = robo.Resultado ? robo.Resultado.trim() : '';
         return resultado === 'Detencion' || 
                resultado === 'Persecucion Y Detencion' || 
                resultado === 'Secuestro De Vehiculo';
       });
+
+      // Si hay un barrio seleccionado, quedarnos solo con los robos dentro de ese barrio
+      if (barrioFeatureZC) {
+        robosConIntervencion = robosConIntervencion.filter(robo => {
+          const coordsStr = robo['Longitud y Latitud'];
+          if (!coordsStr) return false;
+          const parts = coordsStr.split(',').map(s => s.trim());
+          if (parts.length !== 2) return false;
+          const lon = parseFloat(parts[0]);
+          const lat = parseFloat(parts[1]);
+          if (isNaN(lat) || isNaN(lon)) return false;
+          return isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureZC.geometry.coordinates);
+        });
+      }
   
       robosConIntervencion.forEach(robo => {
         const coordsStr = robo['Longitud y Latitud'];
@@ -8927,8 +9713,8 @@ case 'robos_zonas_sin_camaras': {
         const parts = coordsStr.split(',').map(s => s.trim());
         if (parts.length !== 2) return;
         
-        const lat = parseFloat(parts[0]);
-        const lon = parseFloat(parts[1]);
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return;
         
         const roboLatLng = L.latLng(lat, lon);
@@ -8960,8 +9746,8 @@ case 'robos_zonas_sin_camaras': {
             fillOpacity: 0.7
           });
           
-          const fecha = robo.Fecha || 'N/A';
-          const barrio = robo.Barrio || 'N/A';
+          const fecha = getFechaLegibleRobo(robo);
+          const barrio = selectedBarrioNameZC !== 'all' ? selectedBarrioNameZC : (robo.Barrio || 'N/A');
           const resultado = robo.Resultado || 'N/A';
           marker.bindPopup(`
             <b>Robo con intervención policial</b><br>
@@ -8980,8 +9766,9 @@ case 'robos_zonas_sin_camaras': {
         ? ((robosSinCobertura / robosConIntervencion.length) * 100).toFixed(1) 
         : 0;
       
+      const tituloBarrioZC = selectedBarrioNameZC !== 'all' ? ` — Barrio: ${selectedBarrioNameZC}` : ' (todos los barrios)';
       resultadosDiv.innerHTML = `
-        <h5>Análisis: Robos con Intervención Policial vs Cobertura de Cámaras:</h5>
+        <h5>Análisis: Robos con Intervención Policial vs Cobertura de Cámaras${tituloBarrioZC}:</h5>
         <ul>
           <li><b style="color: #e63946;">Robos CON intervención SIN cámaras cercanas (100m):</b> ${robosSinCobertura} (${porcentajeSinCobertura}%)</li>
           <li><b style="color: #2a9d8f;">Robos CON intervención CON cámaras cercanas:</b> ${robosConCobertura}</li>
@@ -9045,8 +9832,8 @@ case 'robos_zonas_sin_camaras': {
       const parts = coordsStr.split(',').map(s => s.trim());
       if (parts.length !== 2) return;
       
-      const lat = parseFloat(parts[0]);
-      const lon = parseFloat(parts[1]);
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
       if (isNaN(lat) || isNaN(lon)) return;
       
       const latlng = L.latLng(lat, lon);
@@ -9370,10 +10157,24 @@ function mostrarInfoCorrelacion(datos) {
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const siniestrosPorMes = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0};
+
+    // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+    const _combinadoPorMes = getSelectedBarrioFeatureCombinada();
+    const selectedBarrioNamePorMes = _combinadoPorMes ? _combinadoPorMes.properties.soc_fomen : 'all';
+    let barrioFeaturePorMes = null;
+    if (selectedBarrioNamePorMes !== 'all') {
+      barrioFeaturePorMes = _combinadoPorMes;
+    }
   
     allSiniestrosData.features.forEach(f => {
       const fechaStr = f.properties.fecha;
       if (!fechaStr || fechaStr.split('/').length !== 3) return;
+
+      if (barrioFeaturePorMes) {
+        if (!f.geometry?.coordinates) return;
+        const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+        if (!isLatLngInMultiPolygon(latlng, barrioFeaturePorMes.geometry.coordinates)) return;
+      }
       
       const partes = fechaStr.split('/');
       const mes = parseInt(partes[1], 10) - 1; // Los meses en JS van de 0-11
@@ -9396,7 +10197,7 @@ function mostrarInfoCorrelacion(datos) {
     }
   
     // Crear visualización
-    let mesesHTML = '<h5>📊 Distribución de Siniestros por Mes:</h5>';
+    let mesesHTML = `<h5>📊 Distribución de Siniestros por Mes${selectedBarrioNamePorMes !== 'all' ? ` — Barrio: ${selectedBarrioNamePorMes}` : ''}:</h5>`;
     mesesHTML += '<div style="max-height: 300px; overflow-y: auto;">';
     
     for (let i = 0; i < 12; i++) {
@@ -9444,6 +10245,14 @@ case 'robos_sin_intervencion': {
   
       robosSinIntervencionLayer.clearLayers();
       
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoSinInterv = getSelectedBarrioFeatureCombinada();
+      const selectedBarrioNameSinInterv = _combinadoSinInterv ? _combinadoSinInterv.properties.soc_fomen : 'all';
+      let barrioFeatureSinInterv = null;
+      if (selectedBarrioNameSinInterv !== 'all') {
+        barrioFeatureSinInterv = _combinadoSinInterv;
+      }
+
       // Filtrar robos sin intervención (sin detención ni secuestro)
       const robosSinIntervencion = allRoboAutomotorData.filter(item => {
         const resultado = item.Resultado ? item.Resultado.trim() : '';
@@ -9461,12 +10270,25 @@ case 'robos_sin_intervencion': {
         const parts = coordsStr.split(',').map(s => s.trim());
         if (parts.length !== 2) return;
         
-        const lat = parseFloat(parts[0]);
-        const lon = parseFloat(parts[1]);
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return;
+
+        // El CSV de robos no trae columna "Barrio": la calculamos por geometría
+        let barrio = 'Sin identificar';
+        if (barriosData) {
+          for (const b of barriosData.features) {
+            if (isLatLngInMultiPolygon(L.latLng(lat, lon), b.geometry.coordinates)) {
+              barrio = b.properties.soc_fomen;
+              break;
+            }
+          }
+        }
+
+        // Si hay un barrio seleccionado, saltear los que no pertenecen a él
+        if (barrioFeatureSinInterv && barrio !== selectedBarrioNameSinInterv) return;
         
         totalSinIntervencion++;
-        const barrio = robo.Barrio || 'Sin especificar';
         robosPorBarrio[barrio] = (robosPorBarrio[barrio] || 0) + 1;
   
 // Agregar marcador al mapa
@@ -9478,7 +10300,7 @@ const marker = L.circleMarker([lat, lon], {
   fillOpacity: 0.9       // bien visible
 }).addTo(mymap);         // <<<<< ESTO FALTABA
 
-const fecha = robo.Fecha || 'N/A';
+const fecha = getFechaLegibleRobo(robo);
 
 marker.bindPopup(`
   <b>Robo sin intervención</b><br>
@@ -9495,8 +10317,19 @@ robosSinIntervencionLayer.addLayer(marker);
 // ==============================
 
 // Calcular porcentaje
-const totalRobos = allRoboAutomotorData.length;
-const porcentajeSinIntervencion = ((totalSinIntervencion / totalRobos) * 100).toFixed(1);
+const totalRobos = barrioFeatureSinInterv
+  ? allRoboAutomotorData.filter(robo => {
+      const coordsStr = robo['Longitud y Latitud'];
+      if (!coordsStr) return false;
+      const parts = coordsStr.split(',').map(s => s.trim());
+      if (parts.length !== 2) return false;
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      if (isNaN(lat) || isNaN(lon)) return false;
+      return isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureSinInterv.geometry.coordinates);
+    }).length
+  : allRoboAutomotorData.length;
+const porcentajeSinIntervencion = totalRobos > 0 ? ((totalSinIntervencion / totalRobos) * 100).toFixed(1) : '0.0';
 
 // Top 5 barrios con más robos sin intervención
 const topBarrios = Object.entries(robosPorBarrio)
@@ -9510,13 +10343,13 @@ if (!window._consultaLayers) window._consultaLayers = [];
 window._consultaLayers.push(robosSinIntervencionLayer);
       
       let resultHTML = `
-        <h5>🚨 Análisis de Robos sin Intervención Policial:</h5>
+        <h5>🚨 Análisis de Robos sin Intervención Policial${selectedBarrioNameSinInterv !== 'all' ? ` — Barrio: ${selectedBarrioNameSinInterv}` : ''}:</h5>
         <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
           <p style="margin: 5px 0;"><b>Total robos sin intervención:</b> ${totalSinIntervencion}</p>
           <p style="margin: 5px 0;"><b>Porcentaje del total:</b> ${porcentajeSinIntervencion}%</p>
           <p style="margin: 5px 0;"><b>Total robos analizados:</b> ${totalRobos}</p>
         </div>
-        <h6>Top 5 Barrios con Más Robos sin Intervención:</h6>
+        <h6>${selectedBarrioNameSinInterv !== 'all' ? 'Detalle del barrio' : 'Top 5 Barrios con Más Robos sin Intervención'}:</h6>
         <ul>
       `;
       
@@ -9588,6 +10421,27 @@ case 'siniestros_corredores_escolares': {
       corredoresEscolaresLayer.clearLayers();
       colegiosLayer.clearLayers();
       siniestrosEnZonasLayer.clearLayers();
+
+      // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+      const _combinadoEscolar = getSelectedBarrioFeatureCombinada();
+      let siniestrosFuenteEscolar = allSiniestrosData.features;
+      let colegiosFuenteEscolar = colegiosData.features;
+      let corredoresFuenteEscolar = corredoresData.features;
+      if (_combinadoEscolar) {
+        siniestrosFuenteEscolar = siniestrosFuenteEscolar.filter(f => {
+          if (!f.geometry?.coordinates) return false;
+          return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), _combinadoEscolar.geometry.coordinates);
+        });
+        colegiosFuenteEscolar = colegiosFuenteEscolar.filter(f => {
+          if (!f.geometry?.coordinates) return false;
+          return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), _combinadoEscolar.geometry.coordinates);
+        });
+        corredoresFuenteEscolar = corredoresFuenteEscolar.filter(f => {
+          if (!f.geometry?.coordinates) return false;
+          const coordsLinea = f.geometry.type === 'LineString' ? f.geometry.coordinates : (f.geometry.coordinates[0] || []);
+          return coordsLinea.some(c => isLatLngInMultiPolygon(L.latLng(c[1], c[0]), _combinadoEscolar.geometry.coordinates));
+        });
+      }
   
       const radioBusqueda = 50; // 50 metros de radio
       const siniestrosEnCorredores = [];
@@ -9603,7 +10457,7 @@ case 'siniestros_corredores_escolares': {
       };
   
       // 1. Dibujar corredores escolares
-      L.geoJSON(corredoresData, {
+      L.geoJSON({ type: 'FeatureCollection', features: corredoresFuenteEscolar }, {
         style: {
           color: "#008000", // Color verde para corredores escolares
           weight: 4,
@@ -9624,7 +10478,7 @@ case 'siniestros_corredores_escolares': {
         popupAnchor: [0, -32]
       });
   
-      colegiosData.features.forEach(colegio => {
+      colegiosFuenteEscolar.forEach(colegio => {
         const coords = colegio.geometry.coordinates;
         const latlng = L.latLng(coords[1], coords[0]);
         const nombre = colegio.properties.Name || 'Colegio sin nombre';
@@ -9640,7 +10494,7 @@ case 'siniestros_corredores_escolares': {
       let totalSiniestrosFiltradosPorHorario = 0;
       let totalSiniestrosFiltradosPorParticipantes = 0;
       
-      allSiniestrosData.features.forEach(siniestro => {
+      siniestrosFuenteEscolar.forEach(siniestro => {
         if (!siniestro.geometry || !siniestro.geometry.coordinates) return;
         
         const props = siniestro.properties;
@@ -9700,7 +10554,7 @@ case 'siniestros_corredores_escolares': {
         let distanciaMinima = Infinity;
   
         // Verificar proximidad a corredores
-        corredoresData.features.forEach(corredor => {
+        corredoresFuenteEscolar.forEach(corredor => {
           let distancia = Infinity;
           
           if (corredor.geometry.type === 'LineString') {
@@ -9742,7 +10596,7 @@ case 'siniestros_corredores_escolares': {
         let colegioMasCercano = null;
         let distanciaMinimaColegio = Infinity;
         
-        colegiosData.features.forEach(colegio => {
+        colegiosFuenteEscolar.forEach(colegio => {
           const colegioLatLng = L.latLng(
             colegio.geometry.coordinates[1],
             colegio.geometry.coordinates[0]
@@ -9820,7 +10674,7 @@ case 'siniestros_corredores_escolares': {
   
       // Generar reporte
       let reporteHTML = `
-        <h5>🎒 Análisis de Siniestros en Zonas Escolares (Horarios Críticos):</h5>
+        <h5>🎒 Análisis de Siniestros en Zonas Escolares (Horarios Críticos)${_combinadoEscolar ? ` — ${_combinadoEscolar.properties.soc_fomen}` : ''}:</h5>
         
         <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #856404;">
           <p style="margin: 5px 0;"><b>✅ Siniestros encontrados:</b> ${siniestrosEnCorredores.length}</p>
@@ -9975,8 +10829,8 @@ case 'siniestros_corredores_escolares': {
         if (!coordsStr) return;
         const parts = coordsStr.split(',').map(s => s.trim());
         if (parts.length !== 2) return;
-        const lat = parseFloat(parts[0]);
-        const lon = parseFloat(parts[1]);
+        const lon = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return;
         
         const resultado = r.Resultado ? r.Resultado.trim() : '';
@@ -9987,7 +10841,7 @@ case 'siniestros_corredores_escolares': {
           lon: lon,
           tipo: 'robo',
           gravedad: sinIntervencion ? 1.8 : 1.2, // Mayor peso si no hubo intervención
-          fecha: r.Fecha
+          fecha: getFechaLegibleRobo(r)
         });
       });
 
@@ -10367,10 +11221,19 @@ case 'siniestros_corredores_escolares': {
           return;
         }
 
-        const siniestrosRelevantes = allSiniestrosData.features.filter(f => {
+        let siniestrosRelevantes = allSiniestrosData.features.filter(f => {
           const participantes = f.properties.participantes_codigos;
           return participantes && (participantes.includes('P') || participantes.includes('B'));
         });
+
+        // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+        const _combinadoEsquinasPelig = getSelectedBarrioFeatureCombinada();
+        if (_combinadoEsquinasPelig) {
+          siniestrosRelevantes = siniestrosRelevantes.filter(f => {
+            if (!f.geometry?.coordinates) return false;
+            return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), _combinadoEsquinasPelig.geometry.coordinates);
+          });
+        }
 
         if (siniestrosRelevantes.length === 0) {
           resultadosDiv.innerHTML = '✅ No se encontraron siniestros relevantes para peatones o ciclistas.';
@@ -10416,7 +11279,7 @@ case 'siniestros_corredores_escolares': {
 
         // Crear marcadores personalizados para las esquinas peligrosas
         
-        let resultsHtmlContent = `<h5>🚶‍♀️🚲 Top ${rankedLocations.length} Esquinas Más Peligrosas para Peatones y Ciclistas:</h5><div style="max-height: 300px; overflow-y: auto;"><ul>`;
+        let resultsHtmlContent = `<h5>🚶‍♀️🚲 Top ${rankedLocations.length} Esquinas Más Peligrosas para Peatones y Ciclistas${_combinadoEsquinasPelig ? ` — ${_combinadoEsquinasPelig.properties.soc_fomen}` : ''}:</h5><div style="max-height: 300px; overflow-y: auto;"><ul>`;
 
         rankedLocations.forEach((location, index) => {
           const rank = index + 1;
@@ -10706,8 +11569,17 @@ async function mostrarCoberturaEscolar() {
       iconAnchor: [20, 20]
   });
 
+    // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+    const _combinadoCoberturaEscolar = getSelectedBarrioFeatureCombinada();
+    const colegiosParaMostrar = _combinadoCoberturaEscolar
+        ? colegiosData.features.filter(f => {
+            if (!f.geometry?.coordinates) return false;
+            return isLatLngInMultiPolygon(L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]), _combinadoCoberturaEscolar.geometry.coordinates);
+          })
+        : colegiosData.features;
+
     // === Verificación individual ===
-    colegiosData.features.forEach(feature => {
+    colegiosParaMostrar.forEach(feature => {
         const [lon, lat] = feature.geometry.coordinates;
         const puntoColegio = L.latLng(lat, lon);
         let cubierto = false;
@@ -10741,7 +11613,15 @@ if (!barriosData?.features) {
   return;   // ← AHORA ESTE RETURN ES LEGAL (está dentro del case correcto)
 }
 
-barriosData.features.forEach(barrio => {
+// Respetar el/los barrio(s) seleccionados en "Filtrar por Barrio" (si hay alguno)
+const _nombresBarriosCoberturaSel = (barrioFilterSelect
+    ? Array.from(barrioFilterSelect.selectedOptions).map(opt => opt.value).filter(v => v && v !== 'all')
+    : []);
+const _barriosParaCobertura = _nombresBarriosCoberturaSel.length > 0
+    ? barriosData.features.filter(b => _nombresBarriosCoberturaSel.includes(b.properties.soc_fomen))
+    : barriosData.features;
+
+_barriosParaCobertura.forEach(barrio => {
     const nombreBarrio = barrio.properties.soc_fomen || 'Sin nombre';
     const colegiosEnBarrio = colegiosData.features.filter(colegio => {
         if (!colegio.geometry?.coordinates) return false;
@@ -10937,9 +11817,23 @@ function calcularTendenciaPorCausa(causaCodigo) {
 
   const conteoPorAño = {};
 
+  // Respetar el barrio seleccionado en el filtro "Filtrar por Barrio"
+  const _combinadoTendencia = getSelectedBarrioFeatureCombinada();
+  const selectedBarrioNameTendencia = _combinadoTendencia ? _combinadoTendencia.properties.soc_fomen : 'all';
+  let barrioFeatureTendencia = null;
+  if (selectedBarrioNameTendencia !== 'all') {
+    barrioFeatureTendencia = _combinadoTendencia;
+  }
+
   allSiniestrosData.features.forEach(f => {
       const props = f.properties;
       if (!props || props.causa !== causaCodigo) return;
+
+      if (barrioFeatureTendencia) {
+          if (!f.geometry?.coordinates) return;
+          const latlng = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+          if (!isLatLngInMultiPolygon(latlng, barrioFeatureTendencia.geometry.coordinates)) return;
+      }
 
       if (props.fecha) {
           let year = props.fecha.split('/')[2];
@@ -10962,7 +11856,7 @@ function calcularTendenciaPorCausa(causaCodigo) {
   if (ultimo > primero) tendencia = "aumento";
   if (ultimo < primero) tendencia = "descenso";
 
-  return { conteoPorAño, tendencia };
+  return { conteoPorAño, tendencia, barrioNombre: selectedBarrioNameTendencia !== 'all' ? selectedBarrioNameTendencia : null };
 }
 
 
@@ -10971,7 +11865,8 @@ function calcularTendenciaPorCausa(causaCodigo) {
 // ===============================================
 
 function mostrarResultadoTendencia(nombreCausa, resultado) {
-  let html = `<h4>📊 Tendencia: ${nombreCausa}</h4><ul>`;
+  const tituloBarrioTendencia = resultado.barrioNombre ? ` — Barrio: ${resultado.barrioNombre}` : '';
+  let html = `<h4>📊 Tendencia: ${nombreCausa}${tituloBarrioTendencia}</h4><ul>`;
 
   for (const año in resultado.conteoPorAño) {
       html += `<li><b>${año}:</b> ${resultado.conteoPorAño[año]} siniestros</li>`;
@@ -12708,7 +13603,11 @@ function calcularMejoraPredictivaCobertura(camaras, siniestros, robos, barrios) 
       return;
     }
 
-    // 2. Contar cámaras actuales en el barrio
+    // 2. Contar cámaras actuales en el barrio (para estadísticas)
+    //    y registrar TODAS las cámaras de la ciudad (para el algoritmo de
+    //    exclusión, ya que una cámara justo al otro lado del límite del
+    //    barrio igual cubre esa zona en la práctica — no hay que ignorarla
+    //    solo por un tecnicismo administrativo del polígono).
     let camarasEnBarrio = 0;
     const puntosCamaras = [];
 
@@ -12717,20 +13616,13 @@ function calcularMejoraPredictivaCobertura(camaras, siniestros, robos, barrios) 
       const lon = parseFloat(String(camara.Longitud).replace(',', '.'));
 
       if (!isNaN(lat) && !isNaN(lon)) {
+        // Todas las cámaras entran al set de exclusión, sin importar el barrio
+        puntosCamaras.push([lon, lat]);
+
         const camaraPoint = turf.point([lon, lat]);
         try {
           if (turf.booleanPointInPolygon(camaraPoint, barrioGeometry)) {
             camarasEnBarrio++;
-            puntosCamaras.push([lon, lat]);
-            // DEBUG: Mostrar si es una cámara conocida
-            if (camara['N CAMARA'] == 396) {
-              console.log(`[DEBUG] Camera 396 INCLUÍDA en ${nombreBarrio}: [${lon.toFixed(6)}, ${lat.toFixed(6)}]`);
-            }
-          } else {
-            // DEBUG: Si es camera 396, mostrar por qué NO fue incluida
-            if (camara['N CAMARA'] == 396) {
-              console.log(`[DEBUG] Camera 396 RECHAZADA (fuera del barrio ${nombreBarrio}): [${lon.toFixed(6)}, ${lat.toFixed(6)}]`);
-            }
           }
         } catch (e) {
           // Ignorar errores de geometría
@@ -12762,9 +13654,9 @@ function calcularMejoraPredictivaCobertura(camaras, siniestros, robos, barrios) 
       const parts = coordsStr.split(',').map(s => s.trim());
       if (parts.length !== 2) return;
       
-      // En CSV: "Longitud y Latitud" genera parts = [lat, lon] (orden de lectura)
-      const lat = parseFloat(parts[0]);
-      const lon = parseFloat(parts[1]);
+      // En CSV: "Longitud y Latitud" genera parts = [lon, lat] (orden de lectura)
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
       if (isNaN(lat) || isNaN(lon)) return;
 
       const resultado = robo.Resultado ? robo.Resultado.trim() : '';
@@ -12948,8 +13840,9 @@ function proponerUbicacionesOptimas(barrioGeometry, puntosIncidentes, puntosCama
       const parts = coordsStr.split(',').map(s => s.trim());
       if (parts.length !== 2) return;
       
-      const lat = parseFloat(parts[0]);
-      const lon = parseFloat(parts[1]);
+      // La columna "Longitud y Latitud" trae primero la longitud y luego la latitud
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
       if (isNaN(lat) || isNaN(lon)) return;
       
       const coords = [lon, lat];
@@ -12982,7 +13875,7 @@ function proponerUbicacionesOptimas(barrioGeometry, puntosIncidentes, puntosCama
           coords: coords,
           tipo: 'robo',
           direccion: robo.Dirección || 'No especificada',
-          fecha: robo.Fecha,
+          fecha: getFechaLegibleRobo(robo),
           gravedad: gravedad
         });
       }

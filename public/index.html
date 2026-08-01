@@ -173,11 +173,13 @@
       <label><input type="checkbox" id="semaforos-checkbox"> Semáforos</label>
       <label><input type="checkbox" id="siniestros-checkbox"> Siniestros (<span id="total-siniestros-count">0</span>)</label>
       <label><input type="checkbox" id="heatmap-checkbox"> Mapa de Calor</label>
+      <label><input type="checkbox" id="show-zones-checkbox"> 📍 Mostrar Zonas Geográficas (Azul/Rojo/Magenta/Verde)</label>
       <label><input type="checkbox" id="alertas-checkbox"> Alertas</label>
 
       <div class="filter-group">
         <h4>Filtrar por Barrio:</h4>
-        <select id="barrio-filter"><option value="all">Todos los Barrios</option></select>
+        <select id="barrio-filter" multiple size="6"><option value="all" selected>Todos los Barrios</option></select>
+        <div style="font-size: 0.75em; color: #666; margin-top: 3px;">Mantené presionado Ctrl (⌘ en Mac) y hacé clic para seleccionar varios barrios a la vez.</div>
       </div>
 
       <div class="filter-group">
@@ -377,7 +379,7 @@
           </button>
         </div>
         <button class="consulta-btn" data-consulta="siniestros_noche">Mostrar siniestros en horario nocturno (22-06hs)</button>
-        <button class="consulta-btn" data-consulta="robos_por_dia">📅 ¿Qué día de la semana hay más robos?</button>
+        <button class="consulta-btn" data-consulta="robos_por_dia">📅 ¿En qué mes hay más robos?</button>
         <button class="consulta-btn" data-consulta="tipos_siniestros_comunes">Listar Causas de siniestros mas comunes</button>
         <button class="consulta-btn" data-consulta="ultimas_alertas">¿Dónde se generaron las últimas alertas?</button>
         <details>
@@ -435,6 +437,7 @@
         </div>
         <button class="consulta-btn" data-consulta="circulacion_motos_hora">¿Zonas con mayor circulación de motos por hora?</button>
         <button class="consulta-btn" data-consulta="densidad_camaras_barrio">Calcular densidad de cámaras por barrio (cámaras/km²)</button>
+        <button class="consulta-btn" data-consulta="densidad_camaras_este_barrio">📊 Densidad de cámaras de este barrio</button>
         <button class="consulta-btn" data-consulta="densidad_camaras_vs_siniestros">📊 Densidad: Cámaras vs Siniestros</button>
         <button class="consulta-btn" data-consulta="proponer_ubicaciones_camaras">🎯 Proponer Ubicaciones para Nuevas Cámaras</button>
         <button class="consulta-btn" data-consulta="mejora_predictiva_cobertura">📊 Mejora Predictiva de Cobertura por Barrio</button>
@@ -534,10 +537,12 @@
           <select id="informe-barrio-select" onchange="renderInformeBarrio()" style="padding:8px 14px;font-size:15px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;min-width:260px;cursor:pointer;">
             <option value="">-- Seleccioná un barrio --</option>
           </select>
+          <button class="informe-tab" data-tab="movilidad" onclick="switchInformeTab('movilidad',this)">🚌 Colectivos y Aforos</button>
           <div id="informe-criticidad-badge" style="display:none;"></div>
           <div style="margin-left:auto;display:flex;gap:8px;">
             <button onclick="informeVerEnMapa()" id="btn-informe-ver-mapa" style="padding:8px 16px;font-size:13px;background:#1a2332;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none;">🗺️ Ver en mapa</button>
             <button onclick="informeProponerCamaras()" id="btn-informe-camaras" style="padding:8px 16px;font-size:13px;background:#0f6e56;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none;">📷 Proponer cámaras</button>
+            <button onclick="exportarInformePDF()" id="btn-informe-pdf" style="padding:8px 16px;font-size:13px;background:#b91c1c;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none;">🖨️ Exportar PDF</button>
           </div>
         </div>
         <!-- TABS -->
@@ -566,6 +571,8 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <!-- Google Maps API -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8I8UrgCcHH0TWTOURa0b4Ro6EhVx29E"></script>
@@ -679,6 +686,20 @@
     .admin-pin-input:focus { outline:none; border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,0.1); }
     .admin-pin-input.error { border-color:#f44336; animation:shake 0.3s; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+    @keyframes pulsoPuntoCritico {
+      0%   { transform:scale(0.6); opacity:1; }
+      70%  { transform:scale(2.2); opacity:0; }
+      100% { transform:scale(2.2); opacity:0; }
+    }
+    .marker-pulso-punto-critico { width:22px; height:22px; }
+    .marker-pulso-punto-critico .punto-pulso-anillo {
+      position:absolute; top:0; left:0; width:22px; height:22px; border-radius:50%;
+      background:rgba(220,38,38,0.55); border:2px solid #dc2626;
+      animation:pulsoPuntoCritico 1s ease-out infinite;
+    }
+    .marker-pulso-punto-critico .punto-pulso-centro {
+      position:absolute; top:7px; left:7px; width:8px; height:8px; border-radius:50%; background:#dc2626;
+    }
     .pin-btn-submit,.pin-btn-cancel { flex:1; padding:12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; }
     .pin-btn-submit { background:#007bff; color:white; }
     .pin-btn-submit:hover { background:#0056b3; }
@@ -844,6 +865,38 @@
     });
   }
 
+  // --- CARGA DE COLECTIVOS: fuente individual por línea (manifest + geojson por línea) ---
+  async function _cargarColectivosIndividuales() {
+    if (window._colectivosIndividualesGeoJSON || window._colectivosIndividualesFetchEnCurso) return;
+    window._colectivosIndividualesFetchEnCurso = true;
+    try {
+      const manifest = await fetch('colectivos-manifest.json').then(r => r.json());
+      let lista = manifest['mar-del-plata'] || manifest.default || [];
+      // La línea 221 no figura en el manifest pero el archivo existe: la agregamos igual
+      if (!lista.some(l => l.numero === '221')) {
+        lista = lista.concat([{ numero: '221', archivo: 'linea221.geojson' }]);
+      }
+      const resultados = await Promise.all(lista.map(l =>
+        fetch(l.archivo).then(r => r.ok ? r.json() : null).catch(() => null)
+      ));
+      const features = [];
+      resultados.forEach((data, i) => {
+        if (data?.features) {
+          data.features.forEach(f => {
+            if (!f.properties) f.properties = {};
+            if (!f.properties.linea) f.properties.linea = lista[i].numero;
+            features.push(f);
+          });
+        }
+      });
+      window._colectivosIndividualesGeoJSON = { type: 'FeatureCollection', features };
+    } catch (e) {
+      window._colectivosIndividualesGeoJSON = { type: 'FeatureCollection', features: [] };
+    } finally {
+      window._colectivosIndividualesFetchEnCurso = false;
+    }
+  }
+
   // --- RENDER PRINCIPAL ---
   async function renderInformeBarrio() {
     const sel    = document.getElementById('informe-barrio-select');
@@ -855,6 +908,7 @@
 
     document.getElementById('btn-informe-ver-mapa').style.display   = 'inline-block';
     document.getElementById('btn-informe-camaras').style.display     = 'inline-block';
+    document.getElementById('btn-informe-pdf').style.display = 'inline-block';
 
     document.querySelectorAll('.informe-tab').forEach(t => t.classList.remove('active'));
     document.querySelector('.informe-tab[data-tab="resumen"]')?.classList.add('active');
@@ -874,6 +928,14 @@
       // Cargar colegios si no están en memoria todavía
       (!window._colegiosGeoJSON && !window.colegiosData)
         ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve(),
+
+     (!window._colectivosGeoJSON && !window._colectivosFetchEnCurso)
+        ? fetch('colectivos_mardelplata_geojson.geojson').then(r=>r.json()).then(d=>{ window._colectivosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve(),
+
+     (!window._colectivosIndividualesGeoJSON && !window._colectivosIndividualesFetchEnCurso)
+        ? _cargarColectivosIndividuales()
         : Promise.resolve()
     ]);
 
@@ -968,7 +1030,8 @@
     const robosBarrio = (allRoboAutomotorData||[]).filter(r => {
       const coordsStr=r['Longitud y Latitud']; if(!coordsStr) return false;
       const parts=coordsStr.split(',').map(s=>s.trim()); if(parts.length!==2) return false;
-      const lat=parseFloat(parts[0]),lng=parseFloat(parts[1]); if(isNaN(lat)||isNaN(lng)) return false;
+      // La columna "Longitud y Latitud" trae primero la longitud y luego la latitud
+      const lng=parseFloat(parts[0]),lat=parseFloat(parts[1]); if(isNaN(lat)||isNaN(lng)) return false;
       return isLatLngInMultiPolygon(L.latLng(lat,lng), geo.coordinates);
     });
 
@@ -1014,7 +1077,115 @@
     const criticidad = Math.min(Math.round((siniestrosBarrio.length/10)*2+(robosBarrio.length/5)*1.5+(sinSinCamara/Math.max(siniestrosBarrio.length,1))*30+(colegiosSinCam*5)),100);
     const recomendaciones = _generarRecomendaciones({nombreBarrio,siniestros:siniestrosBarrio.length,causas,participantes,camaras:camarasBarrio.length,cobertura:coberturaEst,nsd,colegiosSinCam,robos:robosBarrio.length,sinSinCamara,horarioCritico,diaMax:diaMax?.[0]||'No determinado'});
 
-    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature};
+// === COLECTIVOS: líneas que atraviesan el barrio (combina fuente OSM + fuente por línea) ===
+    let lineasColectivo = [];
+    const fuenteColectivos  = window._colectivosGeoJSON?.features || null;
+    const fuenteIndividual  = window._colectivosIndividualesGeoJSON?.features || null;
+
+    // Bug conocido del geojson OSM: la línea 555 quedó etiquetada con ref "550"
+    const _corregirRefLinea = (ref) => ref === '550' ? '555' : ref;
+
+    // Metadatos (nombre/operador) disponibles solo para las ~11 líneas del geojson OSM
+    const metadataPorLinea = {};
+    if (fuenteColectivos) {
+      fuenteColectivos.forEach(f => {
+        const ref = _corregirRefLinea(f.properties.ref || 'S/D');
+        if (!metadataPorLinea[ref]) {
+          metadataPorLinea[ref] = { nombre: f.properties.name || `Línea ${ref}`, operador: f.properties.operator || '—' };
+        }
+      });
+    }
+
+    const lineasEncontradas = new Set();
+
+    // Fuente A: geojson OSM combinado (MultiLineString) → intersección de geometría
+    if (fuenteColectivos) {
+      fuenteColectivos.forEach(f => {
+        if (!f.geometry) return;
+        let intersecta = false;
+        try { intersecta = turf.booleanIntersects(f, barrioFeature); } catch(e) {}
+        if (intersecta) lineasEncontradas.add(_corregirRefLinea(f.properties.ref || 'S/D'));
+      });
+    }
+
+    // Fuente B: geojsons individuales por línea (1 LineString del recorrido + puntos de cámara/parada)
+    if (fuenteIndividual) {
+      const featuresPorLinea = {};
+      fuenteIndividual.forEach(f => {
+        const ref = f.properties?.linea; if (!ref || !f.geometry) return;
+        (featuresPorLinea[ref] = featuresPorLinea[ref] || []).push(f);
+      });
+      Object.entries(featuresPorLinea).forEach(([ref, features]) => {
+        const pasaPorBarrio = features.some(f => {
+          try {
+            // LineString/MultiLineString del recorrido real → intersección de geometría (más precisa)
+            if (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') {
+              return turf.booleanIntersects(f, barrioFeature);
+            }
+            // Points (cámaras/paradas) → punto dentro del polígono, como respaldo
+            if (f.geometry.type === 'Point') {
+              return turf.booleanPointInPolygon(f, barrioFeature);
+            }
+          } catch(e) {}
+          return false;
+        });
+        if (pasaPorBarrio) lineasEncontradas.add(ref);
+      });
+    }
+
+    lineasColectivo = Array.from(lineasEncontradas).map(ref => ({
+      ref,
+      nombre:   metadataPorLinea[ref]?.nombre   || `Línea ${ref}`,
+      operador: metadataPorLinea[ref]?.operador || '—'
+    })).sort((a,b) => (a.ref||'').localeCompare(b.ref||'', undefined, {numeric:true}));
+
+    // Si alguna de las dos fuentes todavía no cargó, dispararla y re-renderizar al terminar
+    if (!fuenteColectivos && !window._colectivosFetchEnCurso) {
+      window._colectivosFetchEnCurso = true;
+      fetch('colectivos_mardelplata_geojson.geojson').then(r=>r.json()).then(data=>{
+        window._colectivosGeoJSON = data;
+        window._colectivosFetchEnCurso = false;
+        if (_informeBarrioActual === nombreBarrio) {
+          const d2 = _calcularDatosBarrio(nombreBarrio);
+          _renderTab(d2, _informeTabActual);
+        }
+      }).catch(()=>{ window._colectivosFetchEnCurso = false; });
+    }
+    if (!fuenteIndividual && !window._colectivosIndividualesFetchEnCurso) {
+      _cargarColectivosIndividuales().then(() => {
+        if (_informeBarrioActual === nombreBarrio) {
+          const d2 = _calcularDatosBarrio(nombreBarrio);
+          _renderTab(d2, _informeTabActual);
+        }
+      });
+    }
+
+    // === AFOROS: cámaras de conteo dentro del barrio ===
+    const direccionKeyAforo = Object.keys(allCamerasData?.[0] || {}).find(k => k.toLowerCase().includes('direcci'));
+    const idsCamarasBarrio = camarasBarrio.map(c => c['N CAMARA']).filter(Boolean);
+    const flujoBarrio = (allFlujoData||[]).filter(f => idsCamarasBarrio.includes(f['N CAMARA']));
+
+    const aforoPorTipo = {};
+    let aforoTotal = 0;
+    flujoBarrio.forEach(f => {
+      const tipo = (f.PART||'otro').trim().toLowerCase();
+      const total = parseInt(f.TOTAL,10) || 0;
+      aforoPorTipo[tipo] = (aforoPorTipo[tipo]||0) + total;
+      aforoTotal += total;
+    });
+
+    const aforoPorCamara = {};
+    flujoBarrio.forEach(f => {
+      const id = f['N CAMARA'];
+      aforoPorCamara[id] = (aforoPorCamara[id]||0) + (parseInt(f.TOTAL,10)||0);
+    });
+    const aforoTopCamaras = Object.entries(aforoPorCamara).map(([id,total]) => {
+      const cam = camarasBarrio.find(c => c['N CAMARA']===id);
+      return { id, direccion: cam ? (cam[direccionKeyAforo]||'Sin dirección') : 'Sin dirección', total };
+    }).sort((a,b)=>b.total-a.total).slice(0,5);
+    const camarasConAforo = Object.keys(aforoPorCamara).length;
+
+    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo};
   }
 
   function _datosVacios(nombre) {
@@ -1069,6 +1240,7 @@
       case 'camaras':         cont.innerHTML=_htmlCamaras(d);         break;
       case 'escolares':       cont.innerHTML=_htmlEscolares(d);       break;
       case 'recomendaciones': cont.innerHTML=_htmlRecomendaciones(d); break;
+      case 'movilidad':       cont.innerHTML=_htmlMovilidad(d);       break;
     }
   }
 
@@ -1201,7 +1373,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-accion" onclick="informeAccion('zonas_ciegas')">◌ Ver zonas ciegas</button>
         <button class="btn-accion" onclick="informeAccion('camaras_sin_siniestros')">🛡️ Cámaras sin siniestros</button>
-        <button class="btn-accion" onclick="informeAccion('densidad_camaras_vs_siniestros')">📊 Densidad vs siniestros</button>
+        <button class="btn-accion" onclick="informeAccion('densidad_camaras_este_barrio')">📊 Densidad de cámaras</button>
         <button class="btn-accion" onclick="informeProponerCamaras()">🎯 Proponer ubicaciones</button>
       </div>`;
   }
@@ -1235,6 +1407,42 @@
         <button class="btn-accion" onclick="informeAccion('siniestros_corredores_escolares')">🎒 Siniestros en horario escolar</button>
         <button class="btn-accion" onclick="informeAccion('esquinas_peligrosas_peatones_ciclistas')">🚶 Esquinas peligrosas</button>
         <button class="btn-accion" onclick="informeAccion('cobertura_colegios')">📷 Ver cobertura colegios</button>
+      </div>`;
+  }
+
+  function _htmlMovilidad(d) {
+    const tipoLabel = {auto:'🚗 Autos', moto:'🏍️ Motos', bici:'🚲 Bicis', colectivo:'🚌 Colectivos', camiones:'🚛 Camiones'};
+    const maxTipo = Math.max(...Object.values(d.aforoPorTipo||{}), 1);
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;">
+        ${_metric('🚌','Líneas de colectivo',(d.lineasColectivo||[]).length,'','#0369a1')}
+        ${_metric('📊','Cámaras con aforo',d.camarasConAforo||0,'','#7c3aed')}
+        ${_metric('🚗','Vehículos registrados',(d.aforoTotal||0).toLocaleString('es-AR'),'','#0f6e56')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>🚌 Líneas que atraviesan el barrio</h4>
+          ${(d.lineasColectivo||[]).length ? `
+            <table class="informe-tabla">
+              <thead><tr><th>Línea</th><th>Recorrido</th><th>Operador</th></tr></thead>
+              <tbody>
+                ${d.lineasColectivo.map(l=>`<tr><td style="font-weight:700;color:#0369a1">${l.ref}</td><td style="font-size:12px">${l.nombre}</td><td style="font-size:12px;color:#64748b">${l.operador}</td></tr>`).join('')}
+              </tbody>
+            </table>` : '<p style="color:#94a3b8;font-size:13px">Ninguna línea registrada atraviesa este barrio.</p>'}
+        </div>
+        <div class="informe-card">
+          <h4>🚦 Flujo vehicular por tipo</h4>
+          ${Object.entries(d.aforoPorTipo||{}).sort((a,b)=>b[1]-a[1]).map(([tipo,cant])=>_causaBar(tipoLabel[tipo]||tipo, cant, maxTipo, '#0f6e56')).join('') || '<p style="color:#94a3b8;font-size:13px">Sin datos de aforo en este barrio.</p>'}
+        </div>
+      </div>
+      <div class="informe-card">
+        <h4>📍 Cámaras de aforo con mayor circulación</h4>
+        <table class="informe-tabla">
+          <thead><tr><th>#</th><th>Ubicación</th><th style="text-align:right">Vehículos (total histórico)</th></tr></thead>
+          <tbody>
+            ${(d.aforoTopCamaras||[]).map((a,i)=>`<tr><td>${i+1}</td><td style="font-size:13px">${a.direccion}</td><td style="text-align:right;font-weight:700;color:#0f6e56">${a.total.toLocaleString('es-AR')}</td></tr>`).join('') || `<tr><td colspan="3" style="color:#94a3b8;text-align:center">Sin datos</td></tr>`}
+          </tbody>
+        </table>
       </div>`;
   }
 
@@ -1272,6 +1480,116 @@
     cerrarInformeBarrio();
   }
 
+  // --- EXPORTAR INFORME COMPLETO A PDF ---
+  async function exportarInformePDF() {
+    if (!_informeBarrioActual) return;
+    const btn = document.getElementById('btn-informe-pdf');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '⏳ Generando...';
+    btn.disabled = true;
+
+    try {
+      const datos = _calcularDatosBarrio(_informeBarrioActual);
+      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'movilidad', 'recomendaciones'];
+      const titulos = {
+        resumen: 'Resumen General',
+        siniestros: 'Siniestros',
+        camaras: 'Cámaras y Cobertura',
+        escolares: 'Corredores Escolares',
+        movilidad: 'Colectivos y Aforos',
+        recomendaciones: 'Recomendaciones'
+      };
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const criticidadInfo = _getCriticidadInfo(datos.criticidad);
+
+      // --- PORTADA ---
+      pdf.setFillColor(26, 35, 50);
+      pdf.rect(0, 0, pageW, 55, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.text('Informe de Seguridad Urbana', margin, 22);
+      pdf.setFontSize(12);
+      pdf.text('CIMU · Centro de Inteligencia y Monitoreo Urbano', margin, 32);
+      pdf.setFontSize(15);
+      pdf.text(`Barrio: ${datos.nombre}`, margin, 46);
+
+      pdf.setTextColor(30, 30, 30);
+      pdf.setFontSize(11);
+      pdf.text(`Fecha del informe: ${fecha}`, margin, 68);
+      pdf.text(`Nivel de criticidad: ${criticidadInfo.label} (${datos.criticidad}/100)`, margin, 76);
+      pdf.text(`Siniestros totales: ${datos.siniestros}   |   Cobertura de cámaras: ${datos.cobertura}%`, margin, 84);
+      pdf.text(`Líneas de colectivo en el barrio: ${(datos.lineasColectivo||[]).length}   |   Vehículos aforados: ${(datos.aforoTotal||0).toLocaleString('es-AR')}`, margin, 92);
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text('Documento generado automáticamente por el sistema CIMU · Análisis por barrio', margin, pageH - 10);
+
+      // --- UNA PÁGINA POR CADA TAB, CAPTURADA CON html2canvas ---
+      const cont = document.getElementById('informe-barrio-content');
+      const tabButtons = document.querySelectorAll('.informe-tab');
+
+      for (const tab of tabs) {
+        _informeTabActual = tab;
+        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+        cont.innerHTML = '';
+        _renderTab(datos, tab);
+        await new Promise(r => setTimeout(r, 200)); // dar tiempo a reflow/render
+
+        const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        const imgW = pageW - margin * 2;
+        const imgH = canvas.height * imgW / canvas.width;
+
+        pdf.addPage();
+        pdf.setFillColor(26, 35, 50);
+        pdf.rect(0, 0, pageW, 14, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(12);
+        pdf.text(`${datos.nombre} · ${titulos[tab]}`, margin, 9);
+
+        let y = 18;
+        if (imgH <= pageH - y - margin) {
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
+        } else {
+          // La sección no entra en una sola página: la partimos en franjas
+          const pxPerMm = canvas.height / imgH;
+          let sY = 0, remaining = imgH, first = true;
+          while (remaining > 0.5) {
+            if (!first) { pdf.addPage(); y = margin; }
+            const sliceHmm = Math.min(pageH - y - margin, remaining);
+            const sliceHpx = Math.round(sliceHmm * pxPerMm);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = sliceHpx;
+            sliceCanvas.getContext('2d').drawImage(canvas, 0, sY, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, y, imgW, sliceHmm);
+            sY += sliceHpx;
+            remaining -= sliceHmm;
+            first = false;
+          }
+        }
+      }
+
+      // --- restaurar la vista original del modal ---
+      _informeTabActual = 'resumen';
+      tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === 'resumen'));
+      _renderTab(datos, 'resumen');
+
+      pdf.save(`Informe_${datos.nombre.replace(/\s+/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+      alert('Ocurrió un error generando el PDF. Revisá la consola.');
+    } finally {
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+    }
+  }
+
   function informeProponerCamaras() {
     if(!_informeBarrioActual) return;
     const sel=document.getElementById('barrio-filter');
@@ -1300,9 +1618,27 @@
     },400);
   }
 
+  let _puntoCriticoMarkerLayer = null;
   function informeZoomPunto(lat,lng) {
     cerrarInformeBarrio();
-    setTimeout(()=>mymap.setView([lat,lng],17),200);
+    setTimeout(()=>{
+      mymap.setView([lat,lng],17);
+
+      // Quitar marcador de pulso anterior si quedó alguno
+      if (_puntoCriticoMarkerLayer) { mymap.removeLayer(_puntoCriticoMarkerLayer); _puntoCriticoMarkerLayer=null; }
+
+      const pulsoIcon = L.divIcon({
+        className: 'marker-pulso-punto-critico',
+        html: '<div class="punto-pulso-anillo"></div><div class="punto-pulso-centro"></div>',
+        iconSize: [22,22],
+        iconAnchor: [11,11]
+      });
+      _puntoCriticoMarkerLayer = L.marker([lat,lng], {icon:pulsoIcon, interactive:false}).addTo(mymap);
+
+      setTimeout(()=>{
+        if (_puntoCriticoMarkerLayer) { mymap.removeLayer(_puntoCriticoMarkerLayer); _puntoCriticoMarkerLayer=null; }
+      }, 3500);
+    },200);
   }
 
   // --- HELPERS HTML ---

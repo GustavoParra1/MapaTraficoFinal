@@ -1,36 +1,25 @@
-# Node modules 
-node_modules/ 
-ECHO est  activado.
-# Logs 
-npm-debug.log* 
-yarn-debug.log* 
-yarn-error.log* 
-pnpm-debug.log* 
-ECHO est  activado.
-# Runtime data 
-pids 
-*.pid 
-*.seed 
-*.pid.lock 
-ECHO est  activado.
-# Cache 
-.cache/ 
-.tmp/ 
-dist/ 
-build/ 
-coverage/ 
-ECHO est  activado.
-# Env files 
-.env 
-.env.local 
-.env.*.local 
-ECHO est  activado.
-# Editor directories and files 
-.vscode/ 
-.idea/ 
-*.swp 
-*.swo 
-ECHO est  activado.
-# OS files 
-.DS_Store 
-Thumbs.db 
+*.seed
+*.pid.lock
+# Cache
+.cache/
+.tmp/
+dist/
+build/
+coverage/
+# Env files
+.env
+.env.local
+.env.*.local
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+# OS files
+.DS_Store
+Thumbs.db
+noticias.db
+deploy.log
+.firebase/
+*.~lock*
+public/*viejo.geojson
