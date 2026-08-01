@@ -1208,21 +1208,25 @@
         return;
       }
 
-      const camara = camarasData.find(c => 
-        c.NUMERO == numero || 
-        c.Nombre?.includes(numero) ||
-        String(c.NUMERO).padStart(3, '0') === numero.padStart(3, '0')
-      );
+      // Buscar solo por número exacto, permitiendo ceros a la izquierda
+      const camara = camarasData.find(c => {
+        if (!c.NUMERO) return false;
+        // Comparar como string, con y sin ceros a la izquierda
+        return (
+          String(c.NUMERO) === numero ||
+          String(c.NUMERO).padStart(3, '0') === numero.padStart(3, '0')
+        );
+      });
 
       if (camara) {
         const lat = camara.latitud;
         const lng = camara.longitud;
-        
+
         // Limpiar marcador anterior
         if (cameraSearchMarker) {
           map.removeLayer(cameraSearchMarker);
         }
-        
+
         // Crear marcador con el número de cámara
         cameraSearchMarker = L.marker([lat, lng], {
           icon: L.divIcon({
@@ -1232,9 +1236,9 @@
             iconAnchor: [15, 15]
           })
         }).addTo(map);
-        
+
         cameraSearchMarker.bindPopup(`<b>📹 Cámara ${camara.NUMERO}</b><br>${camara.Nombre || ''}`).openPopup();
-        
+
         map.setView([lat, lng], 18);
         closePanel();
         showToast(`Cámara ${numero} encontrada`);
