@@ -23,3 +23,4 @@ deploy.log
 .firebase/
 *.~lock*
 public/*viejo.geojson
+node_modules/
