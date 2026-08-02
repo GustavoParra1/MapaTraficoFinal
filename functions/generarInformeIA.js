@@ -77,7 +77,7 @@ exports.generarInformeIA = functions
         }
 
         const tieneObservacionesCampo = !!observaciones || imagenesParts.length > 0;
-        const prompt = construirPrompt(datos, observaciones, imagenesParts.length > 0);
+        const prompt = construirPrompt(datos, observaciones, imagenesParts.length);
 
         const parts = [{ text: prompt }, ...imagenesParts];
 
@@ -90,9 +90,13 @@ exports.generarInformeIA = functions
             contents: [{ parts }],
             generationConfig: {
               temperature: 0.4,
-              // Informe extenso tipo académico (11 secciones, subsecciones, tablas):
-              // necesita bastante más margen de salida que el resumen ejecutivo anterior.
-              maxOutputTokens: 16384
+              // Informe extenso tipo académico (11 secciones, subsecciones, tablas)
+              // con análisis cruzado de datos y desglose foto por foto del
+              // relevamiento de campo: necesita bastante más margen de salida
+              // que el resumen ejecutivo anterior. Si el modelo elegido soporta
+              // menos, Gemini lo trunca solo (revisar candidates[0].finishReason
+              // === 'MAX_TOKENS' en los logs si un informe sale cortado).
+              maxOutputTokens: 32768
             }
           })
         });
@@ -144,7 +148,8 @@ function normalizarEspacios(texto) {
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, '');
 }
 
-function construirPrompt(d, observaciones, tieneImagenes) {
+function construirPrompt(d, observaciones, cantidadImagenes) {
+  const tieneImagenes = cantidadImagenes > 0;
   const listaParticipantes = (d.participantes || []).map(p => `${p.nombre} (${p.cant})`).join(', ') || 'sin datos';
   const listaCausas = (d.causas || []).map(c => `${c.nombre} (${c.cant})`).join(', ') || 'sin datos';
   const listaPuntosCriticos = (d.puntosCriticos || []).slice(0, 5).map(p => `${p.dir} (${p.cant} siniestros)`).join('; ') || 'sin datos';
@@ -157,7 +162,7 @@ function construirPrompt(d, observaciones, tieneImagenes) {
   const bloqueCampo = tieneCampo ? `
 NOTAS DE RELEVAMIENTO DE CAMPO PARA "${d.nombre}" (única fuente permitida para afirmaciones sobre infraestructura física, además de lo visible en fotos):
 ${observaciones ? `Notas escritas por el operador: "${observaciones}"` : 'No se cargaron notas escritas para este relevamiento.'}
-${tieneImagenes ? 'Se adjuntan fotos tomadas en el lugar: describí objetivamente qué elementos de infraestructura vial y urbana son visibles (señalización horizontal y vertical, semáforos, iluminación, veredas, obstáculos visuales, edificación circundante, actividad urbana, terrenos baldíos o en abandono, etc.).' : 'No se adjuntaron fotos para este relevamiento.'}
+${tieneImagenes ? `Se adjuntan ${cantidadImagenes} foto(s) tomadas en el lugar. Instrucción de uso OBLIGATORIA: analizalas una por una, no las resumas en una sola frase genérica tipo "se observó buena señalización". Para cada foto que aporte algo relevante, describí puntualmente qué elemento de infraestructura muestra (señalización horizontal/vertical, semáforo vehicular o peatonal, iluminación, estado de veredas, obstáculos visuales, edificación circundante, actividad urbana, terrenos baldíos o en abandono, etc.) y referenciala explícitamente en el texto (ej. "En una de las fotografías del cruce se observa..."). Si dos o más fotos muestran el mismo punto o problema, agrupalas bajo el mismo hallazgo en vez de repetirlo. Si una foto no aporta nada relevante al diagnóstico vial/de seguridad, simplemente no la menciones — no rellenes con descripciones irrelevantes solo para justificar que la analizaste.` : 'No se adjuntaron fotos para este relevamiento.'}
 Restricción estricta: NO describas nada de infraestructura, semáforos, iluminación o entorno urbano que no esté explícitamente en estas notas o sea efectivamente visible en las fotos adjuntas. Si las notas son escuetas o las fotos no muestran algo relevante, decilo así en vez de completar con supuestos.
 ` : `
 No se cargaron notas de relevamiento de campo ni fotos para "${d.nombre}" en esta ocasión. La sección de factores de riesgo y campo debe basarse solo en lo que puede inferirse de los datos cuantitativos del sistema (causas, puntos críticos, cobertura), aclarando explícitamente que no hubo relevamiento físico in situ para este informe.
@@ -232,7 +237,8 @@ Reglas generales:
 - REGLA DE PRECISIÓN OBLIGATORIA (aplica a todo el informe, especialmente a la sección 9 de recomendaciones): cualquier día de la semana, franja horaria, calle, cruce, porcentaje o cifra que menciones tiene que coincidir textualmente con un valor del bloque "DATOS DEL BARRIO" de más abajo, o con una de las "Recomendaciones ya calculadas por el sistema". Está PROHIBIDO combinar o inventar una franja horaria más específica que la provista (por ejemplo: si el dato es "Horario más crítico: 07-10hs y 17-20hs", NUNCA escribas algo tipo "los martes de 13 a 15hs" — esa combinación día+hora puntual no existe en los datos). Está PROHIBIDO inventar un porcentaje objetivo o meta de cobertura que no sea uno de los que ya te paso explícitamente. Si querés sumar una consideración estratégica adicional que no salga directo de un dato puntual, formulala en términos cualitativos generales (ej. "reforzar la cobertura en el corredor X"), nunca con una cifra, día u horario puntual que no esté en los datos.
 - REGLA ANTI-ESPECULACIÓN (aplica a todo el informe): no uses frases que presenten una interpretación no confirmada como si fuera plausible o razonable — evitá "es posible que", "podría deberse a", "sugiere que", "hipótesis plausible/razonable", "es imperativo reiterar", "cabe destacar que esto implicaría", o construcciones equivalentes. Cada afirmación tiene que ser (a) un dato directo del bloque "DATOS DEL BARRIO", (b) algo explícitamente visible en las notas/fotos de campo, o (c) una aclaración metodológica neutra (ej. "este indicador mide X, no Y"). Si no hay dato o evidencia de campo que respalde una idea, no la escribas, ni siquiera en tono dudoso — directamente omitila.
 - El destinatario ya tiene delante los mapas y capas del sistema, así que no describas colores de capas ni digas "como se ve en el mapa" — tu valor es la interpretación analítica (excepto en la sección de campo, donde si hay fotos SÍ describís lo que se ve en ellas).
-- Extensión total objetivo: entre 3000 y 4500 palabras, repartidas según el peso real de cada sección (las secciones con más datos disponibles, como Diagnóstico de Siniestralidad y Factores de Riesgo, deben ser las más desarrolladas).
+- Extensión: NO hay techo de palabras fijo — no acortes ni resumas para "quedar prolijo". La extensión la determina la cantidad de datos reales y observaciones de campo disponibles: si hay mucho dato, el informe tiene que ser largo y desarrollado; si hay poco, decilo explícitamente en vez de rellenar con paja. Como referencia de piso (no de techo): con el volumen de datos que normalmente se provee acá, un informe bien desarrollado ronda las 6000-9000 palabras, repartido según el peso real de cada sección (las secciones con más datos disponibles, como Diagnóstico de Siniestralidad y Factores de Riesgo, deben ser las más desarrolladas). Si te quedás corto de espacio, priorizá cortar en 8. COMPARACION CON REFERENCIAS antes que en 3, 5 o 9.
+- ANÁLISIS PROFUNDO, no enumeración: para cada dato relevante no te limites a repetirlo tal cual viene ("hay 42 siniestros por causa NSD") — explicá qué implica en términos prácticos y cruzalo con otros datos del mismo bloque cuando la relación sea lógicamente derivable de los datos provistos (por ejemplo: cruzar el punto crítico con mayor siniestralidad contra el horario más crítico y el día con más siniestros, o los participantes más frecuentes contra las causas más frecuentes). Nunca inventes el cruce si los datos no lo permiten — en ese caso, señalalo como una limitación del dataset en vez de forzar una conclusión.
 
 DATOS DEL BARRIO "${d.nombre}":
 - Nivel de criticidad calculado por el sistema: ${d.criticidad}/100
