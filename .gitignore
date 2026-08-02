@@ -24,3 +24,4 @@ deploy.log
 *.~lock*
 public/*viejo.geojson
 node_modules/
+*.pdf

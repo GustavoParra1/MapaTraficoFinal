@@ -1,0 +1,15 @@
+2026-08-02T09:39:46.928936Z ? generarInformeIA: Categoría | Cantidad
+2026-08-02T09:39:46.928940Z ? generarInformeIA: Auto (Participante) | 52
+2026-08-02T09:39:46.928944Z ? generarInformeIA: Moto (Participante) | 42
+2026-08-02T09:39:46.928948Z ? generarInformeIA: Sin causa determinada (NSD) | 42
+2026-08-02T09:39:46.928952Z ? generarInformeIA: Giro (Causa) | 8
+2026-08-02T09:39:46.928957Z ? generarInformeIA: Distracción (Causa) | 5
+2026-08-02T09:39:46.928961Z ? generarInformeIA: FIN_TABLA
+2026-08-02T09:39:46.928968Z ? generarInformeIA: > El 64.6% de los siniestros registrados en el barrio Constitución no poseen una causa determinada (NSD), lo que evidencia una brecha crítica en la capacidad de recolección de evidencia y monitoreo.
+2026-08-02T09:39:46.928973Z ? generarInformeIA: # 4. COBERTURA Y VIDEOVIGILANCIA
+2026-08-02T09:39:46.928980Z ? generarInformeIA: El barrio cuenta con una densidad de 4.8 cámaras por km², totalizando una cobertura estimada del 15%. Aunque el 100% de los siniestros registrados ocurrieron en un radio de 100 metros de alguna cámara, la baja densidad global impide una vigilancia preventiva eficaz. Se identificaron 2 establecimientos educativos dentro del barrio, ambos sin cobertura de cámara pública en su entorno inmediato, lo cual representa un riesgo latente para la seguridad de los estudiantes en los horarios de entrada y salida.
+2026-08-02T09:39:46.928984Z ? generarInformeIA: # 5. FACTORES DE RIESGO Y OBSERVACIONES DE CAMPO
+2026-08-02T09:39:46.928989Z ? generarInformeIA: ## 5.1 Infraestructura y entorno urbano
+2026-08-02T09:39:46.928995Z ? generarInformeIA: El relevamiento de campo permite observar una infraestructura vial que presenta desafíos en términos de mantenimiento y visibilidad. Las fotografías analizadas muestran una señalización horizontal con signos de desgaste en los cruces de mayor flujo, lo que reduce la claridad de las prioridades de paso.
+2026-08-02T09:39:46.929001Z ? generarInformeIA: ## 5.2 Iluminación y obstáculos
+2026-08-02T09:39:46.929007Z ? generarInformeIA: Se observa que la iluminación en las zonas de mayor siniestralidad, particularmente en los cruces con la Avenida Félix U. Camet, es insuficiente para garantizar la visibilidad nocturna adecuada. No se detectaron obstáculos visuales permanentes en las esquinas relevadas, pero la presencia de actividad comercial intensa en ciertos corredores genera una dinámica de estacionamiento y ascenso/descenso de pasajeros que interfiere con la fluidez del tránsito.

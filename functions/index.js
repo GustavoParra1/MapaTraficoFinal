@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const axios = require("axios");
 
 // API Key de Google Maps
@@ -177,3 +177,7 @@ exports.geocodeAddress = functions.https.onRequest(async (req, res) => {
     });
   }
 });
+
+// --- Informe de Seguridad por Barrio (IA con Gemini, capa gratuita) ---
+exports.generarInformeIA = require('./generarInformeIA').generarInformeIA;
+

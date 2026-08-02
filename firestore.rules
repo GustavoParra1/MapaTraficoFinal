@@ -136,6 +136,13 @@ service cloud.firestore {
                      resource.data.operatorEmail == request.auth.token.email;
     }
 
+    // 📝 OBSERVACIONES DE CAMPO - Notas y fotos por barrio para el informe de IA
+    match /observacionesCampo/{barrioSlug} {
+      // Solo el admin puede leer y escribir observaciones de campo
+      allow read, write: if request.auth.uid != null &&
+                             request.auth.token.email == 'com@seguridad-mdp.com';
+    }
+
     // Deny todas las demás rutas
     match /{document=**} {
       allow read, write: if false;

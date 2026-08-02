@@ -552,6 +552,7 @@
           <button class="informe-tab"         data-tab="camaras"         onclick="switchInformeTab('camaras',this)">Cámaras</button>
           <button class="informe-tab"         data-tab="escolares"       onclick="switchInformeTab('escolares',this)">Corredores Escolares</button>
           <button class="informe-tab"         data-tab="recomendaciones" onclick="switchInformeTab('recomendaciones',this)">Recomendaciones</button>
+          <button class="informe-tab"         data-tab="campo"           onclick="switchInformeTab('campo',this)">📝 Observaciones de Campo</button>
         </div>
       </div>
 
@@ -999,6 +1000,28 @@
     const diaMax = Object.entries(diaCount).sort((a,b)=>b[1]-a[1])[0];
     const nsd = siniestrosBarrio.filter(s=>s.properties.causa==='NSD').length;
 
+    // === SINIESTROS POR AÑO (para mostrar evolución histórica en el informe) ===
+    const anioCount = {};
+    siniestrosBarrio.forEach(s => {
+      const f = s.properties.fecha;
+      if (f && f.split('/').length === 3) {
+        let y = parseInt(f.split('/')[2], 10);
+        if (!isNaN(y)) { if (y < 100) y += 2000; anioCount[y] = (anioCount[y]||0) + 1; }
+      }
+    });
+    const siniestrosPorAnio = Object.entries(anioCount).sort((a,b)=>a[0]-b[0]).map(([anio,cant])=>({anio:Number(anio),cant}));
+
+    // === SINIESTROS POR DÍA DE SEMANA (desglose completo, no solo el máximo) ===
+    const siniestrosPorDia = dias.map(d => ({dia: d, cant: diaCount[d]||0}));
+
+    // === PARTICIPANTES VULNERABLES: peatones y ciclistas ===
+    let siniestrosConPeatones = 0, siniestrosConCiclistas = 0;
+    siniestrosBarrio.forEach(s => {
+      const codigos = (s.properties.participantes_codigos || '').split('/');
+      if (codigos.includes('P')) siniestrosConPeatones++;
+      if (codigos.includes('B')) siniestrosConCiclistas++;
+    });
+
     // CÁMARAS PÚBLICAS
     const camarasBarrio = (allCamerasData||[]).filter(c => {
       const lat=parseFloat(String(c.Latitud).replace(',','.')), lng=parseFloat(String(c.Longitud).replace(',','.'));
@@ -1185,11 +1208,11 @@
     }).sort((a,b)=>b.total-a.total).slice(0,5);
     const camarasConAforo = Object.keys(aforoPorCamara).length;
 
-    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo};
+    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo,siniestrosPorAnio,siniestrosPorDia,siniestrosConPeatones,siniestrosConCiclistas};
   }
 
   function _datosVacios(nombre) {
-    return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[]};
+    return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[],siniestrosPorAnio:[],siniestrosPorDia:[],siniestrosConPeatones:0,siniestrosConCiclistas:0};
   }
 
   // --- RECOMENDACIONES AUTOMÁTICAS ---
@@ -1241,6 +1264,7 @@
       case 'escolares':       cont.innerHTML=_htmlEscolares(d);       break;
       case 'recomendaciones': cont.innerHTML=_htmlRecomendaciones(d); break;
       case 'movilidad':       cont.innerHTML=_htmlMovilidad(d);       break;
+      case 'campo':           cont.innerHTML=_htmlCampo(d);           _initCampoTab(d.nombre); break;
     }
   }
 
@@ -1472,6 +1496,133 @@
       </div>`;
   }
 
+  // --- OBSERVACIONES DE CAMPO (texto + fotos, persistidas por barrio en Firestore/Storage) ---
+  function _slugBarrio(nombre) {
+    return (nombre || '').toString()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  let _campoImagenesCache = []; // [{url, nombre}]
+
+  function _htmlCampo(d) {
+    return `
+      <div class="informe-card">
+        <h4>📝 Observaciones de campo — ${d.nombre}</h4>
+        <p style="font-size:13px;color:#64748b;margin:0 0 12px;">
+          Notas de relevamiento manual (estado de señalización, semáforos, iluminación, obstáculos, etc.) y fotos del lugar.
+          Se guardan por barrio y se usan para enriquecer el análisis de la IA en el informe — la IA solo va a describir lo que
+          efectivamente esté escrito acá o sea visible en las fotos, no va a inventar detalles.
+        </p>
+        <textarea id="campo-observaciones-txt" placeholder="Ej: Semáforo peatonal de Av. X y calle Y tapado por cartel publicitario. Vereda rota en la esquina NE. Falta demarcación de senda peatonal sobre Av. X..." style="width:100%;min-height:110px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+        <div style="margin-top:14px;">
+          <label style="font-size:13px;color:#334155;font-weight:600;display:block;margin-bottom:8px;">Fotos del lugar</label>
+          <input type="file" id="campo-imagenes-input" accept="image/*" multiple style="font-size:13px;" onchange="_onCampoImagenesSeleccionadas(event)">
+          <div id="campo-imagenes-galeria" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;"></div>
+        </div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+          <button class="btn-accion" onclick="_guardarObservacionesCampo()">💾 Guardar observaciones</button>
+          <span id="campo-guardado-status" style="font-size:12px;color:#059669;"></span>
+        </div>
+      </div>`;
+  }
+
+  async function _initCampoTab(nombreBarrio) {
+    const txt = document.getElementById('campo-observaciones-txt');
+    const galeria = document.getElementById('campo-imagenes-galeria');
+    if (!txt || !nombreBarrio) return;
+    txt.value = '';
+    galeria.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Cargando...</p>';
+    _campoImagenesCache = [];
+    try {
+      const doc = await db.collection('observacionesCampo').doc(_slugBarrio(nombreBarrio)).get();
+      if (doc.exists) {
+        const data = doc.data();
+        txt.value = data.texto || '';
+        _campoImagenesCache = data.imagenes || [];
+      }
+    } catch (err) {
+      console.warn('No se pudieron cargar observaciones de campo:', err);
+    }
+    _renderGaleriaCampo();
+  }
+
+  function _renderGaleriaCampo() {
+    const galeria = document.getElementById('campo-imagenes-galeria');
+    if (!galeria) return;
+    if (!_campoImagenesCache.length) {
+      galeria.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Sin fotos cargadas todavía.</p>';
+      return;
+    }
+    galeria.innerHTML = _campoImagenesCache.map((img, i) => `
+      <div style="position:relative;width:90px;height:90px;">
+        <img src="${img.url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+        <button onclick="_borrarImagenCampo(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1;">×</button>
+      </div>`).join('');
+  }
+
+  function _borrarImagenCampo(i) {
+    _campoImagenesCache.splice(i, 1);
+    _renderGaleriaCampo();
+  }
+
+  async function _onCampoImagenesSeleccionadas(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length || !_informeBarrioActual) return;
+    const slug = _slugBarrio(_informeBarrioActual);
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 8 * 1024 * 1024) { alert(`"${file.name}" pesa más de 8MB, no se sube.`); continue; }
+      const nombreArchivo = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const ref = storage.ref(`observaciones_campo/${slug}/${nombreArchivo}`);
+      try {
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        _campoImagenesCache.push({ url, nombre: file.name });
+        _renderGaleriaCampo();
+      } catch (err) {
+        console.error('Error subiendo imagen:', err);
+        alert(`No se pudo subir "${file.name}". Revisá la consola.`);
+      }
+    }
+    event.target.value = '';
+  }
+
+  async function _guardarObservacionesCampo() {
+    if (!_informeBarrioActual) return;
+    const txt = document.getElementById('campo-observaciones-txt');
+    const status = document.getElementById('campo-guardado-status');
+    const slug = _slugBarrio(_informeBarrioActual);
+    try {
+      await db.collection('observacionesCampo').doc(slug).set({
+        barrio: _informeBarrioActual,
+        texto: txt.value || '',
+        imagenes: _campoImagenesCache,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      status.textContent = '✅ Guardado';
+      setTimeout(() => { status.textContent = ''; }, 2500);
+    } catch (err) {
+      console.error('Error guardando observaciones de campo:', err);
+      alert('No se pudieron guardar las observaciones. Revisá la consola.');
+    }
+  }
+
+  async function _obtenerObservacionesCampo(nombreBarrio) {
+    try {
+      const doc = await db.collection('observacionesCampo').doc(_slugBarrio(nombreBarrio)).get();
+      if (doc.exists) {
+        const data = doc.data();
+        return { texto: data.texto || '', imagenesUrls: (data.imagenes || []).map(im => im.url).slice(0, 15) };
+      }
+    } catch (err) {
+      console.warn('No se pudieron leer observaciones de campo para el informe:', err);
+    }
+    return { texto: '', imagenesUrls: [] };
+  }
+
   // --- ACCIONES ---
   function informeVerEnMapa() {
     if(!_informeBarrioActual) return;
@@ -1490,6 +1641,32 @@
 
     try {
       const datos = _calcularDatosBarrio(_informeBarrioActual);
+
+      // --- Pedir el análisis redactado por IA (Gemini) al backend ---
+      let textoIA = null;
+      btn.innerHTML = '⏳ Generando análisis con IA...';
+      try {
+        const observacionesCampo = await _obtenerObservacionesCampo(_informeBarrioActual);
+        const respIA = await fetch('https://us-central1-seguridad-mdp-v2.cloudfunctions.net/generarInformeIA', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            datos,
+            observaciones: observacionesCampo.texto,
+            imagenesUrls: observacionesCampo.imagenesUrls
+          })
+        });
+        const dataIA = await respIA.json();
+        if (respIA.ok && dataIA.texto) {
+          textoIA = dataIA.texto;
+        } else {
+          console.warn('No se pudo generar el análisis con IA:', dataIA.error || dataIA.detalle);
+        }
+      } catch (errIA) {
+        console.warn('Error llamando a generarInformeIA:', errIA);
+      }
+      btn.innerHTML = '⏳ Generando PDF...';
+
       const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'movilidad', 'recomendaciones'];
       const titulos = {
         resumen: 'Resumen General',
@@ -1529,6 +1706,214 @@
       pdf.setFontSize(9);
       pdf.setTextColor(148, 163, 184);
       pdf.text('Documento generado automáticamente por el sistema CIMU · Análisis por barrio', margin, pageH - 10);
+
+      // --- PÁGINAS DE ANÁLISIS EJECUTIVO GENERADO POR IA (informe extenso: títulos, subtítulos, listas, tablas y citas) ---
+      if (textoIA) {
+        const maxWidth = pageW - margin * 2;
+        const lineHeight = 5;
+        let y = margin;
+
+        const dibujarHeaderIA = () => {
+          pdf.setFillColor(26, 35, 50);
+          pdf.rect(0, 0, pageW, 14, 'F');
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(`${datos.nombre} · Análisis Ejecutivo (IA)`, margin, 9);
+          pdf.setTextColor(30, 30, 30);
+        };
+
+        const nuevaPaginaIA = () => {
+          pdf.addPage();
+          dibujarHeaderIA();
+          y = 24;
+        };
+
+        nuevaPaginaIA();
+
+        const asegurarEspacio = (necesario) => {
+          if (y + necesario > pageH - margin) nuevaPaginaIA();
+        };
+
+        const escribirParrafo = (texto, opts = {}) => {
+          const { fontSize = 10, font = 'normal', color = [30, 30, 30], indent = 0 } = opts;
+          pdf.setFontSize(fontSize);
+          pdf.setFont(undefined, font);
+          pdf.setTextColor(color[0], color[1], color[2]);
+          const wrapped = pdf.splitTextToSize(texto, maxWidth - indent);
+          wrapped.forEach(linea => {
+            asegurarEspacio(lineHeight);
+            pdf.text(linea, margin + indent, y);
+            y += lineHeight;
+          });
+        };
+
+        const dibujarTabla = (titulo, filas) => {
+          if (!filas.length) return;
+          asegurarEspacio(10);
+          pdf.setFontSize(9.5);
+          pdf.setFont(undefined, 'bold');
+          pdf.setTextColor(26, 35, 50);
+          pdf.text(titulo, margin, y);
+          y += 5;
+
+          const numCols = Math.max(1, filas[0].length);
+          const colWidth = maxWidth / numCols;
+
+          filas.forEach((fila, rowIdx) => {
+            pdf.setFontSize(8.5);
+            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
+            let alturaFila = 6;
+            const celdasWrapped = fila.map(celda => {
+              const w = pdf.splitTextToSize(String(celda || ''), colWidth - 4);
+              alturaFila = Math.max(alturaFila, w.length * 4 + 3);
+              return w;
+            });
+
+            if (y + alturaFila > pageH - margin) {
+              nuevaPaginaIA();
+              if (rowIdx !== 0) {
+                pdf.setFontSize(9.5);
+                pdf.setFont(undefined, 'bold');
+                pdf.setTextColor(26, 35, 50);
+                pdf.text(titulo + ' (cont.)', margin, y);
+                y += 5;
+              }
+            }
+
+            if (rowIdx === 0) {
+              pdf.setFillColor(240, 244, 248);
+              pdf.rect(margin, y - 4, maxWidth, alturaFila, 'F');
+            }
+            pdf.setDrawColor(210, 216, 224);
+            pdf.rect(margin, y - 4, maxWidth, alturaFila, 'S');
+
+            celdasWrapped.forEach((lineasCelda, colIdx) => {
+              const xCol = margin + colIdx * colWidth + 2;
+              if (colIdx > 0) pdf.line(margin + colIdx * colWidth, y - 4, margin + colIdx * colWidth, y - 4 + alturaFila);
+              if (rowIdx === 0) pdf.setTextColor(26, 35, 50); else pdf.setTextColor(50, 50, 50);
+              lineasCelda.forEach((linea, li) => pdf.text(linea, xCol, y + li * 4));
+            });
+
+            y += alturaFila;
+          });
+          y += 5;
+        };
+
+        const dibujarCita = (texto) => {
+          pdf.setFontSize(10);
+          pdf.setFont(undefined, 'italic');
+          const wrapped = pdf.splitTextToSize(texto, maxWidth - 10);
+          const alturaBloque = wrapped.length * lineHeight + 6;
+          asegurarEspacio(alturaBloque);
+          pdf.setFillColor(255, 251, 235);
+          pdf.rect(margin, y - 4, maxWidth, alturaBloque, 'F');
+          pdf.setDrawColor(251, 191, 36);
+          pdf.setLineWidth(1);
+          pdf.line(margin, y - 4, margin, y - 4 + alturaBloque);
+          pdf.setLineWidth(0.2);
+          pdf.setTextColor(120, 90, 10);
+          wrapped.forEach((linea, i) => pdf.text(linea, margin + 6, y + i * lineHeight));
+          y += alturaBloque + 3;
+          pdf.setFont(undefined, 'normal');
+        };
+
+        // --- Parser línea por línea del protocolo devuelto por la IA ---
+        const lineasIA = textoIA.split('\n');
+        let li = 0;
+        while (li < lineasIA.length) {
+          const trim = lineasIA[li].trim();
+
+          if (!trim) { li++; continue; }
+
+          if (trim.startsWith('TABLA:')) {
+            const titulo = trim.replace('TABLA:', '').trim();
+            li++;
+            const filas = [];
+            const MAX_FILAS_TABLA = 20; // freno de seguridad extra
+            while (
+              li < lineasIA.length &&
+              lineasIA[li].trim() !== 'FIN_TABLA' &&
+              lineasIA[li].trim() !== '' &&
+              !lineasIA[li].trim().startsWith('#') &&
+              !lineasIA[li].trim().startsWith('TABLA:') &&
+              !lineasIA[li].trim().startsWith('> ') &&
+              lineasIA[li].includes('|') && // si la línea no tiene "|", no es una fila real: cortamos la tabla acá
+              filas.length < MAX_FILAS_TABLA
+            ) {
+              filas.push(lineasIA[li].split('|').map(c => c.trim()).filter(c => c !== ''));
+              li++;
+            }
+            if (lineasIA[li] && lineasIA[li].trim() === 'FIN_TABLA') li++;
+            dibujarTabla(titulo, filas);
+            continue;
+          }
+
+          if (trim.startsWith('## ')) {
+            asegurarEspacio(10);
+            escribirParrafo(trim.replace(/^##\s*/, ''), { fontSize: 10.5, font: 'bold', color: [26, 35, 50] });
+            y += 2;
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('# ')) {
+            asegurarEspacio(14);
+            y += 2;
+            escribirParrafo(trim.replace(/^#\s*/, ''), { fontSize: 13, font: 'bold', color: [26, 35, 50] });
+            y += 3;
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('> ')) {
+            dibujarCita(trim.replace(/^>\s*/, ''));
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('- ')) {
+            const bullets = [];
+            while (li < lineasIA.length && lineasIA[li].trim().startsWith('- ')) {
+              bullets.push(lineasIA[li].trim().replace(/^-\s*/, ''));
+              li++;
+            }
+            bullets.forEach(b => {
+              pdf.setFontSize(10);
+              pdf.setFont(undefined, 'normal');
+              pdf.setTextColor(30, 30, 30);
+              const wrapped = pdf.splitTextToSize(b, maxWidth - 6);
+              wrapped.forEach((ln, idx) => {
+                asegurarEspacio(lineHeight);
+                pdf.text((idx === 0 ? '•  ' : '   ') + ln, margin, y);
+                y += lineHeight;
+              });
+            });
+            y += 1;
+            continue;
+          }
+
+          // párrafo normal: agrupar líneas consecutivas de texto plano
+          const parrafoLineas = [];
+          while (
+            li < lineasIA.length &&
+            lineasIA[li].trim() !== '' &&
+            !lineasIA[li].trim().startsWith('#') &&
+            !lineasIA[li].trim().startsWith('- ') &&
+            !lineasIA[li].trim().startsWith('> ') &&
+            !lineasIA[li].trim().startsWith('TABLA:')
+          ) {
+            parrafoLineas.push(lineasIA[li].trim());
+            li++;
+          }
+          escribirParrafo(parrafoLineas.join(' '));
+          y += 3;
+        }
+
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Análisis generado con inteligencia artificial (Gemini) en base a datos reales del sistema.', margin, pageH - 6);
+      }
 
       // --- UNA PÁGINA POR CADA TAB, CAPTURADA CON html2canvas ---
       const cont = document.getElementById('informe-barrio-content');
