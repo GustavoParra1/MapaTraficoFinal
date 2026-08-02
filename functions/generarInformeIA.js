@@ -26,7 +26,7 @@ const cors = require('cors')({ origin: true });
 // Modelo de la capa gratuita de Gemini. Si en el futuro Google cambia
 // el nombre del modelo gratuito, se actualiza solo acá.
 // Verificar el modelo vigente en https://ai.google.dev/gemini-api/docs/pricing
-const MODELO_GEMINI = 'gemini-3.1-flash-lite';
+const MODELO_GEMINI = 'gemini-3-flash';
 
 // Máximo de fotos que se le mandan a Gemini por informe (cuidar costo/latencia).
 const MAX_IMAGENES = 15;
