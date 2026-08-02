@@ -567,6 +567,42 @@
   </div>
   <!-- FIN MODAL INFORME -->
 
+  <!-- ====== MODAL INFORME DE CRUCE ====== -->
+  <div id="informe-cruce-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10000; align-items:center; justify-content:center;">
+    <div id="informe-cruce-inner" style="background:#fff; border-radius:12px; width:92vw; max-width:820px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative;">
+
+      <!-- HEADER arrastrable -->
+      <div id="informe-cruce-header" style="background:#1a2332; color:#fff; padding:17px 24px; display:flex; align-items:center; justify-content:space-between; cursor:move; flex-shrink:0; user-select:none;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-size:24px;">🎯</span>
+          <div>
+            <div style="font-size:18px;font-weight:600;letter-spacing:0.3px;" id="informe-cruce-titulo">Análisis de Cruce</div>
+            <div style="font-size:13px;color:#94a3b8;margin-top:2px;">CIMU · Análisis puntual por radio</div>
+          </div>
+        </div>
+        <button onclick="cerrarInformeCruce()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:22px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+      </div>
+
+      <!-- CONTROLES -->
+      <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="font-size:14px;color:#64748b;font-weight:500;">RADIO DE ANÁLISIS:</label>
+        <select id="informe-cruce-radio" onchange="renderInformeCruce()" style="padding:8px 14px;font-size:15px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;cursor:pointer;">
+          <option value="100">100 m</option>
+          <option value="150">150 m</option>
+          <option value="200">200 m</option>
+        </select>
+        <button class="btn-accion" onclick="if(_informeCruceActual) informeZoomPunto(_informeCruceActual.lat,_informeCruceActual.lng)" style="margin-left:auto;">🗺️ Ver en mapa</button>
+      </div>
+
+      <!-- CONTENIDO dinámico -->
+      <div id="informe-cruce-content" style="overflow-y:auto;flex:1;padding:24px;">
+        <div style="text-align:center;color:#94a3b8;padding:70px 20px;font-size:16px;">Calculando...</div>
+      </div>
+
+    </div>
+  </div>
+  <!-- FIN MODAL INFORME DE CRUCE -->
+
   <!-- === LIBRERÍAS Y SCRIPTS === -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -1215,6 +1251,139 @@
     return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[],siniestrosPorAnio:[],siniestrosPorDia:[],siniestrosConPeatones:0,siniestrosConCiclistas:0};
   }
 
+  // === ANÁLISIS POR CRUCE (mismo patrón que _calcularDatosBarrio, pero filtrando
+  // por radio de distancia a un punto en vez de por polígono de barrio) ===
+  function _calcularDatosCruce(lat, lng, nombreCruce, radioMetros = 100) {
+    if (isNaN(lat) || isNaN(lng)) return _datosVaciosCruce(nombreCruce);
+
+    const centro = L.latLng(lat, lng);
+    const dentroDelRadio = (otroLat, otroLng) =>
+      !isNaN(otroLat) && !isNaN(otroLng) && centro.distanceTo(L.latLng(otroLat, otroLng)) <= radioMetros;
+
+    // SINIESTROS dentro del radio
+    const siniestrosCruce = (allSiniestrosData?.features || []).filter(f => {
+      if (!f.geometry?.coordinates) return false;
+      return dentroDelRadio(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+    });
+
+    const partCount = {};
+    siniestrosCruce.forEach(s => {
+      (s.properties.participantes_codigos || '').split('/').forEach(p => { if (p) partCount[p] = (partCount[p]||0)+1; });
+    });
+    const participantes = Object.entries(partCount).map(([cod,cant]) => ({cod, nombre: participantMapping[cod]||cod, cant})).sort((a,b)=>b.cant-a.cant).slice(0,6);
+
+    const causaCount = {};
+    siniestrosCruce.forEach(s => { const c=s.properties.causa; if(c) causaCount[c]=(causaCount[c]||0)+1; });
+    const causas = Object.entries(causaCount).map(([cod,cant]) => ({cod, nombre: causeMapping[cod]||cod, cant})).sort((a,b)=>b.cant-a.cant).slice(0,6);
+
+    const horCount = {};
+    siniestrosCruce.forEach(s => { const h=parseInt(s.properties.hora?.split(':')[0]||-1); if(h>=0) horCount[h]=(horCount[h]||0)+1; });
+    const horMax = Object.entries(horCount).sort((a,b)=>b[1]-a[1])[0];
+    const horarioCritico = horMax ? `${horMax[0].toString().padStart(2,'0')}:00 – ${(+horMax[0]+2).toString().padStart(2,'0')}:00` : 'No determinado';
+
+    const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diaCount = {};
+    siniestrosCruce.forEach(s => {
+      const f=s.properties.fecha;
+      if (f && f.split('/').length===3) {
+        const parts=f.split('/'); let y=parseInt(parts[2]); if(y<100) y+=2000;
+        const d=new Date(y,parseInt(parts[1])-1,parseInt(parts[0])).getDay();
+        diaCount[dias[d]]=(diaCount[dias[d]]||0)+1;
+      }
+    });
+    const diaMax = Object.entries(diaCount).sort((a,b)=>b[1]-a[1])[0];
+    const siniestrosPorDia = dias.map(d => ({dia: d, cant: diaCount[d]||0}));
+
+    const anioCount = {};
+    siniestrosCruce.forEach(s => {
+      const f = s.properties.fecha;
+      if (f && f.split('/').length === 3) {
+        let y = parseInt(f.split('/')[2], 10);
+        if (!isNaN(y)) { if (y < 100) y += 2000; anioCount[y] = (anioCount[y]||0) + 1; }
+      }
+    });
+    const siniestrosPorAnio = Object.entries(anioCount).sort((a,b)=>a[0]-b[0]).map(([anio,cant])=>({anio:Number(anio),cant}));
+
+    const nsd = siniestrosCruce.filter(s=>s.properties.causa==='NSD').length;
+
+    let siniestrosConPeatones = 0, siniestrosConCiclistas = 0;
+    siniestrosCruce.forEach(s => {
+      const codigos = (s.properties.participantes_codigos || '').split('/');
+      if (codigos.includes('P')) siniestrosConPeatones++;
+      if (codigos.includes('B')) siniestrosConCiclistas++;
+    });
+
+    // CÁMARAS PÚBLICAS dentro del radio
+    const camarasCruce = (allCamerasData||[]).filter(c => {
+      const clat=parseFloat(String(c.Latitud).replace(',','.')), clng=parseFloat(String(c.Longitud).replace(',','.'));
+      return dentroDelRadio(clat, clng);
+    });
+
+    // CÁMARAS PRIVADAS dentro del radio
+    const camarasPrivCruce = (allCamarasPrivadasData||[]).filter(c => dentroDelRadio(c.latlng?.lat, c.latlng?.lng));
+
+    const sinCobertura = siniestrosCruce.length - siniestrosCruce.filter(s =>
+      camarasCruce.some(c => {
+        const clat=parseFloat(String(c.Latitud).replace(',','.')), clng=parseFloat(String(c.Longitud).replace(',','.'));
+        return dentroDelRadio(clat, clng);
+      })
+    ).length;
+    const pctSiniConCam = siniestrosCruce.length>0 ? Math.round(((siniestrosCruce.length-sinCobertura)/siniestrosCruce.length)*100) : 0;
+
+    // ROBOS DE AUTOMOTOR dentro del radio
+    const robosCruce = (allRoboAutomotorData||[]).filter(r => {
+      const coordsStr=r['Longitud y Latitud']; if(!coordsStr) return false;
+      const parts=coordsStr.split(',').map(s=>s.trim()); if(parts.length!==2) return false;
+      const clng=parseFloat(parts[0]), clat=parseFloat(parts[1]);
+      return dentroDelRadio(clat, clng);
+    });
+
+    // COLEGIOS dentro del radio
+    const fuenteColegios = window._colegiosGeoJSON?.features || window.colegiosData?.features || [];
+    const colegiosCruce = fuenteColegios.filter(f => {
+      if (!f.geometry?.coordinates) return false;
+      return dentroDelRadio(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+    });
+
+    // ÁREA del círculo de análisis (para densidad de cámaras, análogo a areaCamKm2 de barrio)
+    const areaCamKm2 = (Math.PI * radioMetros * radioMetros) / 1000000;
+    const densidadCamaras = areaCamKm2>0 ? (camarasCruce.length/areaCamKm2).toFixed(1) : 0;
+
+    return {
+      nombre: nombreCruce,
+      lat, lng, radioMetros,
+      siniestros: siniestrosCruce.length,
+      camarasPublicas: camarasCruce.length,
+      camarasPrivadas: camarasPrivCruce.length,
+      robos: robosCruce.length,
+      colegios: colegiosCruce.length,
+      densidadCamaras,
+      areaCamKm2: areaCamKm2.toFixed(4),
+      pctSiniConCam,
+      sinSinCamara: sinCobertura,
+      participantes,
+      causas,
+      horarioCritico,
+      diaMaxSiniestros: diaMax?.[0] || 'No determinado',
+      siniestrosPorAnio,
+      siniestrosPorDia,
+      siniestrosConPeatones,
+      siniestrosConCiclistas,
+      nsd
+    };
+  }
+
+  function _datosVaciosCruce(nombreCruce) {
+    return {
+      nombre: nombreCruce, lat: null, lng: null, radioMetros: 0,
+      siniestros: 0, camarasPublicas: 0, camarasPrivadas: 0, robos: 0, colegios: 0,
+      densidadCamaras: 0, areaCamKm2: '0', pctSiniConCam: 0, sinSinCamara: 0,
+      participantes: [], causas: [], horarioCritico: '-', diaMaxSiniestros: '-',
+      siniestrosPorAnio: [], siniestrosPorDia: [], siniestrosConPeatones: 0,
+      siniestrosConCiclistas: 0, nsd: 0
+    };
+  }
+
   // --- RECOMENDACIONES AUTOMÁTICAS ---
   function _generarRecomendaciones(d) {
     const recs=[];
@@ -1352,7 +1521,10 @@
                 <td><span style="background:${i<3?['#fde8e8','#fef3c7','#dbeafe'][i]:'#f1f5f9'};color:${i<3?['#9b1c1c','#92400e','#1e40af'][i]:'#334155'};width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</span></td>
                 <td style="font-size:13px">${p.dir}</td>
                 <td style="text-align:right;font-weight:700;color:#dc2626;font-size:14px">${p.cant}</td>
-                <td><button class="btn-accion" style="font-size:12px;padding:4px 10px" onclick="informeZoomPunto(${p.lat},${p.lng})">🗺️</button></td>
+                <td>
+                  <button class="btn-accion" style="font-size:12px;padding:4px 10px" onclick="informeZoomPunto(${p.lat},${p.lng})" title="Ver en mapa">🗺️</button>
+                  <button class="btn-accion" style="font-size:12px;padding:4px 10px" onclick="informeAnalizarCruce(${p.lat},${p.lng},'${(p.dir||'').replace(/'/g,"\\'")}')" title="Analizar este cruce">🎯</button>
+                </td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -2113,6 +2285,127 @@
     const btn = document.getElementById('informe-barrio-btn');
     if(btn) btn.style.display = 'block';
   };
+
+  // ============================================================
+  // === ANÁLISIS DE CRUCE — abrir/cerrar/render del modal nuevo ===
+  // ============================================================
+  let _informeCruceActual = null; // {lat, lng, nombre}
+
+  function informeAnalizarCruce(lat, lng, nombre) {
+    _informeCruceActual = {lat, lng, nombre};
+    document.getElementById('informe-cruce-titulo').textContent = nombre || 'Análisis de Cruce';
+    const sel = document.getElementById('informe-cruce-radio');
+    if (sel) sel.value = '100';
+    document.getElementById('informe-cruce-modal').style.display = 'flex';
+    renderInformeCruce();
+  }
+
+  function cerrarInformeCruce() {
+    document.getElementById('informe-cruce-modal').style.display = 'none';
+  }
+
+  async function renderInformeCruce() {
+    if (!_informeCruceActual) return;
+    const cont = document.getElementById('informe-cruce-content');
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">⏳ Calculando análisis...</div>';
+
+    // Asegurar datos base en memoria (mismo patrón que renderInformeBarrio)
+    await Promise.all([
+      typeof loadSiniestrosData    === 'function' ? loadSiniestrosData()    : Promise.resolve(),
+      typeof loadBaseCSVData       === 'function' ? loadBaseCSVData()       : Promise.resolve(),
+      typeof loadRoboAutomotorData === 'function' ? loadRoboAutomotorData() : Promise.resolve(),
+      (!window._colegiosGeoJSON && !window.colegiosData)
+        ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve()
+    ]);
+    if (!window._colegiosGeoJSON && window.colegiosData?.features) {
+      window._colegiosGeoJSON = window.colegiosData;
+    }
+
+    const radio = parseInt(document.getElementById('informe-cruce-radio')?.value || '100', 10);
+    const { lat, lng, nombre } = _informeCruceActual;
+    const d = _calcularDatosCruce(lat, lng, nombre, radio);
+    cont.innerHTML = _htmlCruce(d);
+  }
+
+  function _htmlCruce(d) {
+    const maxPart  = Math.max(1, ...d.participantes.map(p=>p.cant));
+    const maxCausa = Math.max(1, ...d.causas.map(c=>c.cant));
+    const cC=['#e24b4a','#ba7517','#534ab7','#0f6e56','#888780','#1d9e75'];
+    const cP=['#378add','#1d9e75','#d85a30','#ba7517','#534ab7','#e24b4a'];
+
+    if (d.lat === null) {
+      return `<div style="text-align:center;color:#94a3b8;padding:70px 20px;font-size:15px;">No se pudieron obtener coordenadas válidas para este cruce.</div>`;
+    }
+
+    return `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+        ${_metric('💥','Siniestros',d.siniestros,'','#dc2626')}
+        ${_metric('📷','Cámaras públicas',d.camarasPublicas,'','#1a2332')}
+        ${_metric('🔒','Cámaras privadas',d.camarasPrivadas,'','#1a2332')}
+        ${_metric('🚗','Robos automotor',d.robos,'','#1a2332')}
+        ${_metric('🏫','Colegios',d.colegios,'','#1a2332')}
+        ${_metric('📡','Con cobertura',d.pctSiniConCam,'%','#0f6e56')}
+        ${_metric('🕐','Horario crítico',d.horarioCritico,'','#1a2332')}
+        ${_metric('📅','Día más crítico',d.diaMaxSiniestros,'','#1a2332')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>👥 Participantes</h4>
+          ${d.participantes.map((p,i)=>_causaBar(p.nombre,p.cant,maxPart,cP[i%cP.length])).join('')}
+          ${d.participantes.length===0?'<p style="color:#94a3b8;font-size:13px">Sin datos</p>':''}
+        </div>
+        <div class="informe-card">
+          <h4>🔍 Causas principales</h4>
+          ${d.causas.map((c,i)=>_causaBar(c.nombre,c.cant,maxCausa,cC[i%cC.length])).join('')}
+          ${d.causas.length===0?'<p style="color:#94a3b8;font-size:13px">Sin datos</p>':''}
+        </div>
+      </div>
+      <div class="informe-card">
+        <h4>📈 Siniestros por año</h4>
+        <table class="informe-tabla">
+          <thead><tr><th>Año</th><th style="text-align:right">Siniestros</th></tr></thead>
+          <tbody>
+            ${d.siniestrosPorAnio.map(a=>`<tr><td>${a.anio}</td><td style="text-align:right;font-weight:700;color:#dc2626;">${a.cant}</td></tr>`).join('')}
+            ${d.siniestrosPorAnio.length===0?'<tr><td colspan="2" style="color:#94a3b8;">Sin datos</td></tr>':''}
+          </tbody>
+        </table>
+      </div>
+      <div class="informe-card" style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:#64748b;">
+        <span>🚶 Con peatones: <b style="color:#1e293b">${d.siniestrosConPeatones}</b></span>
+        <span>🚴 Con ciclistas: <b style="color:#1e293b">${d.siniestrosConCiclistas}</b></span>
+        <span>❔ Sin causa determinada: <b style="color:#1e293b">${d.nsd}</b></span>
+        <span>📡 Densidad de cámaras: <b style="color:#1e293b">${d.densidadCamaras}/km²</b></span>
+        <span>📐 Radio de análisis: <b style="color:#1e293b">${d.radioMetros} m</b></span>
+      </div>`;
+  }
+
+  // --- DRAG & DROP DEL MODAL DE CRUCE (mismo patrón que el modal de barrio) ---
+  document.addEventListener('DOMContentLoaded',()=>{
+    const modal  = document.getElementById('informe-cruce-inner');
+    const header = document.getElementById('informe-cruce-header');
+    if(!modal||!header) return;
+    let isDragging=false,offsetX=0,offsetY=0;
+    header.addEventListener('mousedown',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.closest('button')) return;
+      isDragging=true;
+      const rect=modal.getBoundingClientRect();
+      offsetX=e.clientX-rect.left; offsetY=e.clientY-rect.top;
+      modal.style.transition='none';
+    });
+    document.addEventListener('mousemove',e=>{
+      if(!isDragging) return;
+      const wrapper=document.getElementById('informe-cruce-modal');
+      let x=e.clientX-offsetX, y=e.clientY-offsetY;
+      x=Math.max(0,Math.min(x,window.innerWidth-modal.offsetWidth));
+      y=Math.max(0,Math.min(y,window.innerHeight-modal.offsetHeight));
+      wrapper.style.alignItems='flex-start';
+      wrapper.style.justifyContent='flex-start';
+      wrapper.style.paddingTop=`${y}px`;
+      wrapper.style.paddingLeft=`${x}px`;
+    });
+    document.addEventListener('mouseup',()=>{isDragging=false;modal.style.transition='';});
+  });
   </script>
 
 </body>
