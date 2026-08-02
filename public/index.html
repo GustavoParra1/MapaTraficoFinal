@@ -1743,6 +1743,14 @@
           const wrapped = pdf.splitTextToSize(texto, maxWidth - indent);
           wrapped.forEach(linea => {
             asegurarEspacio(lineHeight);
+            // Reaplicar fuente/color en cada linea: si asegurarEspacio disparo un
+            // salto de pagina, dibujarHeaderIA() ya cambio el tamano de fuente a 12
+            // para el titulo del header, y sin esto la linea se dibujaria mas grande
+            // de lo que el ancho calculado por splitTextToSize permite, desbordando
+            // el margen derecho.
+            pdf.setFontSize(fontSize);
+            pdf.setFont(undefined, font);
+            pdf.setTextColor(color[0], color[1], color[2]);
             pdf.text(linea, margin + indent, y);
             y += lineHeight;
           });
@@ -1788,6 +1796,12 @@
             pdf.setDrawColor(210, 216, 224);
             pdf.rect(margin, y - 4, maxWidth, alturaFila, 'S');
 
+            // Reaplicar fuente antes de dibujar el texto de las celdas: si esta fila
+            // disparo un salto de pagina arriba, el titulo "(cont.)" o el header dejaron
+            // la fuente en otro tamano/estilo distinto al 8.5 usado para calcular el
+            // ancho de las celdas, y el texto se desbordaria de su columna.
+            pdf.setFontSize(8.5);
+            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
             celdasWrapped.forEach((lineasCelda, colIdx) => {
               const xCol = margin + colIdx * colWidth + 2;
               if (colIdx > 0) pdf.line(margin + colIdx * colWidth, y - 4, margin + colIdx * colWidth, y - 4 + alturaFila);
@@ -1813,7 +1827,16 @@
           pdf.line(margin, y - 4, margin, y - 4 + alturaBloque);
           pdf.setLineWidth(0.2);
           pdf.setTextColor(120, 90, 10);
-          wrapped.forEach((linea, i) => pdf.text(linea, margin + 6, y + i * lineHeight));
+          wrapped.forEach((linea, i) => {
+            // Reaplicar fuente/color por linea: dibujarHeaderIA() (si hubo salto
+            // de pagina en asegurarEspacio, arriba) deja la fuente en tamano 12
+            // normal, y sin esto el texto de la cita se dibujaria mas grande y
+            // se desbordaria del margen.
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'italic');
+            pdf.setTextColor(120, 90, 10);
+            pdf.text(linea, margin + 6, y + i * lineHeight);
+          });
           y += alturaBloque + 3;
           pdf.setFont(undefined, 'normal');
         };
@@ -1885,6 +1908,11 @@
               const wrapped = pdf.splitTextToSize(b, maxWidth - 6);
               wrapped.forEach((ln, idx) => {
                 asegurarEspacio(lineHeight);
+                // Reaplicar fuente/color por linea (ver nota en escribirParrafo):
+                // protege contra el salto de pagina disparado por asegurarEspacio.
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                pdf.setTextColor(30, 30, 30);
                 pdf.text((idx === 0 ? '•  ' : '   ') + ln, margin, y);
                 y += lineHeight;
               });
