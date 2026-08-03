@@ -569,7 +569,7 @@
 
   <!-- ====== MODAL INFORME DE CRUCE ====== -->
   <div id="informe-cruce-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10000; align-items:center; justify-content:center;">
-    <div id="informe-cruce-inner" style="background:#fff; border-radius:12px; width:92vw; max-width:820px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative;">
+    <div id="informe-cruce-inner" style="background:#fff; border-radius:12px; width:94vw; max-width:960px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative;">
 
       <!-- HEADER arrastrable -->
       <div id="informe-cruce-header" style="background:#1a2332; color:#fff; padding:17px 24px; display:flex; align-items:center; justify-content:space-between; cursor:move; flex-shrink:0; user-select:none;">
@@ -583,15 +583,23 @@
         <button onclick="cerrarInformeCruce()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:22px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
       </div>
 
-      <!-- CONTROLES -->
-      <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <label style="font-size:14px;color:#64748b;font-weight:500;">RADIO DE ANÁLISIS:</label>
-        <select id="informe-cruce-radio" onchange="renderInformeCruce()" style="padding:8px 14px;font-size:15px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;cursor:pointer;">
-          <option value="100">100 m</option>
-          <option value="150">150 m</option>
-          <option value="200">200 m</option>
-        </select>
-        <button class="btn-accion" onclick="if(_informeCruceActual) informeZoomPunto(_informeCruceActual.lat,_informeCruceActual.lng)" style="margin-left:auto;">🗺️ Ver en mapa</button>
+      <!-- CONTROLES + TABS -->
+      <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 24px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <label style="font-size:14px;color:#64748b;font-weight:500;">RADIO DE ANÁLISIS:</label>
+          <select id="informe-cruce-radio" onchange="renderInformeCruce()" style="padding:8px 14px;font-size:15px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;cursor:pointer;">
+            <option value="100">100 m</option>
+            <option value="150">150 m</option>
+            <option value="200">200 m</option>
+          </select>
+          <button class="btn-accion" id="btn-informe-cruce-pdf" onclick="exportarInformeCrucePDF()" style="margin-left:auto;">🤖 Informe PDF con IA</button>
+          <button class="btn-accion" onclick="if(_informeCruceActual) informeZoomPunto(_informeCruceActual.lat,_informeCruceActual.lng)">🗺️ Ver en mapa</button>
+        </div>
+        <div style="display:flex;gap:0;overflow-x:auto;">
+          <button class="informe-tab active" data-cruce-tab="resumen"    onclick="switchInformeCruceTab('resumen',this)">Resumen</button>
+          <button class="informe-tab"        data-cruce-tab="movilidad" onclick="switchInformeCruceTab('movilidad',this)">🚌 Colectivos y Aforos</button>
+          <button class="informe-tab"        data-cruce-tab="campo"     onclick="switchInformeCruceTab('campo',this)">📝 Observaciones de Campo</button>
+        </div>
       </div>
 
       <!-- CONTENIDO dinámico -->
@@ -1304,6 +1312,20 @@
     });
     const siniestrosPorAnio = Object.entries(anioCount).sort((a,b)=>a[0]-b[0]).map(([anio,cant])=>({anio:Number(anio),cant}));
 
+    // Siniestros por mes (además de por año y por día de semana)
+    const mesCount = {};
+    siniestrosCruce.forEach(s => {
+      const f = s.properties.fecha;
+      if (f && f.split('/').length === 3) {
+        const parts = f.split('/');
+        let y = parseInt(parts[2], 10); if (isNaN(y)) return; if (y < 100) y += 2000;
+        const m = parts[1].padStart(2, '0');
+        const key = `${y}-${m}`;
+        mesCount[key] = (mesCount[key] || 0) + 1;
+      }
+    });
+    const siniestrosPorMes = Object.entries(mesCount).sort((a,b)=>a[0].localeCompare(b[0])).map(([mes,cant])=>({mes,cant}));
+
     const nsd = siniestrosCruce.filter(s=>s.properties.causa==='NSD').length;
 
     let siniestrosConPeatones = 0, siniestrosConCiclistas = 0;
@@ -1338,12 +1360,113 @@
       return dentroDelRadio(clat, clng);
     });
 
+    // Robos por año (robo_automotor.csv solo trae el campo "año", no hay mes ni día disponibles)
+    const robosPorAnioMap = {};
+    robosCruce.forEach(r => { const y = r['año']; if (y) robosPorAnioMap[y] = (robosPorAnioMap[y]||0) + 1; });
+    const robosPorAnio = Object.entries(robosPorAnioMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([anio,cant])=>({anio:Number(anio),cant}));
+
     // COLEGIOS dentro del radio
     const fuenteColegios = window._colegiosGeoJSON?.features || window.colegiosData?.features || [];
     const colegiosCruce = fuenteColegios.filter(f => {
       if (!f.geometry?.coordinates) return false;
       return dentroDelRadio(f.geometry.coordinates[1], f.geometry.coordinates[0]);
     });
+
+    // === COLECTIVOS: líneas cuyo recorrido pasa dentro del radio del cruce ===
+    // Mismo patrón que _calcularDatosBarrio, pero acá no hay polígono: se mide
+    // distancia del punto central a cada línea (turf.pointToLineDistance) en vez
+    // de intersección de geometría, porque un radio de 100-200m no es un área
+    // contra la que "intersectar" en el sentido de turf.booleanIntersects.
+    let lineasColectivo = [];
+    const fuenteColectivosC = window._colectivosGeoJSON?.features || null;
+    const fuenteIndividualC = window._colectivosIndividualesGeoJSON?.features || null;
+    const _corregirRefLineaC = (ref) => ref === '550' ? '555' : ref; // mismo bug conocido del geojson OSM que en barrio
+    let puntoCentroTurf = null;
+    try { puntoCentroTurf = turf.point([lng, lat]); } catch(e) {}
+
+    if (puntoCentroTurf) {
+      const metadataPorLineaC = {};
+      if (fuenteColectivosC) {
+        fuenteColectivosC.forEach(f => {
+          const ref = _corregirRefLineaC(f.properties.ref || 'S/D');
+          if (!metadataPorLineaC[ref]) {
+            metadataPorLineaC[ref] = { nombre: f.properties.name || `Línea ${ref}`, operador: f.properties.operator || '—' };
+          }
+        });
+      }
+
+      const lineasEncontradasC = new Set();
+
+      // Fuente A: geojson OSM combinado (MultiLineString) → distancia punto-línea
+      if (fuenteColectivosC) {
+        fuenteColectivosC.forEach(f => {
+          if (!f.geometry) return;
+          try {
+            const dist = turf.pointToLineDistance(puntoCentroTurf, f, { units: 'meters' });
+            if (dist <= radioMetros) lineasEncontradasC.add(_corregirRefLineaC(f.properties.ref || 'S/D'));
+          } catch(e) {}
+        });
+      }
+
+      // Fuente B: geojsons individuales por línea (recorrido real + puntos de cámara/parada)
+      if (fuenteIndividualC) {
+        const featuresPorLineaC = {};
+        fuenteIndividualC.forEach(f => {
+          const ref = f.properties?.linea; if (!ref || !f.geometry) return;
+          (featuresPorLineaC[ref] = featuresPorLineaC[ref] || []).push(f);
+        });
+        Object.entries(featuresPorLineaC).forEach(([ref, features]) => {
+          const pasaCerca = features.some(f => {
+            try {
+              if (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') {
+                return turf.pointToLineDistance(puntoCentroTurf, f, { units: 'meters' }) <= radioMetros;
+              }
+              if (f.geometry.type === 'Point') {
+                return dentroDelRadio(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+              }
+            } catch(e) {}
+            return false;
+          });
+          if (pasaCerca) lineasEncontradasC.add(ref);
+        });
+      }
+
+      lineasColectivo = Array.from(lineasEncontradasC).map(ref => ({
+        ref,
+        nombre:   metadataPorLineaC[ref]?.nombre   || `Línea ${ref}`,
+        operador: metadataPorLineaC[ref]?.operador || '—'
+      })).sort((a,b) => (a.ref||'').localeCompare(b.ref||'', undefined, {numeric:true}));
+    }
+
+    // === AFOROS: cámaras de conteo dentro del radio del cruce ===
+    const idsCamarasCruce = camarasCruce.map(c => c['N CAMARA']).filter(Boolean);
+    const flujoCruce = (allFlujoData||[]).filter(f => idsCamarasCruce.includes(f['N CAMARA']));
+
+    const aforoPorTipo = {};
+    let aforoTotal = 0;
+    flujoCruce.forEach(f => {
+      const tipo = (f.PART||'otro').trim().toLowerCase();
+      const total = parseInt(f.TOTAL,10) || 0;
+      aforoPorTipo[tipo] = (aforoPorTipo[tipo]||0) + total;
+      aforoTotal += total;
+    });
+
+    // Desglose temporal del aforo por mes y por año (campo FECHA dd/mm/aaaa de FLUJO.csv)
+    const aforoPorMesMap = {}, aforoPorAnioMap = {};
+    flujoCruce.forEach(f => {
+      const total = parseInt(f.TOTAL,10) || 0;
+      if (f.FECHA && f.FECHA.split('/').length === 3) {
+        const partes = f.FECHA.split('/');
+        let y = parseInt(partes[2], 10); if (isNaN(y)) return; if (y < 100) y += 2000;
+        const m = partes[1].padStart(2, '0');
+        const keyMes = `${y}-${m}`;
+        aforoPorMesMap[keyMes] = (aforoPorMesMap[keyMes]||0) + total;
+        aforoPorAnioMap[y] = (aforoPorAnioMap[y]||0) + total;
+      }
+    });
+    const aforoPorMes = Object.entries(aforoPorMesMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([mes,total])=>({mes,total}));
+    const aforoPorAnio = Object.entries(aforoPorAnioMap).sort((a,b)=>a[0]-b[0]).map(([anio,total])=>({anio:Number(anio),total}));
+    const camarasConAforo = new Set(flujoCruce.map(f=>f['N CAMARA'])).size;
 
     // ÁREA del círculo de análisis (para densidad de cámaras, análogo a areaCamKm2 de barrio)
     const areaCamKm2 = (Math.PI * radioMetros * radioMetros) / 1000000;
@@ -1366,10 +1489,18 @@
       horarioCritico,
       diaMaxSiniestros: diaMax?.[0] || 'No determinado',
       siniestrosPorAnio,
+      siniestrosPorMes,
       siniestrosPorDia,
       siniestrosConPeatones,
       siniestrosConCiclistas,
-      nsd
+      nsd,
+      robosPorAnio,
+      lineasColectivo,
+      aforoTotal,
+      aforoPorTipo,
+      aforoPorMes,
+      aforoPorAnio,
+      camarasConAforo
     };
   }
 
@@ -1379,8 +1510,9 @@
       siniestros: 0, camarasPublicas: 0, camarasPrivadas: 0, robos: 0, colegios: 0,
       densidadCamaras: 0, areaCamKm2: '0', pctSiniConCam: 0, sinSinCamara: 0,
       participantes: [], causas: [], horarioCritico: '-', diaMaxSiniestros: '-',
-      siniestrosPorAnio: [], siniestrosPorDia: [], siniestrosConPeatones: 0,
-      siniestrosConCiclistas: 0, nsd: 0
+      siniestrosPorAnio: [], siniestrosPorMes: [], siniestrosPorDia: [], siniestrosConPeatones: 0,
+      siniestrosConCiclistas: 0, nsd: 0, robosPorAnio: [],
+      lineasColectivo: [], aforoTotal: 0, aforoPorTipo: {}, aforoPorMes: [], aforoPorAnio: [], camarasConAforo: 0
     };
   }
 
@@ -2289,13 +2421,19 @@
   // ============================================================
   // === ANÁLISIS DE CRUCE — abrir/cerrar/render del modal nuevo ===
   // ============================================================
-  let _informeCruceActual = null; // {lat, lng, nombre}
+  let _informeCruceActual = null;    // {lat, lng, nombre}
+  let _informeCruceTabActual = 'resumen';
+  let _informeCruceDatosActual = null; // último objeto calculado por _calcularDatosCruce, cacheado para no recalcular al cambiar de pestaña
 
   function informeAnalizarCruce(lat, lng, nombre) {
     _informeCruceActual = {lat, lng, nombre};
+    _informeCruceTabActual = 'resumen';
+    _informeCruceDatosActual = null;
     document.getElementById('informe-cruce-titulo').textContent = nombre || 'Análisis de Cruce';
     const sel = document.getElementById('informe-cruce-radio');
     if (sel) sel.value = '100';
+    document.querySelectorAll('#informe-cruce-modal .informe-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('#informe-cruce-modal .informe-tab[data-cruce-tab="resumen"]')?.classList.add('active');
     document.getElementById('informe-cruce-modal').style.display = 'flex';
     renderInformeCruce();
   }
@@ -2304,18 +2442,35 @@
     document.getElementById('informe-cruce-modal').style.display = 'none';
   }
 
+  function switchInformeCruceTab(tab, btn) {
+    _informeCruceTabActual = tab;
+    document.querySelectorAll('#informe-cruce-modal .informe-tab').forEach(t => t.classList.remove('active'));
+    btn?.classList.add('active');
+    if (_informeCruceDatosActual) {
+      _renderCruceTab(_informeCruceDatosActual, tab);
+    } else {
+      renderInformeCruce();
+    }
+  }
+
   async function renderInformeCruce() {
     if (!_informeCruceActual) return;
     const cont = document.getElementById('informe-cruce-content');
     cont.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">⏳ Calculando análisis...</div>';
 
-    // Asegurar datos base en memoria (mismo patrón que renderInformeBarrio)
+    // Asegurar datos base en memoria (mismo patrón que renderInformeBarrio, sumando colectivos)
     await Promise.all([
       typeof loadSiniestrosData    === 'function' ? loadSiniestrosData()    : Promise.resolve(),
       typeof loadBaseCSVData       === 'function' ? loadBaseCSVData()       : Promise.resolve(),
       typeof loadRoboAutomotorData === 'function' ? loadRoboAutomotorData() : Promise.resolve(),
       (!window._colegiosGeoJSON && !window.colegiosData)
         ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve(),
+      (!window._colectivosGeoJSON && !window._colectivosFetchEnCurso)
+        ? fetch('colectivos_mardelplata_geojson.geojson').then(r=>r.json()).then(d=>{ window._colectivosGeoJSON=d; }).catch(()=>{})
+        : Promise.resolve(),
+      (!window._colectivosIndividualesGeoJSON && !window._colectivosIndividualesFetchEnCurso)
+        ? _cargarColectivosIndividuales()
         : Promise.resolve()
     ]);
     if (!window._colegiosGeoJSON && window.colegiosData?.features) {
@@ -2325,18 +2480,26 @@
     const radio = parseInt(document.getElementById('informe-cruce-radio')?.value || '100', 10);
     const { lat, lng, nombre } = _informeCruceActual;
     const d = _calcularDatosCruce(lat, lng, nombre, radio);
-    cont.innerHTML = _htmlCruce(d);
+    _informeCruceDatosActual = d;
+    _renderCruceTab(d, _informeCruceTabActual);
   }
 
-  function _htmlCruce(d) {
+  function _renderCruceTab(d, tab) {
+    const cont = document.getElementById('informe-cruce-content');
+    if (d.lat === null) {
+      cont.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:70px 20px;font-size:15px;">No se pudieron obtener coordenadas válidas para este cruce.</div>`;
+      return;
+    }
+    if (tab === 'movilidad') { cont.innerHTML = _htmlCruceMovilidad(d); return; }
+    if (tab === 'campo')     { cont.innerHTML = _htmlCruceCampo(d); _initCampoTabCruce(d); return; }
+    cont.innerHTML = _htmlCruceResumen(d);
+  }
+
+  function _htmlCruceResumen(d) {
     const maxPart  = Math.max(1, ...d.participantes.map(p=>p.cant));
     const maxCausa = Math.max(1, ...d.causas.map(c=>c.cant));
     const cC=['#e24b4a','#ba7517','#534ab7','#0f6e56','#888780','#1d9e75'];
     const cP=['#378add','#1d9e75','#d85a30','#ba7517','#534ab7','#e24b4a'];
-
-    if (d.lat === null) {
-      return `<div style="text-align:center;color:#94a3b8;padding:70px 20px;font-size:15px;">No se pudieron obtener coordenadas válidas para este cruce.</div>`;
-    }
 
     return `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
@@ -2361,15 +2524,40 @@
           ${d.causas.length===0?'<p style="color:#94a3b8;font-size:13px">Sin datos</p>':''}
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>📈 Siniestros por año</h4>
+          <table class="informe-tabla">
+            <thead><tr><th>Año</th><th style="text-align:right">Siniestros</th></tr></thead>
+            <tbody>
+              ${d.siniestrosPorAnio.map(a=>`<tr><td>${a.anio}</td><td style="text-align:right;font-weight:700;color:#dc2626;">${a.cant}</td></tr>`).join('')}
+              ${d.siniestrosPorAnio.length===0?'<tr><td colspan="2" style="color:#94a3b8;">Sin datos</td></tr>':''}
+            </tbody>
+          </table>
+        </div>
+        <div class="informe-card">
+          <h4>📅 Siniestros por mes</h4>
+          <div style="max-height:220px;overflow-y:auto;">
+            <table class="informe-tabla">
+              <thead><tr><th>Mes</th><th style="text-align:right">Siniestros</th></tr></thead>
+              <tbody>
+                ${d.siniestrosPorMes.map(m=>`<tr><td>${m.mes}</td><td style="text-align:right;font-weight:700;color:#dc2626;">${m.cant}</td></tr>`).join('')}
+                ${d.siniestrosPorMes.length===0?'<tr><td colspan="2" style="color:#94a3b8;">Sin datos</td></tr>':''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       <div class="informe-card">
-        <h4>📈 Siniestros por año</h4>
+        <h4>🚗 Robos de automotor por año</h4>
         <table class="informe-tabla">
-          <thead><tr><th>Año</th><th style="text-align:right">Siniestros</th></tr></thead>
+          <thead><tr><th>Año</th><th style="text-align:right">Robos</th></tr></thead>
           <tbody>
-            ${d.siniestrosPorAnio.map(a=>`<tr><td>${a.anio}</td><td style="text-align:right;font-weight:700;color:#dc2626;">${a.cant}</td></tr>`).join('')}
-            ${d.siniestrosPorAnio.length===0?'<tr><td colspan="2" style="color:#94a3b8;">Sin datos</td></tr>':''}
+            ${d.robosPorAnio.map(a=>`<tr><td>${a.anio}</td><td style="text-align:right;font-weight:700;color:#dc2626;">${a.cant}</td></tr>`).join('')}
+            ${d.robosPorAnio.length===0?`<tr><td colspan="2" style="color:#94a3b8;">${d.robos>0?'Sin campo de año en los registros':'Sin robos registrados en el radio'}</td></tr>`:''}
           </tbody>
         </table>
+        <p style="font-size:12px;color:#94a3b8;margin:8px 0 0;">El dataset de robos de automotor solo trae el año del hecho, no mes ni día.</p>
       </div>
       <div class="informe-card" style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:#64748b;">
         <span>🚶 Con peatones: <b style="color:#1e293b">${d.siniestrosConPeatones}</b></span>
@@ -2378,6 +2566,548 @@
         <span>📡 Densidad de cámaras: <b style="color:#1e293b">${d.densidadCamaras}/km²</b></span>
         <span>📐 Radio de análisis: <b style="color:#1e293b">${d.radioMetros} m</b></span>
       </div>`;
+  }
+
+  function _htmlCruceMovilidad(d) {
+    const tipoLabel = {auto:'🚗 Autos', moto:'🏍️ Motos', bici:'🚲 Bicis', colectivo:'🚌 Colectivos', camiones:'🚛 Camiones'};
+    const maxTipo = Math.max(...Object.values(d.aforoPorTipo||{}), 1);
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;">
+        ${_metric('🚌','Líneas de colectivo',(d.lineasColectivo||[]).length,'','#0369a1')}
+        ${_metric('📊','Cámaras con aforo',d.camarasConAforo||0,'','#7c3aed')}
+        ${_metric('🚗','Vehículos registrados',(d.aforoTotal||0).toLocaleString('es-AR'),'','#0f6e56')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>🚌 Líneas que pasan cerca del cruce (radio ${d.radioMetros}m)</h4>
+          ${(d.lineasColectivo||[]).length ? `
+            <table class="informe-tabla">
+              <thead><tr><th>Línea</th><th>Recorrido</th><th>Operador</th></tr></thead>
+              <tbody>
+                ${d.lineasColectivo.map(l=>`<tr><td style="font-weight:700;color:#0369a1">${l.ref}</td><td style="font-size:12px">${l.nombre}</td><td style="font-size:12px;color:#64748b">${l.operador}</td></tr>`).join('')}
+              </tbody>
+            </table>` : '<p style="color:#94a3b8;font-size:13px">Ninguna línea registrada pasa dentro de este radio.</p>'}
+        </div>
+        <div class="informe-card">
+          <h4>🚦 Flujo vehicular por tipo</h4>
+          ${Object.entries(d.aforoPorTipo||{}).sort((a,b)=>b[1]-a[1]).map(([tipo,cant])=>_causaBar(tipoLabel[tipo]||tipo, cant, maxTipo, '#0f6e56')).join('') || '<p style="color:#94a3b8;font-size:13px">No se realizó aforo en ninguna cámara de este radio.</p>'}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="informe-card">
+          <h4>📅 Aforo por año</h4>
+          <table class="informe-tabla">
+            <thead><tr><th>Año</th><th style="text-align:right">Vehículos</th></tr></thead>
+            <tbody>
+              ${(d.aforoPorAnio||[]).map(a=>`<tr><td>${a.anio}</td><td style="text-align:right;font-weight:700;color:#0f6e56">${a.total.toLocaleString('es-AR')}</td></tr>`).join('') || `<tr><td colspan="2" style="color:#94a3b8;text-align:center">Sin datos</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <div class="informe-card">
+          <h4>📆 Aforo por mes</h4>
+          <div style="max-height:220px;overflow-y:auto;">
+            <table class="informe-tabla">
+              <thead><tr><th>Mes</th><th style="text-align:right">Vehículos</th></tr></thead>
+              <tbody>
+                ${(d.aforoPorMes||[]).map(m=>`<tr><td>${m.mes}</td><td style="text-align:right;font-weight:700;color:#0f6e56">${m.total.toLocaleString('es-AR')}</td></tr>`).join('') || `<tr><td colspan="2" style="color:#94a3b8;text-align:center">Sin datos</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // --- OBSERVACIONES DE CAMPO DEL CRUCE (texto + fotos, Firestore/Storage) ---
+  // Colección separada de la de barrio ("observacionesCampoCruce") con un slug
+  // que incluye lat/lng además del nombre, porque el nombre de un cruce
+  // (ej. "Colón y Alberti") no es necesariamente único en toda la ciudad.
+  function _slugCruce(nombre, lat, lng) {
+    const base = (nombre || 'cruce').toString()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    const coords = (typeof lat==='number' && typeof lng==='number') ? `_${lat.toFixed(5)}_${lng.toFixed(5)}` : '';
+    return `${base}${coords}`;
+  }
+
+  let _campoImagenesCacheCruce = []; // [{url, nombre}]
+
+  function _htmlCruceCampo(d) {
+    return `
+      <div class="informe-card">
+        <h4>📝 Observaciones de campo — ${d.nombre}</h4>
+        <p style="font-size:13px;color:#64748b;margin:0 0 12px;">
+          Notas de relevamiento manual de esta esquina (señalización, semáforos, iluminación, obstáculos, etc.) y fotos del lugar.
+          Se guardan por cruce (coordenadas exactas) y quedan disponibles para enriquecer un futuro análisis con IA de este punto.
+        </p>
+        <textarea id="campo-cruce-observaciones-txt" placeholder="Ej: Semáforo peatonal tapado por cartel publicitario. Vereda rota en la esquina NE. Falta demarcación de senda peatonal..." style="width:100%;min-height:110px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+        <div style="margin-top:14px;">
+          <label style="font-size:13px;color:#334155;font-weight:600;display:block;margin-bottom:8px;">Fotos del lugar</label>
+          <input type="file" id="campo-cruce-imagenes-input" accept="image/*" multiple style="font-size:13px;" onchange="_onCampoImagenesSeleccionadasCruce(event)">
+          <div id="campo-cruce-imagenes-galeria" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;"></div>
+        </div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+          <button class="btn-accion" onclick="_guardarObservacionesCampoCruce()">💾 Guardar observaciones</button>
+          <span id="campo-cruce-guardado-status" style="font-size:12px;color:#059669;"></span>
+        </div>
+      </div>`;
+  }
+
+  async function _initCampoTabCruce(d) {
+    const txt = document.getElementById('campo-cruce-observaciones-txt');
+    const galeria = document.getElementById('campo-cruce-imagenes-galeria');
+    if (!txt || !_informeCruceActual) return;
+    txt.value = '';
+    galeria.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Cargando...</p>';
+    _campoImagenesCacheCruce = [];
+    try {
+      const slug = _slugCruce(d.nombre, d.lat, d.lng);
+      const doc = await db.collection('observacionesCampoCruce').doc(slug).get();
+      if (doc.exists) {
+        const data = doc.data();
+        txt.value = data.texto || '';
+        _campoImagenesCacheCruce = data.imagenes || [];
+      }
+    } catch (err) {
+      console.warn('No se pudieron cargar observaciones de campo del cruce:', err);
+    }
+    _renderGaleriaCampoCruce();
+  }
+
+  function _renderGaleriaCampoCruce() {
+    const galeria = document.getElementById('campo-cruce-imagenes-galeria');
+    if (!galeria) return;
+    if (!_campoImagenesCacheCruce.length) {
+      galeria.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Sin fotos cargadas todavía.</p>';
+      return;
+    }
+    galeria.innerHTML = _campoImagenesCacheCruce.map((img, i) => `
+      <div style="position:relative;width:90px;height:90px;">
+        <img src="${img.url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+        <button onclick="_borrarImagenCampoCruce(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1;">×</button>
+      </div>`).join('');
+  }
+
+  function _borrarImagenCampoCruce(i) {
+    _campoImagenesCacheCruce.splice(i, 1);
+    _renderGaleriaCampoCruce();
+  }
+
+  async function _onCampoImagenesSeleccionadasCruce(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length || !_informeCruceActual || !_informeCruceDatosActual) return;
+    const slug = _slugCruce(_informeCruceDatosActual.nombre, _informeCruceDatosActual.lat, _informeCruceDatosActual.lng);
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 8 * 1024 * 1024) { alert(`"${file.name}" pesa más de 8MB, no se sube.`); continue; }
+      const nombreArchivo = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const ref = storage.ref(`observaciones_campo_cruce/${slug}/${nombreArchivo}`);
+      try {
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        _campoImagenesCacheCruce.push({ url, nombre: file.name });
+        _renderGaleriaCampoCruce();
+      } catch (err) {
+        console.error('Error subiendo imagen:', err);
+        alert(`No se pudo subir "${file.name}". Revisá la consola.`);
+      }
+    }
+    event.target.value = '';
+  }
+
+  async function _guardarObservacionesCampoCruce() {
+    if (!_informeCruceActual || !_informeCruceDatosActual) return;
+    const txt = document.getElementById('campo-cruce-observaciones-txt');
+    const status = document.getElementById('campo-cruce-guardado-status');
+    const slug = _slugCruce(_informeCruceDatosActual.nombre, _informeCruceDatosActual.lat, _informeCruceDatosActual.lng);
+    try {
+      await db.collection('observacionesCampoCruce').doc(slug).set({
+        cruce: _informeCruceDatosActual.nombre,
+        lat: _informeCruceDatosActual.lat,
+        lng: _informeCruceDatosActual.lng,
+        texto: txt.value || '',
+        imagenes: _campoImagenesCacheCruce,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      status.textContent = '✅ Guardado';
+      setTimeout(() => { status.textContent = ''; }, 2500);
+    } catch (err) {
+      console.error('Error guardando observaciones de campo del cruce:', err);
+      alert('No se pudieron guardar las observaciones. Revisá la consola.');
+    }
+  }
+
+  async function _obtenerObservacionesCampoCruce(nombreCruce, lat, lng) {
+    try {
+      const slug = _slugCruce(nombreCruce, lat, lng);
+      const doc = await db.collection('observacionesCampoCruce').doc(slug).get();
+      if (doc.exists) {
+        const data = doc.data();
+        return { texto: data.texto || '', imagenesUrls: (data.imagenes || []).map(im => im.url).slice(0, 15) };
+      }
+    } catch (err) {
+      console.warn('No se pudieron leer observaciones de campo del cruce:', err);
+    }
+    return { texto: '', imagenesUrls: [] };
+  }
+
+  // --- EXPORTAR INFORME DE CRUCE A PDF (llama a generarInformeCruceIA) ---
+  // Mismo parser de protocolo (# título / ## subtítulo / TABLA:.../FIN_TABLA / "- " listas / "> " citas)
+  // que usa exportarInformePDF() para barrio, duplicado acá a propósito en vez
+  // de compartir función: así un cambio futuro en el informe de barrio no puede
+  // romper el de cruce (y viceversa) por una refactorización mal calculada.
+  async function exportarInformeCrucePDF() {
+    if (!_informeCruceActual) return;
+    const btn = document.getElementById('btn-informe-cruce-pdf');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '⏳ Generando...';
+    btn.disabled = true;
+
+    try {
+      const radio = parseInt(document.getElementById('informe-cruce-radio')?.value || '100', 10);
+      const { lat, lng, nombre } = _informeCruceActual;
+      const datos = _calcularDatosCruce(lat, lng, nombre, radio);
+      _informeCruceDatosActual = datos;
+
+      // --- Pedir el análisis redactado por IA (Gemini) al backend ---
+      let textoIA = null;
+      btn.innerHTML = '⏳ Generando análisis con IA...';
+      try {
+        const observacionesCampo = await _obtenerObservacionesCampoCruce(datos.nombre, datos.lat, datos.lng);
+        const respIA = await fetch('https://us-central1-seguridad-mdp-v2.cloudfunctions.net/generarInformeCruceIA', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            datos,
+            observaciones: observacionesCampo.texto,
+            imagenesUrls: observacionesCampo.imagenesUrls
+          })
+        });
+        const dataIA = await respIA.json();
+        if (respIA.ok && dataIA.texto) {
+          textoIA = dataIA.texto;
+        } else {
+          console.warn('No se pudo generar el análisis con IA:', dataIA.error || dataIA.detalle);
+        }
+      } catch (errIA) {
+        console.warn('Error llamando a generarInformeCruceIA:', errIA);
+      }
+      btn.innerHTML = '⏳ Generando PDF...';
+
+      // Solo Resumen y Movilidad se capturan como páginas de imagen: Campo no,
+      // porque sus notas y fotos ya quedaron incorporadas al texto de la IA
+      // (sección 5 del prompt) — mismo criterio que usa barrio, que tampoco
+      // captura su tab de observaciones de campo como página aparte.
+      const tabs = ['resumen', 'movilidad'];
+      const titulos = { resumen: 'Resumen General', movilidad: 'Colectivos y Aforos' };
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      // --- PORTADA ---
+      pdf.setFillColor(26, 35, 50);
+      pdf.rect(0, 0, pageW, 55, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.text('Informe de Seguridad Urbana', margin, 22);
+      pdf.setFontSize(12);
+      pdf.text('CIMU · Centro de Inteligencia y Monitoreo Urbano', margin, 32);
+      pdf.setFontSize(15);
+      pdf.text(`Cruce: ${datos.nombre}`, margin, 46);
+
+      pdf.setTextColor(30, 30, 30);
+      pdf.setFontSize(11);
+      pdf.text(`Fecha del informe: ${fecha}`, margin, 68);
+      pdf.text(`Radio de análisis: ${datos.radioMetros} m`, margin, 76);
+      pdf.text(`Siniestros totales: ${datos.siniestros}   |   % con cámara cercana: ${datos.pctSiniConCam}%`, margin, 84);
+      pdf.text(`Líneas de colectivo cercanas: ${(datos.lineasColectivo||[]).length}   |   Vehículos aforados: ${(datos.aforoTotal||0).toLocaleString('es-AR')}`, margin, 92);
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text('Documento generado automáticamente por el sistema CIMU · Análisis puntual por cruce', margin, pageH - 10);
+
+      // --- PÁGINAS DE ANÁLISIS EJECUTIVO GENERADO POR IA ---
+      if (textoIA) {
+        const maxWidth = pageW - margin * 2;
+        const lineHeight = 5;
+        let y = margin;
+
+        const dibujarHeaderIA = () => {
+          pdf.setFillColor(26, 35, 50);
+          pdf.rect(0, 0, pageW, 14, 'F');
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(`${datos.nombre} · Análisis Ejecutivo (IA)`, margin, 9);
+          pdf.setTextColor(30, 30, 30);
+        };
+
+        const nuevaPaginaIA = () => {
+          pdf.addPage();
+          dibujarHeaderIA();
+          y = 24;
+        };
+
+        nuevaPaginaIA();
+
+        const asegurarEspacio = (necesario) => {
+          if (y + necesario > pageH - margin) nuevaPaginaIA();
+        };
+
+        const escribirParrafo = (texto, opts = {}) => {
+          const { fontSize = 10, font = 'normal', color = [30, 30, 30], indent = 0 } = opts;
+          pdf.setFontSize(fontSize);
+          pdf.setFont(undefined, font);
+          pdf.setTextColor(color[0], color[1], color[2]);
+          const wrapped = pdf.splitTextToSize(texto, maxWidth - indent);
+          wrapped.forEach(linea => {
+            asegurarEspacio(lineHeight);
+            pdf.setFontSize(fontSize);
+            pdf.setFont(undefined, font);
+            pdf.setTextColor(color[0], color[1], color[2]);
+            pdf.text(linea, margin + indent, y);
+            y += lineHeight;
+          });
+        };
+
+        const dibujarTabla = (titulo, filas) => {
+          if (!filas.length) return;
+          asegurarEspacio(10);
+          pdf.setFontSize(9.5);
+          pdf.setFont(undefined, 'bold');
+          pdf.setTextColor(26, 35, 50);
+          pdf.text(titulo, margin, y);
+          y += 5;
+
+          const numCols = Math.max(1, filas[0].length);
+          const colWidth = maxWidth / numCols;
+
+          filas.forEach((fila, rowIdx) => {
+            pdf.setFontSize(8.5);
+            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
+            let alturaFila = 6;
+            const celdasWrapped = fila.map(celda => {
+              const w = pdf.splitTextToSize(String(celda || ''), colWidth - 4);
+              alturaFila = Math.max(alturaFila, w.length * 4 + 3);
+              return w;
+            });
+
+            if (y + alturaFila > pageH - margin) {
+              nuevaPaginaIA();
+              if (rowIdx !== 0) {
+                pdf.setFontSize(9.5);
+                pdf.setFont(undefined, 'bold');
+                pdf.setTextColor(26, 35, 50);
+                pdf.text(titulo + ' (cont.)', margin, y);
+                y += 5;
+              }
+            }
+
+            if (rowIdx === 0) {
+              pdf.setFillColor(240, 244, 248);
+              pdf.rect(margin, y - 4, maxWidth, alturaFila, 'F');
+            }
+            pdf.setDrawColor(210, 216, 224);
+            pdf.rect(margin, y - 4, maxWidth, alturaFila, 'S');
+
+            pdf.setFontSize(8.5);
+            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
+            celdasWrapped.forEach((lineasCelda, colIdx) => {
+              const xCol = margin + colIdx * colWidth + 2;
+              if (colIdx > 0) pdf.line(margin + colIdx * colWidth, y - 4, margin + colIdx * colWidth, y - 4 + alturaFila);
+              if (rowIdx === 0) pdf.setTextColor(26, 35, 50); else pdf.setTextColor(50, 50, 50);
+              lineasCelda.forEach((linea, li) => pdf.text(linea, xCol, y + li * 4));
+            });
+
+            y += alturaFila;
+          });
+          y += 5;
+        };
+
+        const dibujarCita = (texto) => {
+          pdf.setFontSize(10);
+          pdf.setFont(undefined, 'italic');
+          const wrapped = pdf.splitTextToSize(texto, maxWidth - 10);
+          const alturaBloque = wrapped.length * lineHeight + 6;
+          asegurarEspacio(alturaBloque);
+          pdf.setFillColor(255, 251, 235);
+          pdf.rect(margin, y - 4, maxWidth, alturaBloque, 'F');
+          pdf.setDrawColor(251, 191, 36);
+          pdf.setLineWidth(1);
+          pdf.line(margin, y - 4, margin, y - 4 + alturaBloque);
+          pdf.setLineWidth(0.2);
+          pdf.setTextColor(120, 90, 10);
+          wrapped.forEach((linea, i) => {
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'italic');
+            pdf.setTextColor(120, 90, 10);
+            pdf.text(linea, margin + 6, y + i * lineHeight);
+          });
+          y += alturaBloque + 3;
+          pdf.setFont(undefined, 'normal');
+        };
+
+        // --- Parser línea por línea del protocolo devuelto por la IA ---
+        const lineasIA = textoIA.split('\n');
+        let li = 0;
+        while (li < lineasIA.length) {
+          const trim = lineasIA[li].trim();
+
+          if (!trim) { li++; continue; }
+
+          if (trim.startsWith('TABLA:')) {
+            const titulo = trim.replace('TABLA:', '').trim();
+            li++;
+            const filas = [];
+            const MAX_FILAS_TABLA = 20;
+            while (
+              li < lineasIA.length &&
+              lineasIA[li].trim() !== 'FIN_TABLA' &&
+              lineasIA[li].trim() !== '' &&
+              !lineasIA[li].trim().startsWith('#') &&
+              !lineasIA[li].trim().startsWith('TABLA:') &&
+              !lineasIA[li].trim().startsWith('> ') &&
+              lineasIA[li].includes('|') &&
+              filas.length < MAX_FILAS_TABLA
+            ) {
+              filas.push(lineasIA[li].split('|').map(c => c.trim()).filter(c => c !== ''));
+              li++;
+            }
+            if (lineasIA[li] && lineasIA[li].trim() === 'FIN_TABLA') li++;
+            dibujarTabla(titulo, filas);
+            continue;
+          }
+
+          if (trim.startsWith('## ')) {
+            asegurarEspacio(10);
+            escribirParrafo(trim.replace(/^##\s*/, ''), { fontSize: 10.5, font: 'bold', color: [26, 35, 50] });
+            y += 2;
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('# ')) {
+            asegurarEspacio(14);
+            y += 2;
+            escribirParrafo(trim.replace(/^#\s*/, ''), { fontSize: 13, font: 'bold', color: [26, 35, 50] });
+            y += 3;
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('> ')) {
+            dibujarCita(trim.replace(/^>\s*/, ''));
+            li++;
+            continue;
+          }
+
+          if (trim.startsWith('- ')) {
+            const bullets = [];
+            while (li < lineasIA.length && lineasIA[li].trim().startsWith('- ')) {
+              bullets.push(lineasIA[li].trim().replace(/^-\s*/, ''));
+              li++;
+            }
+            bullets.forEach(b => {
+              pdf.setFontSize(10);
+              pdf.setFont(undefined, 'normal');
+              pdf.setTextColor(30, 30, 30);
+              const wrapped = pdf.splitTextToSize(b, maxWidth - 6);
+              wrapped.forEach((ln, idx) => {
+                asegurarEspacio(lineHeight);
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                pdf.setTextColor(30, 30, 30);
+                pdf.text((idx === 0 ? '•  ' : '   ') + ln, margin, y);
+                y += lineHeight;
+              });
+            });
+            y += 1;
+            continue;
+          }
+
+          const parrafoLineas = [];
+          while (
+            li < lineasIA.length &&
+            lineasIA[li].trim() !== '' &&
+            !lineasIA[li].trim().startsWith('#') &&
+            !lineasIA[li].trim().startsWith('- ') &&
+            !lineasIA[li].trim().startsWith('> ') &&
+            !lineasIA[li].trim().startsWith('TABLA:')
+          ) {
+            parrafoLineas.push(lineasIA[li].trim());
+            li++;
+          }
+          escribirParrafo(parrafoLineas.join(' '));
+          y += 3;
+        }
+
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Análisis generado con inteligencia artificial (Gemini) en base a datos reales del sistema.', margin, pageH - 6);
+      }
+
+      // --- UNA PÁGINA POR CADA TAB (Resumen y Movilidad), CAPTURADA CON html2canvas ---
+      const cont = document.getElementById('informe-cruce-content');
+      const tabButtons = document.querySelectorAll('#informe-cruce-modal .informe-tab');
+
+      for (const tab of tabs) {
+        _informeCruceTabActual = tab;
+        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === tab));
+        cont.innerHTML = '';
+        _renderCruceTab(datos, tab);
+        await new Promise(r => setTimeout(r, 200));
+
+        const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        const imgW = pageW - margin * 2;
+        const imgH = canvas.height * imgW / canvas.width;
+
+        pdf.addPage();
+        pdf.setFillColor(26, 35, 50);
+        pdf.rect(0, 0, pageW, 14, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(12);
+        pdf.text(`${datos.nombre} · ${titulos[tab]}`, margin, 9);
+
+        let y = 18;
+        if (imgH <= pageH - y - margin) {
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
+        } else {
+          const pxPerMm = canvas.height / imgH;
+          let sY = 0, remaining = imgH, first = true;
+          while (remaining > 0.5) {
+            if (!first) { pdf.addPage(); y = margin; }
+            const sliceHmm = Math.min(pageH - y - margin, remaining);
+            const sliceHpx = Math.round(sliceHmm * pxPerMm);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = sliceHpx;
+            sliceCanvas.getContext('2d').drawImage(canvas, 0, sY, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, y, imgW, sliceHmm);
+            sY += sliceHpx;
+            remaining -= sliceHmm;
+            first = false;
+          }
+        }
+      }
+
+      // --- restaurar la vista original del modal ---
+      _informeCruceTabActual = 'resumen';
+      tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === 'resumen'));
+      _renderCruceTab(datos, 'resumen');
+
+      pdf.save(`Informe_Cruce_${datos.nombre.replace(/\s+/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF de cruce:', err);
+      alert('Ocurrió un error generando el PDF. Revisá la consola.');
+    } finally {
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+    }
   }
 
   // --- DRAG & DROP DEL MODAL DE CRUCE (mismo patrón que el modal de barrio) ---

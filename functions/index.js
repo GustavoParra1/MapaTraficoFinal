@@ -181,3 +181,7 @@ exports.geocodeAddress = functions.https.onRequest(async (req, res) => {
 // --- Informe de Seguridad por Barrio (IA con Gemini, capa gratuita) ---
 exports.generarInformeIA = require('./generarInformeIA').generarInformeIA;
 
+// --- Informe de Seguridad por Cruce puntual (IA con Gemini) ---
+exports.generarInformeCruceIA = require('./generarInformeCruceIA').generarInformeCruceIA;
+
+
