@@ -143,6 +143,14 @@ service cloud.firestore {
                              request.auth.token.email == 'com@seguridad-mdp.com';
     }
 
+    // 📝 OBSERVACIONES DE CAMPO POR CRUCE - mismo patrón que barrio, colección
+    // separada porque la clave (slug) incluye lat/lng de un punto puntual
+    match /observacionesCampoCruce/{cruceSlug} {
+      // Solo el admin puede leer y escribir observaciones de campo
+      allow read, write: if request.auth.uid != null &&
+                             request.auth.token.email == 'com@seguridad-mdp.com';
+    }
+
     // Deny todas las demás rutas
     match /{document=**} {
       allow read, write: if false;
