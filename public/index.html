@@ -19,6 +19,12 @@
 
   <!-- Tu CSS -->
   <link rel="stylesheet" href="css/style.css?v=202602191300">
+  <link rel="stylesheet" href="css/sidebar-cimu.css?v=6">
+  <link rel="stylesheet" href="css/sidebar-cimu-azul.css?v=1">
+  <link rel="stylesheet" href="css/ventanas-cimu.css?v=1">
+  <link rel="stylesheet" href="css/informe-cimu-azul.css?v=1">
+  <link rel="stylesheet" href="css/paneles-igualar.css?v=1">
+  <link rel="stylesheet" href="css/tour-cimu-azul.css?v=1">
 
   <!-- ============================================================
        INFORME DE SEGURIDAD - ESTILOS
@@ -122,10 +128,13 @@
 
  <!-- === PANEL IZQUIERDO === -->
  <div id="left-sidebar">
-  <h2 style="text-align: center;">
-    CIMU<br>
-    Centro de Inteligencia y<br>Monitoreo Urbano
-  </h2>
+  <div class="cimu-brand">
+    <img src="img/cimu-logo.svg" alt="CIMU">
+    <div>
+      <h2 class="cimu-title">CIMU</h2>
+      <p class="cimu-sub">Centro de Inteligencia y<br>Monitoreo Urbano</p>
+    </div>
+  </div>
   <div id="user-info">
     <span id="user-email"></span>
     <button id="chat-panel-btn">💬 Panel de Chat</button>
@@ -866,6 +875,8 @@
 
   <script src="js/eventos-operadores.js?v=202602201400"></script>
   <script src="script.js?v=20260309001"></script>
+  <script src="js/sidebar-cimu.js?v=1"></script>
+  <script src="js/tour-fix-cimu.js?v=1"></script>
 
   <!-- ============================================================
        INFORME DE SEGURIDAD POR BARRIO - JS

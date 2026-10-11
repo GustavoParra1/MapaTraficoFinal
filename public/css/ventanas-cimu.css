@@ -1,0 +1,255 @@
+/* =====================================================
+   CIMU - Estilo de las ventanas (Consultas, Resultados,
+   Alertas y Top 10) igual al de los paneles laterales
+   -----------------------------------------------------
+   Se carga DESPUES de sidebar-cimu.css y sidebar-cimu-azul.css.
+   Para volver al estilo anterior: borrar la linea
+   <link ... ventanas-cimu.css> en index.html.
+   No cambia posiciones ni logica: solo colores y tipografia.
+   ===================================================== */
+
+:root {
+  --cimu-azul-fondo: #0a2a66;
+  --cimu-azul-banda: #071d4d;
+  --cimu-azul-seccion: #16418f;
+  --cimu-azul-cuerpo: #0d3377;
+  --cimu-azul-boton: #1a4799;
+  --cimu-azul-boton-hover: #2457b8;
+  --cimu-azul-borde: #2c5bb3;
+  --cimu-azul-linea: #1d4a9e;
+  --cimu-texto: #d6e4fa;
+  --cimu-texto-suave: #9fc2f5;
+}
+
+/* ---------- Tipografia comun ---------- */
+#consultas-panel,
+#consulta-results-panel,
+.panel-floating {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =====================================================
+   VENTANA "CONSULTAS AL SISTEMA"
+   ===================================================== */
+#consultas-panel {
+  width: 340px;
+  background: var(--cimu-azul-fondo);
+  border: 1px solid var(--cimu-azul-linea);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--cimu-texto);
+  overflow: hidden;
+}
+
+#consultas-panel .panel-header {
+  background: var(--cimu-azul-banda);
+  color: #fff;
+  padding: 10px 12px;
+}
+#consultas-panel .panel-header h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #fff;
+}
+#consultas-panel .close-button {
+  background: var(--cimu-azul-seccion) !important;
+  color: #e8f0fc !important;
+  border: 1px solid var(--cimu-azul-borde) !important;
+  border-radius: 6px !important;
+  padding: 2px 9px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.4;
+  box-shadow: none !important;
+}
+#consultas-panel .close-button:hover { background: var(--cimu-azul-boton-hover) !important; }
+
+#consultas-content {
+  padding: 10px;
+  font-size: 12.5px;
+  color: var(--cimu-texto);
+  scrollbar-width: thin;
+  scrollbar-color: #3d6cc4 transparent;
+}
+
+/* Desplegables: mismas "barras de seccion" que los paneles laterales */
+#consultas-content details {
+  background: var(--cimu-azul-cuerpo);
+  border: 1px solid var(--cimu-azul-borde);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  box-shadow: none;
+  overflow: hidden;
+}
+#consultas-content details[open] { box-shadow: none; }
+
+#consultas-content summary {
+  padding: 8px 10px;
+  background: var(--cimu-azul-seccion);
+  color: #e8f0fc;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+#consultas-content summary:hover { background: #1d4fa8; }
+#consultas-content summary::after {
+  font-size: 9px;
+  color: var(--cimu-texto-suave);
+}
+
+/* Desplegable dentro de otro (ej. Tendencias por Causa) */
+#consultas-content details details {
+  background: var(--cimu-azul-fondo);
+}
+#consultas-content details details > summary { background: #1d4fa8; font-weight: 500; }
+
+#consultas-content details > :not(summary) {
+  margin-left: 10px;
+  margin-right: 10px;
+  max-width: calc(100% - 20px);
+}
+#consultas-content details > :last-child { padding-bottom: 10px; }
+
+/* Subtitulos dentro de un desplegable (ej. "Analisis de Calles") */
+#consultas-content details > h3 {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cimu-texto-suave);
+  margin: 12px 10px 4px;
+}
+
+/* Cada consulta (boton) */
+#consultas-content .consulta-btn,
+.consulta-btn {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 8px 10px !important;
+  background: var(--cimu-azul-boton) !important;
+  color: #e8f0fc !important;
+  border: 1px solid var(--cimu-azul-borde) !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.35;
+  text-align: left;
+  box-shadow: none !important;
+}
+#consultas-content .consulta-btn:hover,
+.consulta-btn:hover {
+  background: var(--cimu-azul-boton-hover) !important;
+  border-color: #5b8fe0 !important;
+  color: #fff !important;
+}
+
+/* Controles que aparecen dentro (numero de rutas, turno, etc.) */
+#consultas-panel .filter-group {
+  border-color: var(--cimu-azul-borde) !important;
+  background: transparent;
+}
+#consultas-panel label { color: var(--cimu-texto); font-size: 12px; }
+#consultas-panel select,
+#consultas-panel input[type="number"],
+#consultas-panel input[type="text"] {
+  font-size: 12px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #1b2a41;
+}
+
+/* =====================================================
+   VENTANA "RESULTADO DE LA CONSULTA"
+   (el contenido sigue claro porque incluye tablas y graficos)
+   ===================================================== */
+#consulta-results-panel {
+  border: 1px solid var(--cimu-azul-linea);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+#consulta-results-panel .panel-header {
+  background: var(--cimu-azul-fondo);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 0;
+}
+#consulta-results-panel .panel-header h4 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #fff;
+}
+#consulta-results-content {
+  background: #f4f8fe;
+  color: #1b2a41;
+  font-size: 13px;
+  padding: 12px;
+}
+#consulta-results-panel h5 {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0b3a8c;
+}
+#clear-consulta-results-btn {
+  margin: 10px auto 12px;
+  padding: 8px 18px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2) !important;
+}
+
+/* Listados dentro de los resultados */
+.consulta-lista li {
+  font-size: 12.5px;
+  border-left-color: #1769e0;
+}
+.consulta-lista li .nombre { font-weight: 600; }
+.consulta-lista li .cantidad { font-size: 11.5px; color: #5a6b86; }
+.consulta-lista li .btn-ver-mapa {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+}
+
+/* =====================================================
+   VENTANAS "ALERTAS RECIENTES" y "TOP 10"
+   (conservan su color de cabecera: verde / azul / rojo)
+   ===================================================== */
+.panel-floating {
+  width: 300px;
+  border-width: 1px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 12.5px;
+}
+.panel-floating .panel-header {
+  padding: 9px 12px;
+  border-radius: 0;
+}
+.panel-floating .panel-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #fff;
+}
+.panel-floating .panel-content {
+  padding: 10px;
+  background: #f4f8fe;
+  color: #1b2a41;
+  scrollbar-width: thin;
+}
+.panel-item {
+  padding: 8px 10px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}

@@ -1,0 +1,93 @@
+/* =====================================================
+   CIMU - Mismo ancho util en el panel izquierdo y derecho
+        + marca (logo y titulo) que ocupa todo el ancho
+   -----------------------------------------------------
+   Problema: el izquierdo tiene barra de scroll (reserva ~10px)
+   y el derecho no, asi que sus barras de seccion quedaban
+   mas cortas.
+   Solucion: los dos reservan el mismo espacio para la barra,
+   y la barra es fina (6px) en ambos.
+   Se carga DESPUES de sidebar-cimu.css, sidebar-cimu-azul.css
+   y ventanas-cimu.css. Para volver atras: borrar la linea
+   <link ... paneles-igualar.css> en index.html.
+   No cambia el ancho de los paneles (sigue --cimu-w-panel).
+   ===================================================== */
+
+#left-sidebar,
+#right-panel {
+  scrollbar-gutter: stable;
+}
+
+/* Chrome / Edge / Safari: barra de 6px (la propiedad estandar
+   "scrollbar-width" la ignora, por eso se anula aca) */
+@supports selector(::-webkit-scrollbar) {
+  #left-sidebar,
+  #right-panel {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+  #left-sidebar::-webkit-scrollbar,
+  #right-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+  #left-sidebar::-webkit-scrollbar-track,
+  #right-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #left-sidebar::-webkit-scrollbar-thumb,
+  #right-panel::-webkit-scrollbar-thumb {
+    background: #3d6cc4;
+    border-radius: 3px;
+  }
+}
+
+/* Firefox: barra fina en ambos */
+@supports not selector(::-webkit-scrollbar) {
+  #left-sidebar,
+  #right-panel {
+    scrollbar-width: thin;
+    scrollbar-color: #3d6cc4 transparent;
+  }
+}
+
+
+/* =====================================================
+   MARCA CIMU: logo y titulo abarcan todo el ancho del panel
+   -----------------------------------------------------
+   Logo y titulo van en una fila; el subtitulo, centrado
+   debajo y a todo el ancho. Todo se escala en proporcion
+   al ancho del panel (--cimu-w-panel), asi que si cambias
+   ese valor en sidebar-cimu.css, la marca se ajusta sola.
+   ===================================================== */
+#left-sidebar .cimu-brand {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  column-gap: calc(var(--cimu-w-panel) * 0.045);
+  row-gap: calc(var(--cimu-w-panel) * 0.012);
+  padding: calc(var(--cimu-w-panel) * 0.06) 10px calc(var(--cimu-w-panel) * 0.05);
+}
+/* El bloque de texto se "abre": titulo junto al logo, subtitulo abajo */
+#left-sidebar .cimu-brand > div { display: contents; }
+
+#left-sidebar .cimu-brand img {
+  order: 1;
+  width: calc(var(--cimu-w-panel) * 0.236);   /* ~52px con panel de 220px */
+  height: auto;
+}
+#left-sidebar .cimu-brand .cimu-title {
+  order: 2;
+  font-size: calc(var(--cimu-w-panel) * 0.2);  /* ~44px con panel de 220px */
+  font-weight: 700;
+  letter-spacing: calc(var(--cimu-w-panel) * 0.009);
+  line-height: 1;
+  margin: 0;
+}
+#left-sidebar .cimu-brand .cimu-sub {
+  order: 3;
+  flex: 0 0 100%;
+  font-size: calc(var(--cimu-w-panel) * 0.055); /* ~12px con panel de 220px */
+  line-height: 1.25;
+  text-align: center;
+  margin: 0;
+}

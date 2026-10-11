@@ -1,0 +1,463 @@
+/* =====================================================
+   CIMU - Panel izquierdo compacto (secciones plegables)
+   Solo cambia la apariencia: no modifica IDs ni logica.
+   Cargar DESPUES de css/style.css
+   ===================================================== */
+
+/* ---------- Encabezado de marca ---------- */
+#left-sidebar .cimu-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -12px -15px 10px -15px;
+  padding: 12px 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #0b3a8c, #08235a);
+  text-align: left;
+}
+#left-sidebar .cimu-brand img { width: 34px; height: auto; flex-shrink: 0; }
+#left-sidebar .cimu-brand .cimu-title {
+  font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1; margin: 0;
+}
+#left-sidebar .cimu-brand .cimu-sub {
+  font-size: 10px; font-weight: 600; line-height: 1.2; margin: 3px 0 0 0; color: #cfe3ff;
+}
+
+/* ---------- Usuario y botones en fila ---------- */
+#left-sidebar #user-info {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+  padding: 0 0 8px 0 !important;
+}
+#left-sidebar #user-info span {
+  flex: 1 1 100% !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  color: #455a78;
+  word-break: break-all;
+}
+#left-sidebar #user-info button {
+  flex: 1 1 45% !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 7px 8px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Secciones plegables ---------- */
+#left-sidebar .sb-section {
+  margin: 0 0 6px 0 !important;
+  padding: 0 !important;
+  border: 1px solid #d6e2f3 !important;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+#left-sidebar .sb-section > .sb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  font-weight: 700;
+  color: #0b3a8c !important;
+  background: #eaf2fd;
+  cursor: pointer;
+  user-select: none;
+}
+#left-sidebar .sb-section > .sb-header:hover { background: #dbe9fb; }
+#left-sidebar .sb-section > .sb-header::after {
+  content: "";
+  width: 7px; height: 7px;
+  border-right: 2px solid #0b3a8c;
+  border-bottom: 2px solid #0b3a8c;
+  transform: rotate(45deg);
+  transition: transform .2s;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+#left-sidebar .sb-section.sb-collapsed > .sb-header::after { transform: rotate(-45deg); }
+
+/* Cuerpo: todo lo que no es el encabezado */
+#left-sidebar .sb-section > :not(.sb-header) { margin-left: 10px; margin-right: 10px; }
+#left-sidebar .sb-section > .sb-header + * { margin-top: 8px; }
+#left-sidebar .sb-section > :last-child { margin-bottom: 8px; }
+#left-sidebar .sb-section.sb-collapsed > :not(.sb-header) { display: none !important; }
+
+/* Subgrupos de filtros dentro de "Filtros": sin cajas extra */
+#left-sidebar .sb-section .filter-group {
+  border-bottom: none !important;
+  margin-bottom: 8px !important;
+  padding-bottom: 0 !important;
+}
+#left-sidebar .sb-section .filter-group h4 { font-size: 12px; margin-bottom: 4px; }
+#left-sidebar .sb-section label { margin-bottom: 3px; font-size: 13px; }
+
+/* Botones dentro de secciones: un poco mas compactos */
+#left-sidebar .sb-section button {
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+/* Leyenda de trafico y espaciados */
+#left-sidebar #traffic-legend-container { margin-top: 6px; }
+
+/* Barra de scroll fina (por si se abren varias secciones) */
+#left-sidebar { scrollbar-width: thin; scrollbar-color: #9db8e0 transparent; }
+#left-sidebar::-webkit-scrollbar { width: 6px; }
+#left-sidebar::-webkit-scrollbar-thumb { background: #9db8e0; border-radius: 3px; }
+
+
+/* =====================================================
+   v2 - Tipografia mas fina y refinada (solo estilo)
+   ===================================================== */
+
+/* Fuente mas limpia que la "sans-serif" por defecto */
+#left-sidebar,
+#right-panel,
+#consultas-panel,
+.panel-floating {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Panel izquierdo ---------- */
+#left-sidebar .cimu-brand .cimu-title { font-weight: 700; letter-spacing: 1.5px; }
+#left-sidebar .cimu-brand .cimu-sub   { font-weight: 500; letter-spacing: .2px; }
+
+#left-sidebar #user-info span { font-weight: 500 !important; font-size: 11px !important; }
+#left-sidebar #user-info button {
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  letter-spacing: .2px;
+}
+
+#left-sidebar .sb-section > .sb-header {
+  font-weight: 600;
+  font-size: 12.5px !important;
+  letter-spacing: .2px;
+}
+
+#left-sidebar .sb-section label,
+#left-sidebar label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #33425b;
+}
+#left-sidebar .sb-section .filter-group h4,
+#left-sidebar .filter-group h4 {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #5a6b86;
+  text-transform: none;
+}
+
+#left-sidebar select,
+#left-sidebar input[type="text"] {
+  font-size: 12.5px;
+  font-weight: 400;
+  padding: 5px 7px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #1b2a41;
+}
+#left-sidebar select:focus,
+#left-sidebar input[type="text"]:focus {
+  outline: none;
+  border-color: #1769e0;
+  box-shadow: 0 0 0 2px rgba(23,105,224,.15);
+}
+
+/* Botones: mismos colores, letra mas fina y sombra suave */
+#left-sidebar button {
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  letter-spacing: .2px;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+}
+
+/* ---------- Panel derecho ---------- */
+#right-panel h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b3a8c;
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #d6e2f3;
+}
+#right-panel h4 { font-size: 12px; font-weight: 600; color: #5a6b86; }
+#right-panel label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #33425b;
+}
+#right-panel select,
+#right-panel input[type="text"] {
+  font-size: 12.5px;
+  padding: 5px 7px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+}
+#right-panel button {
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  letter-spacing: .2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+}
+
+/* ---------- Ventanas flotantes (consultas, alertas, tops) ---------- */
+#consultas-panel,
+.panel-floating {
+  font-size: 13px;
+}
+#consultas-panel h1, #consultas-panel h2, #consultas-panel h3, #consultas-panel h4,
+.panel-floating h4 {
+  font-weight: 600;
+  letter-spacing: .1px;
+}
+
+
+/* =====================================================
+   v3 - Titulo centrado, leyenda compacta, pequenos ajustes
+   ===================================================== */
+
+/* ---------- Titulo centrado y un poco mas grande ---------- */
+#left-sidebar .cimu-brand {
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 12px;
+  text-align: center;
+}
+#left-sidebar .cimu-brand img { width: 42px; }
+#left-sidebar .cimu-brand .cimu-title {
+  font-size: 30px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+#left-sidebar .cimu-brand .cimu-sub {
+  font-size: 11px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ---------- Leyenda de trafico compacta (2 columnas) ---------- */
+#left-sidebar #traffic-legend-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  row-gap: 3px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #d6e2f3;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: #33425b;
+}
+#left-sidebar #traffic-legend-container h4 {
+  grid-column: 1 / -1;
+  margin: 0 0 2px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0b3a8c;
+}
+#left-sidebar #traffic-legend-container div {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  width: auto !important;
+  text-align: left;
+  font-weight: 400;
+  font-size: 11.5px;
+}
+#left-sidebar #traffic-legend-container i {
+  width: 11px;
+  height: 11px;
+  float: none;
+  margin-right: 6px;
+  border-radius: 3px;
+  opacity: 1;
+  flex-shrink: 0;
+}
+
+/* ---------- Ajustes de campos y zonas ---------- */
+/* Evita que los selectores se salgan de la caja (ej. Tipo de Mapa Base) */
+#left-sidebar select,
+#left-sidebar input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+/* Filtrar por Zona: opciones una debajo de otra, sin cortes de linea */
+#left-sidebar .zone-filter-group label {
+  display: block;
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   v4 - Paneles mas angostos y panel derecho con el mismo
+        estilo tipografico que el izquierdo
+   -----------------------------------------------------
+   Para ajustar el ancho, cambiar SOLO estos 4 numeros:
+   ===================================================== */
+:root {
+  --cimu-w-panel: 220px;  /* ancho de AMBOS paneles (antes 280px y 260px) */
+}
+@media (max-width: 1400px) {
+  :root { --cimu-w-panel: 205px; }
+}
+
+@media (min-width: 701px) {
+  #left-sidebar {
+    width: var(--cimu-w-panel) !important;
+    max-width: none !important;
+    padding: 12px 12px !important;
+    box-sizing: border-box; /* igual que el panel derecho: el ancho incluye relleno y borde */
+  }
+  #right-panel {
+    right: 0 !important;
+    width: var(--cimu-w-panel) !important;
+    max-width: var(--cimu-w-panel) !important;
+    padding: 12px 12px !important;
+    box-sizing: border-box;
+  }
+  /* El mapa ocupa todo el ancho por detras de los paneles (sin desplazarlo:
+     eso era lo que generaba la barra de desplazamiento horizontal) */
+  #mapid {
+    left: 0 !important;
+    right: 0 !important;
+    max-width: 100% !important;
+  }
+  #events-container { right: calc(var(--cimu-w-panel) + 20px) !important; }
+  /* Boton Guia de navegacion: alineado dentro del panel derecho */
+  #btn-start-tour {
+    right: 12px !important;
+    width: calc(var(--cimu-w-panel) - 24px) !important;
+    box-sizing: border-box !important;
+  }
+}
+@media (min-width: 1025px) {
+  #compass-rose { right: calc(var(--cimu-w-panel) + 60px); }
+}
+
+/* Titulo: se ajusta al panel mas angosto */
+#left-sidebar .cimu-brand { margin: -12px -12px 10px -12px; padding: 12px 10px; gap: 10px; }
+#left-sidebar .cimu-brand img { width: 38px; }
+#left-sidebar .cimu-brand .cimu-title { font-size: 28px; }
+#left-sidebar .cimu-brand .cimu-sub { font-size: 10.5px; }
+
+/* ---------- Panel derecho: mismo estilo que el izquierdo ---------- */
+#right-panel h3 {
+  margin: 10px 0 8px;
+  padding: 8px 10px;
+  background: #eaf2fd;
+  border: 1px solid #d6e2f3;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #0b3a8c;
+}
+#right-panel > h3:first-of-type { margin-top: 0; }
+
+#right-panel h4 {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #5a6b86;
+  margin: 6px 0 4px;
+}
+#right-panel label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #33425b;
+  margin-bottom: 3px;
+}
+#right-panel .layer-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+#right-panel .layer-option label { margin: 0; }
+
+#right-panel select,
+#right-panel input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 400;
+  padding: 5px 7px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #1b2a41;
+}
+#right-panel select:focus,
+#right-panel input[type="text"]:focus {
+  outline: none;
+  border-color: #1769e0;
+  box-shadow: 0 0 0 2px rgba(23,105,224,.15);
+}
+
+#right-panel button {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+}
+#right-panel .panel-help-button .button-text {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+#right-panel hr { border: 0; border-top: 1px solid #d6e2f3; margin: 10px 0; }
+
+/* Textos generados (aforos, detalle por dia, resultados) */
+#right-panel #flow-list,
+#right-panel #aforo-details-container,
+#right-panel #aforo-day-list {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #33425b;
+}
+#right-panel #flow-list *,
+#right-panel #aforo-day-list * {
+  font-size: 12px !important;
+}
+
+/* Boton "Guia de navegacion": misma tipografia fina */
+#btn-start-tour {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 8px 14px !important;
+}
+#btn-start-tour .button-text {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+
+
+/* La app ocupa exactamente la pantalla: sin barra de desplazamiento horizontal */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+#left-sidebar select,
+#right-panel select {
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,236 @@
+/* =====================================================
+   CIMU - Ventanas "Informe de Seguridad Urbana" (por barrio)
+   y "Análisis de Cruce", con el MISMO estilo, tamaño y
+   tipografía que Consultas / Resultados / Alertas.
+   -----------------------------------------------------
+   Se carga DESPUES de ventanas-cimu.css.
+   Para volver atras: borrar la linea
+   <link ... informe-cimu-azul.css> en index.html.
+   No cambia posiciones ni logica: solo colores, tamanos y letra.
+   El cuerpo (tarjetas y tablas) queda claro porque el
+   contenido trae colores propios en linea.
+   ===================================================== */
+
+:root {
+  --cimu-azul-fondo:   #0a2a66;
+  --cimu-azul-banda:   #071d4d;
+  --cimu-azul-seccion: #16418f;
+  --cimu-azul-cuerpo:  #0d3377;
+  --cimu-azul-boton:   #1a4799;
+  --cimu-azul-boton-hover: #2457b8;
+  --cimu-azul-borde:   #2c5bb3;
+  --cimu-azul-linea:   #1d4a9e;
+  --cimu-texto:        #d6e4fa;
+  --cimu-texto-suave:  #9fc2f5;
+  --cimu-celeste:      #2fd0ff;
+
+  /* Escala de letra: la misma de ventanas-cimu.css */
+  --inf-fs-titulo: 13px;     /* titulo de ventana */
+  --inf-fs-texto:  12.5px;   /* texto de cuerpo */
+  --inf-fs-ctrl:   12px;     /* botones, etiquetas, selectores, tablas */
+  --inf-fs-chico:  11.5px;   /* subtitulos y notas */
+}
+
+/* ---------- Tipografia: misma fuente en TODO (incluye botones y campos) ---------- */
+#informe-barrio-modal,
+#informe-cruce-modal {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+#informe-barrio-modal button,
+#informe-barrio-modal select,
+#informe-barrio-modal input,
+#informe-barrio-modal textarea,
+#informe-cruce-modal button,
+#informe-cruce-modal select,
+#informe-cruce-modal input,
+#informe-cruce-modal textarea {
+  font-family: inherit;
+}
+
+/* ---------- Marco de la ventana (mas compacta) ---------- */
+#informe-barrio-inner,
+#informe-cruce-inner {
+  border: 1px solid var(--cimu-azul-linea);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+#informe-barrio-inner { max-width: 980px !important; }
+#informe-cruce-inner  { max-width: 820px !important; }
+
+/* ---------- Cabecera (banda del titulo) ---------- */
+#informe-barrio-header,
+#informe-cruce-header {
+  background: var(--cimu-azul-banda) !important;
+  border-bottom: 1px solid var(--cimu-azul-linea);
+  padding: 10px 12px !important;
+}
+#informe-barrio-header > div:first-child,
+#informe-cruce-header > div:first-child { gap: 10px !important; }
+
+#informe-barrio-header > div:first-child > div > div:first-child,
+#informe-cruce-titulo {
+  font-size: var(--inf-fs-titulo) !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px !important;
+  color: #fff;
+}
+#informe-barrio-header > div:first-child > div > div:nth-child(2),
+#informe-cruce-header > div:first-child > div > div:nth-child(2) {
+  font-size: var(--inf-fs-chico) !important;
+  color: var(--cimu-texto-suave) !important;
+}
+#informe-barrio-header > div:first-child > span,
+#informe-cruce-header > div:first-child > span {
+  font-size: 18px !important;
+}
+/* Boton cerrar: mismo tamano que el X de Consultas */
+#informe-barrio-header > button,
+#informe-cruce-header > button {
+  width: 26px !important;
+  height: 26px !important;
+  font-size: 15px !important;
+}
+
+/* ---------- Barra de controles + pestanas ---------- */
+#informe-barrio-header + div,
+#informe-cruce-header + div {
+  background: var(--cimu-azul-cuerpo) !important;
+  border-bottom: 1px solid var(--cimu-azul-borde) !important;
+  padding: 8px 12px !important;
+}
+#informe-barrio-header + div label,
+#informe-cruce-header + div label {
+  font-size: var(--inf-fs-ctrl) !important;
+  font-weight: 600 !important;
+  color: var(--cimu-texto-suave) !important;
+  letter-spacing: .3px;
+}
+#informe-barrio-header + div select,
+#informe-cruce-header + div select {
+  font-size: var(--inf-fs-ctrl) !important;
+  padding: 5px 9px !important;
+  border: 1px solid #c9d6ea !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #1b2a41 !important;
+}
+
+/* Pestanas */
+#informe-barrio-modal .informe-tab,
+#informe-cruce-modal .informe-tab {
+  padding: 6px 12px;
+  font-size: var(--inf-fs-ctrl);
+  font-weight: 500;
+  color: var(--cimu-texto-suave);
+}
+#informe-barrio-modal .informe-tab:hover,
+#informe-cruce-modal .informe-tab:hover { color: #fff; }
+#informe-barrio-modal .informe-tab.active,
+#informe-cruce-modal .informe-tab.active {
+  color: #fff;
+  font-weight: 600;
+  border-bottom-color: var(--cimu-celeste);
+}
+
+/* Botones de accion (Ver en mapa, Proponer camaras, Exportar PDF, Informe IA) */
+#informe-barrio-header + div button:not(.informe-tab),
+#informe-cruce-header + div button:not(.informe-tab) {
+  font-size: var(--inf-fs-ctrl) !important;
+  font-weight: 600 !important;
+  padding: 6px 11px !important;
+  border-radius: 6px !important;
+}
+/* "Ver en mapa" azul; camaras (verde) y PDF (rojo) mantienen su color */
+#btn-informe-ver-mapa {
+  background: var(--cimu-azul-boton) !important;
+  border: 1px solid var(--cimu-azul-borde) !important;
+}
+#btn-informe-ver-mapa:hover { background: var(--cimu-azul-boton-hover) !important; }
+
+#informe-cruce-modal .btn-accion {
+  background: var(--cimu-azul-boton);
+  color: #e8f0fc;
+  border: 1px solid var(--cimu-azul-borde);
+}
+#informe-cruce-modal .btn-accion:hover {
+  background: var(--cimu-azul-boton-hover);
+  color: #fff;
+}
+
+/* ---------- Cuerpo ---------- */
+#informe-barrio-content,
+#informe-cruce-content {
+  background: #f4f8fe;
+  color: #1b2a41;
+  font-size: var(--inf-fs-texto);
+  padding: 12px !important;
+}
+
+#informe-barrio-modal .informe-card,
+#informe-cruce-modal .informe-card {
+  border-color: #d3e0f3;
+  font-size: var(--inf-fs-texto);
+}
+#informe-barrio-modal .informe-card h4,
+#informe-cruce-modal .informe-card h4 {
+  font-size: var(--inf-fs-texto);
+  font-weight: 600;
+  color: #0b3a8c;
+}
+
+#informe-barrio-modal .informe-metric .label,
+#informe-cruce-modal .informe-metric .label { font-size: var(--inf-fs-chico); color: #4a5f80; }
+#informe-barrio-modal .informe-metric .value,
+#informe-cruce-modal .informe-metric .value { font-size: 22px; }
+#informe-barrio-modal .informe-metric .unit,
+#informe-cruce-modal .informe-metric .unit  { font-size: var(--inf-fs-chico); }
+
+#informe-barrio-modal .informe-tabla,
+#informe-cruce-modal .informe-tabla { font-size: var(--inf-fs-ctrl); }
+#informe-barrio-modal .informe-tabla th,
+#informe-cruce-modal .informe-tabla th {
+  background: #e8f0fc;
+  color: #3b5a8c;
+  font-size: 11px;
+  padding: 8px 10px;
+  border-bottom-color: #d3e0f3;
+}
+#informe-barrio-modal .informe-tabla td,
+#informe-cruce-modal .informe-tabla td { color: #1b2a41; padding: 8px 10px; }
+#informe-barrio-modal .informe-tabla tr:hover td,
+#informe-cruce-modal .informe-tabla tr:hover td { background: #eef4fd; }
+
+#informe-barrio-modal .informe-rec p,
+#informe-cruce-modal .informe-rec p { font-size: var(--inf-fs-texto); }
+
+/* ---------- Tamanos puestos "a mano" dentro del contenido ----------
+   Se llevan a la misma escala (13/14/15/16px -> 12.5/13px) */
+#informe-barrio-content [style*="font-size:13px"],
+#informe-barrio-content [style*="font-size: 13px"],
+#informe-cruce-content  [style*="font-size:13px"],
+#informe-cruce-content  [style*="font-size: 13px"] { font-size: var(--inf-fs-texto) !important; }
+
+#informe-barrio-content [style*="font-size:14px"],
+#informe-barrio-content [style*="font-size: 14px"],
+#informe-cruce-content  [style*="font-size:14px"],
+#informe-cruce-content  [style*="font-size: 14px"] { font-size: var(--inf-fs-texto) !important; }
+
+#informe-barrio-content [style*="font-size:15px"],
+#informe-barrio-content [style*="font-size: 15px"],
+#informe-cruce-content  [style*="font-size:15px"],
+#informe-cruce-content  [style*="font-size: 15px"] { font-size: var(--inf-fs-titulo) !important; }
+
+#informe-barrio-content [style*="font-size:16px"],
+#informe-barrio-content [style*="font-size: 16px"],
+#informe-cruce-content  [style*="font-size:16px"],
+#informe-cruce-content  [style*="font-size: 16px"] { font-size: var(--inf-fs-titulo) !important; }
+
+/* Cuadros de texto de Observaciones de Campo */
+#informe-barrio-content textarea,
+#informe-cruce-content textarea,
+#informe-barrio-content input,
+#informe-cruce-content input,
+#informe-barrio-content select,
+#informe-cruce-content select {
+  font-size: var(--inf-fs-ctrl) !important;
+}

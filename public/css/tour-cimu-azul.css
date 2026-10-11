@@ -1,0 +1,232 @@
+/* =====================================================
+   CIMU - Guia de navegacion (ventana de bienvenida + pasos)
+   con el mismo estilo, tipografia y tamanos que el resto.
+   -----------------------------------------------------
+   Se carga DESPUES de paneles-igualar.css.
+   Para volver atras: borrar la linea
+   <link ... tour-cimu-azul.css> en index.html.
+   No cambia la logica del tour: solo colores, tamanos y letra.
+   ===================================================== */
+
+:root {
+  --tour-banda:   var(--cimu-azul-banda, #071d4d);
+  --tour-fondo:   var(--cimu-azul-fondo, #0a2a66);
+  --tour-seccion: var(--cimu-azul-seccion, #16418f);
+  --tour-boton:   var(--cimu-azul-boton, #1a4799);
+  --tour-boton-h: var(--cimu-azul-boton-hover, #2457b8);
+  --tour-linea:   var(--cimu-azul-linea, #1d4a9e);
+  --tour-celeste: var(--cimu-celeste, #2fd0ff);
+  --tour-texto-suave: var(--cimu-texto-suave, #9fc2f5);
+}
+
+/* ---------- Fondo oscurecido ---------- */
+#tour-overlay {
+  background: rgba(4, 14, 38, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+/* ---------- Tipografia comun ---------- */
+.tour-card,
+#tour-tooltip {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.tour-card button,
+#tour-tooltip button { font-family: inherit; }
+
+/* =====================================================
+   VENTANA DE BIENVENIDA
+   ===================================================== */
+.tour-card {
+  max-width: 460px;
+  padding: 0;
+  overflow: hidden;
+  background: #f4f8fe;
+  border: 1px solid var(--tour-linea);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* Banda del titulo */
+.tour-card .tour-header {
+  margin: 0;
+  padding: 18px 20px 16px;
+  background: linear-gradient(135deg, var(--tour-seccion), var(--tour-banda));
+  border-bottom: 1px solid var(--tour-linea);
+  text-align: center;
+}
+.tour-card .tour-logo {
+  font-size: 30px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.tour-card .tour-header h1 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: #fff;
+}
+.tour-card .tour-header p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .2px;
+  color: var(--tour-texto-suave);
+}
+
+/* Opciones */
+.tour-card .tour-options {
+  gap: 10px;
+  padding: 16px;
+}
+.tour-card .tour-option {
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #d3e0f3;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(11, 58, 140, 0.08);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.tour-card .tour-option:hover {
+  transform: translateY(-1px);
+  border-color: var(--tour-boton-h);
+  box-shadow: 0 4px 12px rgba(11, 58, 140, 0.18);
+}
+.tour-card .tour-option > div:not(.tour-icon) {
+  flex: 1;
+  min-width: 0;
+}
+.tour-card .tour-option h3 {
+  margin: 0 0 3px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .1px;
+  color: #0b3a8c;
+}
+.tour-card .tour-option p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #4a5f80;
+}
+
+/* Iconos de cada opcion (no afecta al icono del boton GUIA) */
+.tour-card .tour-option .tour-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+.tour-card .tour-option .tour-icon.blue   { background: linear-gradient(135deg, #2457b8, #16418f); }
+.tour-card .tour-option .tour-icon.purple { background: linear-gradient(135deg, #0aa5d1, #0e6f9e); }
+
+/* Pie */
+.tour-card .tour-footer {
+  margin: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #d3e0f3;
+  background: #eaf1fc;
+  text-align: center;
+}
+#skip-tour {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4a5f80;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color .2s;
+}
+#skip-tour:hover {
+  color: #0b3a8c;
+  text-decoration: underline;
+}
+
+/* =====================================================
+   VENTANA DE CADA PASO (globo con Anterior / Siguiente)
+   ===================================================== */
+#tour-tooltip {
+  max-width: 340px;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--tour-linea);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+#tour-tooltip #tour-header {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--tour-banda);
+  border-bottom: 1px solid var(--tour-linea);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: var(--tour-texto-suave);
+}
+#tour-tooltip #tour-close {
+  background: var(--tour-seccion);
+  color: #e8f0fc;
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3);
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+#tour-tooltip #tour-close:hover { background: var(--tour-boton-h); }
+
+#tour-title {
+  margin: 12px 14px 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .1px;
+  color: #0b3a8c;
+}
+#tour-description {
+  margin: 0 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #33425b;
+}
+#tour-tooltip #tour-nav {
+  gap: 8px;
+  margin-top: 0;
+  padding: 12px 14px 14px;
+}
+#tour-tooltip #tour-nav button {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #fff;
+  background: var(--tour-boton);
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+  cursor: pointer;
+  transition: background .2s;
+}
+#tour-tooltip #tour-nav button:hover { background: var(--tour-boton-h); }
+#tour-tooltip #tour-nav #tour-next {
+  margin-left: auto;
+  background: #1769e0;
+  border-color: #1769e0;
+}
+#tour-tooltip #tour-nav #tour-next:hover { background: #2a7cf2; }
+
+/* Resaltado del elemento que explica cada paso: celeste CIMU */
+.tour-highlight {
+  outline: 3px solid var(--tour-celeste);
+  box-shadow: 0 0 0 5px rgba(47, 208, 255, 0.25);
+}

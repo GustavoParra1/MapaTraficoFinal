@@ -1,0 +1,112 @@
+/* =====================================================
+   CIMU - Tema azul para los paneles izquierdo y derecho
+   -----------------------------------------------------
+   Se carga DESPUES de sidebar-cimu.css.
+   Para volver al fondo claro: borrar (o comentar) la linea
+   <link ... sidebar-cimu-azul.css> en index.html.
+   ===================================================== */
+
+:root {
+  --cimu-azul-fondo: #0a2a66;    /* fondo de los paneles */
+  --cimu-azul-banda: #071d4d;    /* banda del titulo */
+  --cimu-azul-seccion: #16418f;  /* barras de seccion */
+  --cimu-azul-cuerpo: #0d3377;   /* interior de secciones abiertas */
+  --cimu-azul-borde: #2c5bb3;
+  --cimu-azul-linea: #1d4a9e;    /* borde del panel */
+  --cimu-texto: #d6e4fa;
+  --cimu-texto-suave: #9fc2f5;
+  --cimu-celeste: #2fd0ff;
+}
+
+/* ---------- Fondo de ambos paneles ---------- */
+#left-sidebar,
+#right-panel {
+  background: var(--cimu-azul-fondo) !important;
+  backdrop-filter: none !important;
+  color: var(--cimu-texto);
+  accent-color: var(--cimu-celeste);
+  scrollbar-color: #3d6cc4 transparent;
+}
+#left-sidebar  { border-right: 2px solid var(--cimu-azul-linea) !important; }
+#right-panel   { border-left:  2px solid var(--cimu-azul-linea) !important; }
+#left-sidebar::-webkit-scrollbar-thumb { background: #3d6cc4; }
+
+/* ---------- Titulo y usuario ---------- */
+#left-sidebar .cimu-brand { background: var(--cimu-azul-banda); }
+#left-sidebar #user-info {
+  border-bottom-color: var(--cimu-azul-borde) !important;
+}
+#left-sidebar #user-info span { color: var(--cimu-texto-suave); }
+
+/* ---------- Secciones del panel izquierdo ---------- */
+#left-sidebar .sb-section {
+  background: var(--cimu-azul-cuerpo);
+  border-color: var(--cimu-azul-borde) !important;
+}
+#left-sidebar .sb-section > .sb-header {
+  background: var(--cimu-azul-seccion);
+  color: #e8f0fc !important;
+}
+#left-sidebar .sb-section > .sb-header:hover { background: #1d4fa8; }
+#left-sidebar .sb-section > .sb-header::after {
+  border-right-color: var(--cimu-texto-suave);
+  border-bottom-color: var(--cimu-texto-suave);
+}
+
+/* ---------- Textos ---------- */
+#left-sidebar label,
+#left-sidebar .sb-section label,
+#right-panel label {
+  color: var(--cimu-texto);
+}
+#left-sidebar h4,
+#left-sidebar .filter-group h4,
+#left-sidebar .sb-section .filter-group h4,
+#right-panel h4 {
+  color: var(--cimu-texto-suave);
+}
+/* Textos auxiliares con color gris fijo en el HTML */
+#left-sidebar [style*="#666"],
+#left-sidebar [style*="#555"],
+#right-panel [style*="#666"],
+#right-panel [style*="#555"] {
+  color: var(--cimu-texto-suave) !important;
+}
+#left-sidebar .filter-group,
+#right-panel .filter-group {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- Leyenda de trafico ---------- */
+#left-sidebar #traffic-legend-container {
+  background: transparent;
+  border-color: var(--cimu-azul-borde);
+  color: var(--cimu-texto);
+}
+#left-sidebar #traffic-legend-container h4 { color: var(--cimu-texto-suave); }
+
+/* ---------- Panel derecho ---------- */
+#right-panel h3 {
+  background: var(--cimu-azul-seccion);
+  border-color: var(--cimu-azul-borde);
+  color: #e8f0fc;
+}
+#right-panel hr { border-top-color: var(--cimu-azul-borde); }
+
+#right-panel #flow-list,
+#right-panel #aforo-details-container,
+#right-panel #aforo-day-list {
+  color: var(--cimu-texto);
+}
+#right-panel .day-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: var(--cimu-azul-cuerpo);
+  border: 1px solid var(--cimu-azul-borde);
+  border-radius: 6px;
+  cursor: pointer;
+}
+#right-panel .day-item:hover { background: var(--cimu-azul-seccion); }
