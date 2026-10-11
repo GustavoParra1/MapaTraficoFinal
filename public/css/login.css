@@ -1,65 +1,149 @@
+:root {
+    --cimu-blue-900: #08235a;
+    --cimu-blue-800: #0b3a8c;
+    --cimu-blue-600: #1769e0;
+    --cimu-cyan: #2fd0ff;
+    --cimu-bg-soft: #eaf2fd;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
 body {
-    font-family: sans-serif;
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    color: #1b2a41;
+    background:
+        radial-gradient(circle at 15% 10%, rgba(47, 208, 255, 0.25), transparent 45%),
+        linear-gradient(160deg, var(--cimu-blue-800) 0%, var(--cimu-blue-900) 100%);
+}
+
+.login-wrapper {
+    min-height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f2f5;
+    padding: 1.5rem;
 }
 
 .login-container {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
+
+/* ---------- Marca ---------- */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 1.75rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--cimu-blue-800), var(--cimu-blue-900));
+}
+
+.brand-logo { width: 62px; height: auto; flex-shrink: 0; }
+
+.brand-text h1 {
+    margin: 0;
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.brand-name {
+    margin: 0.35rem 0 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand-city {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--cimu-cyan);
+}
+
+/* ---------- Formulario ---------- */
+#login-form { padding: 1.75rem; }
 
 #login-form h2 {
+    margin: 0 0 1.25rem;
     text-align: center;
-    margin-bottom: 1.5rem;
-    color: #333;
+    font-size: 1.25rem;
+    color: var(--cimu-blue-800);
 }
 
-.input-group {
-    margin-bottom: 1rem;
-}
+.input-group { margin-bottom: 1rem; }
 
 .input-group label {
     display: block;
-    margin-bottom: 0.5rem;
-    color: #555;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #455a78;
 }
 
 .input-group input {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+    font-size: 0.95rem;
+    border: 1px solid #c3d3ea;
+    border-radius: 6px;
+    background: var(--cimu-bg-soft);
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-button {
+.input-group input:focus {
+    outline: none;
+    border-color: var(--cimu-blue-600);
+    box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.2);
+    background: #fff;
+}
+
+button[type="submit"] {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.8rem;
     border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
+    border-radius: 6px;
     font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
     cursor: pointer;
-    transition: background-color 0.3s;
+    background: linear-gradient(135deg, var(--cimu-blue-600), var(--cimu-blue-800));
+    transition: filter 0.2s, transform 0.1s;
 }
 
-button:hover {
-    background-color: #0056b3;
-}
+button[type="submit"]:hover { filter: brightness(1.12); }
+button[type="submit"]:active { transform: translateY(1px); }
 
 .error-message {
-    color: red;
+    min-height: 1.2rem;
+    margin: 1rem 0 0;
     text-align: center;
-    margin-top: 1rem;
-    height: 1rem;
+    font-size: 0.9rem;
+    color: #d62839;
+}
+
+/* ---------- Pie ---------- */
+.login-footer {
+    padding: 0.85rem 1.25rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--cimu-blue-900);
+}
+
+@media (max-width: 480px) {
+    .brand { padding: 1.25rem; }
+    .brand-text h1 { font-size: 2.2rem; }
+    #login-form { padding: 1.25rem; }
 }
