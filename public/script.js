@@ -12141,10 +12141,10 @@ if (!patrullasMarkers[movil]) {
     
         if (action === "ver-video") {
           visorCerradoManual = false; // ✅ el usuario QUIERE ver la cámara
-          cerrarChatBase(); // Cerrar chat si está abierto
+          // (chat y video pueden estar abiertos a la vez: ya no se cierra el chat)
           verCamaraPatrulla(targetMovil);
         } else if (action === "ir-al-chat") {
-          cerrarVisor(); // Cerrar visor si está abierto
+          // (chat y video pueden estar abiertos a la vez: ya no se cierra el visor)
           abrirChatBase(targetMovil);
         }
       });
@@ -12352,15 +12352,10 @@ rtdb.ref("patrullas").on("child_changed", snapshot => {
 
 // 🔥 Abrir chat cuando elegimos una patrulla en el mapa
 function abrirChatBase(movil) {
-    const visor = document.getElementById("visor-patrulla");
-    if (visor && !visor.classList.contains("visor-hidden")) {
-      return;
-    }
     console.log(`➡️ Opening chat for mobile: ${movil}`);
     chatMovilActual = movil;
 
-    // Asegurarse de que el visor de video esté cerrado al abrir el chat
-    cerrarVisor();
+    // El visor de video puede seguir abierto: chat y video conviven.
 
     document.getElementById("chatBaseMovil").textContent = movil;
     document.getElementById("chatBasePanel").style.display = "flex"; // Show the chat panel
@@ -12407,20 +12402,29 @@ function mostrarMensajeBase(msg) {
   const box = document.getElementById("chatBaseMsgs");
   if (!box) return;
 
-  const div = document.createElement("div");
-  div.style.marginBottom = "8px";
+  const esCom = msg.autorRol === "com";
 
-  const autor = msg.autorRol === "com" ? "COM" : "Patrulla";
-  const hora = msg.timestamp
-    ? new Date(msg.timestamp).toLocaleString()
+  const burbuja = document.createElement("div");
+  burbuja.className = "chat-bubble " + (esCom ? "com" : "patrulla");
+
+  const autor = document.createElement("span");
+  autor.className = "chat-autor";
+  autor.textContent = esCom ? "COM" : "Patrulla";
+
+  const texto = document.createElement("span");
+  texto.className = "chat-texto";
+  texto.textContent = msg.text == null ? "" : String(msg.text); // textContent: no interpreta HTML
+
+  const hora = document.createElement("span");
+  hora.className = "chat-hora";
+  hora.textContent = msg.timestamp
+    ? new Date(msg.timestamp).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
     : "";
 
-  div.innerHTML = `
-    <b>${autor}:</b> ${msg.text}<br>
-    <small>${hora}</small>
-  `;
-
-  box.appendChild(div);
+  burbuja.appendChild(autor);
+  burbuja.appendChild(texto);
+  burbuja.appendChild(hora);
+  box.appendChild(burbuja);
   box.scrollTop = box.scrollHeight;
 }
 
@@ -13000,8 +13004,8 @@ function cerrarVisor(e) {
   const video = document.getElementById("visorVideo");
 
   // 1. Limpiar Firebase del Video (Sin romper el Chat)
-  if (chatMovilActual) {
-    const rtcRef = firebase.database().ref(`webrtc/${chatMovilActual}`);
+  if (patrullaActualVisor) {
+    const rtcRef = firebase.database().ref(`webrtc/${patrullaActualVisor}`);
     rtcRef.child('ice_patru').off();
     rtcRef.child('offer').off();
     rtcRef.child('answer').off();
@@ -13026,16 +13030,7 @@ function cerrarVisor(e) {
     video.load(); // Fuerza la liberación de recursos del hardware
   }
   
-  // 4. Limpiar Chat asociado
-  const chatBasePanel = document.getElementById('chatBasePanel');
-  if (chatBasePanel) {
-      chatBasePanel.style.display = 'none';
-      
-      if (currentChatListenerRef) {
-          currentChatListenerRef.off(); 
-          currentChatListenerRef = null;
-      }
-  }
+  // 4. (El chat es independiente del visor: cerrar el video ya no cierra el chat)
 
   // 5. Detener visualización MJPEG y sistema de multi-cámaras
   detenerVisualizacionMJPEG();
@@ -13108,7 +13103,8 @@ function inicializarArrastreUniversal(idElemento, idHeader) {
     if (e.target.tagName === "BUTTON" || e.target.closest("button")) return;
     
     // Poner al frente la ventana que estamos tocando
-    el.style.zIndex = "100000";
+    window.__zTopVentanas = (window.__zTopVentanas || 100000) + 1;
+    el.style.setProperty("z-index", String(window.__zTopVentanas), "important");
     
     // Convertir posiciones relativas (right/bottom) a fijas (top/left) para poder mover
     const rect = el.getBoundingClientRect();
