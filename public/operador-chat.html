@@ -4,245 +4,336 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071d4d">
     <title>Chat Operador - CIMU</title>
     <style>
+        /* =====================================================
+           CIMU - Chat de operadores (MAC, UPPL, Multiagencia,
+           Encargado de Sala) con el estilo azul de la app.
+           Misma paleta, tipografia y tamaños que los paneles.
+           ===================================================== */
+        :root {
+            --cimu-azul-fondo: #0a2a66;
+            --cimu-azul-banda: #071d4d;
+            --cimu-azul-seccion: #16418f;
+            --cimu-azul-cuerpo: #0d3377;
+            --cimu-azul-boton: #1a4799;
+            --cimu-azul-boton-hover: #2457b8;
+            --cimu-azul-borde: #2c5bb3;
+            --cimu-azul-linea: #1d4a9e;
+            --cimu-texto: #d6e4fa;
+            --cimu-texto-suave: #9fc2f5;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+        }
+
+        @supports (height: 100dvh) {
+            html, body { height: 100dvh; }
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+            color: #1b2a41;
+            background: var(--cimu-azul-banda);
             display: flex;
             flex-direction: column;
-            padding: 0;
-            margin: 0;
         }
 
         .chat-container {
             flex: 1;
+            min-height: 320px;
             display: flex;
             flex-direction: column;
-            background: white;
-            max-width: 600px;
             width: 100%;
+            max-width: 640px;
             margin: 10px auto;
+            background: #f4f8fe;
+            border: 1px solid var(--cimu-azul-linea);
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            overflow: auto;
-            contain: layout style paint;
-            resize: vertical;
-            min-height: 400px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
         }
 
+        /* ---------- Encabezado ---------- */
         .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 12px;
+            background: var(--cimu-azul-banda);
+            color: #fff;
+            padding: 10px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
-            contain: layout style paint;
         }
 
         .chat-header h2 {
-            font-size: 1.8em;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: .2px;
             margin: 0;
-            font-weight: 700;
-            line-height: 1.1;
+            line-height: 1.2;
         }
 
         .status-badge {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid var(--cimu-azul-borde);
+            color: var(--cimu-texto);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
+        .status-badge::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3ddc84;
+            box-shadow: 0 0 0 2px rgba(61, 220, 132, .25);
+        }
+
+        /* ---------- Datos del operador ---------- */
         .operador-info {
-            padding: 4px 4px;
-            background: #f5f5f5;
-            border-bottom: 1px solid #e0e0e0;
+            background: var(--cimu-azul-fondo);
+            color: var(--cimu-texto);
+            padding: 10px 14px 12px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 8px;
             flex-shrink: 0;
-            contain: layout style paint;
+            border-bottom: 1px solid var(--cimu-azul-linea);
         }
 
-        .operador-info > div:first-child {
+        .operador-id {
             display: flex;
+            align-items: baseline;
             justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
-            gap: 2px;
+            gap: 4px 12px;
         }
 
-        .operador-info strong {
-            color: #333;
-            font-size: 1.65em;
+        #operador-nombre {
+            font-size: 16px;
             font-weight: 700;
-            line-height: 1;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        #operador-movil {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--cimu-texto-suave);
+        }
+
+        .operador-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: stretch;
         }
 
         .operador-info input {
-            width: 100%;
-            padding: 12px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1.45em;
-            height: 52px;
+            flex: 1 1 180px;
+            min-width: 0;
+            height: 36px;
+            padding: 6px 10px;
+            font: inherit;
+            font-size: 13px;
+            color: #1b2a41;
+            background: #fff;
+            border: 1px solid #c9d6ea;
+            border-radius: 6px;
+        }
+
+        .operador-info input::placeholder { color: #7b8aa3; }
+
+        .operador-info input:focus {
+            outline: 2px solid #5b8fe0;
+            outline-offset: 0;
         }
 
         .logout-btn {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
+            height: 36px;
+            padding: 0 12px;
+            font: inherit;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #e8f0fc;
+            background: var(--cimu-azul-seccion);
+            border: 1px solid var(--cimu-azul-borde);
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 1.1em;
-            font-weight: bold;
-            min-height: 42px;
-            min-width: 42px;
-            line-height: 1;
+            white-space: nowrap;
         }
 
-        .logout-btn:hover {
-            background: #cc0000;
+        .logout-btn:hover { background: var(--cimu-azul-boton-hover); }
+
+        .logout-btn.btn-limpiar {
+            color: #ffd48a;
+            background: transparent;
+            border-color: #c98a1b;
         }
 
+        .logout-btn.btn-limpiar:hover { background: rgba(201, 138, 27, .22); }
+
+        /* ---------- Mensajes ---------- */
         .messages {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
-            padding: 1px 2px;
-            background: white;
-            min-height: 5px;
-            contain: layout style paint;
+            padding: 10px 12px;
+            background: #f4f8fe;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: #3d6cc4 transparent;
         }
 
         .message {
-            margin-bottom: 2px;
-            padding: 8px 10px;
-            border-radius: 6px;
             max-width: 85%;
-            word-wrap: break-word;
-            font-size: 1.5em;
-            line-height: 1.25;
-            font-weight: 500;
+            padding: 6px 10px 5px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
         }
 
+        /* Administrativo: a la izquierda, claro */
         .message.admin {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            margin-right: auto;
+            align-self: flex-start;
+            background: #fff;
+            color: #1b2a41;
+            border: 1px solid #c9d6ea;
+            border-bottom-left-radius: 3px;
         }
 
+        /* Operador (vos): a la derecha, azul */
         .message.operador {
-            background: #f3e5f5;
-            border-left: 4px solid #9c27b0;
-            margin-left: auto;
-            text-align: right;
+            align-self: flex-end;
+            background: var(--cimu-azul-boton);
+            color: #fff;
+            border-bottom-right-radius: 3px;
         }
 
+        /* Avisos del sistema */
         .message.system {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            margin: 12px auto;
-            text-align: center;
-            width: 100%;
+            align-self: center;
             max-width: 100%;
+            text-align: center;
+            background: #fff7e0;
+            border: 1px solid #f0d98c;
+            color: #7a5b00;
             font-style: italic;
-            color: #856404;
-        }
-
-        .message-time {
-            font-size: 0.85em;
-            opacity: 0.7;
-            margin-top: 3px;
+            font-size: 12.5px;
+            box-shadow: none;
         }
 
         .message-sender {
-            font-weight: bold;
-            font-size: 1.05em;
-            margin-bottom: 3px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .3px;
+            opacity: .85;
+            margin-bottom: 2px;
         }
 
+        .message-time {
+            font-size: 10px;
+            opacity: .65;
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        .message.system .message-time { text-align: center; }
+
+        /* ---------- Barra para escribir ---------- */
         .input-area {
-            padding: 4px 4px;
-            background: #f9f9f9;
-            border-top: 1px solid #e0e0e0;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #fff;
+            border-top: 1px solid #d5e0f1;
             flex-shrink: 0;
-            align-items: stretch;
-            contain: layout style paint;
         }
 
         .input-area input {
-            width: 100%;
-            padding: 12px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1.4em;
-            min-height: 52px;
+            flex: 1;
+            min-width: 0;
+            height: 40px;
+            padding: 8px 12px;
+            font: inherit;
+            font-size: 14px;
+            color: #1b2a41;
+            background: #fff;
+            border: 1px solid #c9d6ea;
+            border-radius: 6px;
         }
 
         .input-area input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+            outline: 2px solid #5b8fe0;
+            outline-offset: 0;
+            border-color: #5b8fe0;
         }
+
+        .input-area input:disabled { background: #eef2f9; }
 
         .button-group {
             display: flex;
-            gap: 10px;
-            flex-direction: column;
-            width: 100%;
+            width: auto;
         }
 
         .send-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 18px;
-            border-radius: 4px;
+            height: 40px;
+            padding: 0 16px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--cimu-azul-boton);
+            border: 1px solid var(--cimu-azul-borde);
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 1.4em;
-            min-height: 54px;
             white-space: nowrap;
-            flex: 1;
-            line-height: 1;
         }
 
-        .send-btn:hover {
-            opacity: 0.9;
-        }
+        .send-btn:hover:not(:disabled) { background: var(--cimu-azul-boton-hover); }
 
         .send-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
+        /* ---------- Estados vacios / carga ---------- */
         .empty-chat {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            color: #999;
+            color: #5a6b86;
+            font-size: 13px;
         }
 
         .empty-chat-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-            opacity: 0.3;
+            font-size: 2.6em;
+            margin-bottom: 8px;
+            opacity: 0.35;
         }
 
         .waiting-auth {
@@ -251,12 +342,12 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            color: #999;
+            color: #5a6b86;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid #dbe5f5;
+            border-top: 4px solid var(--cimu-azul-boton-hover);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -270,7 +361,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--cimu-azul-banda);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -279,70 +370,64 @@
         }
 
         .splash-spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-top: 4px solid #fff;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 46px;
+            height: 46px;
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .splash-text {
-            color: white;
-            font-size: 16px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--cimu-texto);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: .2px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-            /* ===== RESPONSIVE MOBILE ===== */
-            @media (max-width: 600px) {
-                body {
-                    font-size: 22px;
-                }
-                .chat-container {
-                    max-width: 100vw;
-                    border-radius: 0;
-                    margin: 0;
-                    min-height: 100vh;
-                    box-shadow: none;
-                }
-                .chat-header h2 {
-                    font-size: 2.2em;
-                }
-                .operador-info strong {
-                    font-size: 2em;
-                }
-                .operador-info input {
-                    font-size: 1.7em;
-                    height: 60px;
-                }
-                .logout-btn {
-                    font-size: 1.3em;
-                    min-height: 50px;
-                    min-width: 50px;
-                }
-                .messages {
-                    font-size: 1.7em;
-                    padding: 4px 4px;
-                }
-                .message {
-                    font-size: 1.7em;
-                    padding: 12px 14px;
-                }
-                .input-area input {
-                    font-size: 1.6em;
-                    min-height: 60px;
-                }
-                .send-btn {
-                    font-size: 1.6em;
-                    min-height: 60px;
-                    padding: 16px 20px;
-                }
+
+        /* ---------- Celular ----------
+           Pantalla completa, letra un poco mas grande y botones de
+           44px para tocar con el dedo. Los campos de texto en 16px
+           evitan que el navegador haga zoom al escribir. */
+        @media (max-width: 600px) {
+            body { font-size: 15px; }
+
+            .chat-container {
+                max-width: 100%;
+                margin: 0;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                min-height: 0;
             }
+
+            #operador-nombre { font-size: 17px; }
+            #operador-movil { font-size: 13px; }
+
+            .operador-info input,
+            .input-area input { font-size: 16px; }
+
+            .operador-info input,
+            .logout-btn { height: 44px; }
+
+            .logout-btn { flex: 1; font-size: 14px; }
+
+            .message { font-size: 15px; padding: 8px 12px 6px; }
+            .message.system { font-size: 14px; }
+            .message-sender { font-size: 11.5px; }
+            .message-time { font-size: 11px; }
+
+            .input-area input,
+            .send-btn { height: 46px; }
+
+            .send-btn { font-size: 15px; padding: 0 18px; }
+        }
     </style>
 </head>
 <body>
@@ -359,18 +444,14 @@
         </div>
 
         <div class="operador-info">
-            <div>
-                <strong id="operador-nombre" style="font-size:2.6em;">Patrulla</strong>
+            <div class="operador-id">
+                <strong id="operador-nombre">Patrulla</strong>
+                <span id="operador-movil">Movil AA120JS</span>
             </div>
-            <div>
-                <span id="operador-movil" style="font-size:2.2em; font-weight:bold; color:#333;">Movil AA120JS</span>
-            </div>
-            <div style="display: flex; gap: 10px; flex-direction: column;">
+            <div class="operador-controls">
                 <input type="text" id="operador-nombre-input" placeholder="Tu nombre..." maxlength="30">
-                <div style="display: flex; gap: 10px;">
-                    <button class="logout-btn" id="logout-operador-btn" style="flex: 1;">🚪 Salir</button>
-                    <button class="logout-btn" id="reset-chat-btn" style="background: #ff9800; flex: 1;">🗑️ Limpiar</button>
-                </div>
+                <button class="logout-btn" id="logout-operador-btn">🚪 Salir</button>
+                <button class="logout-btn btn-limpiar" id="reset-chat-btn">🗑️ Limpiar</button>
             </div>
         </div>
 
@@ -582,7 +663,7 @@
 
                     if (isSystem) {
                         div.innerHTML = `
-                            <div>${msg.text}</div>
+                            <div>${escapeHtml(msg.text)}</div>
                             <div class="message-time">${time}</div>
                         `;
                     } else {

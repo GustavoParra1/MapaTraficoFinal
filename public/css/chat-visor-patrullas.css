@@ -185,3 +185,264 @@
   #chatBasePanel { height: 300px; top: 70px; right: 20px; }
   /* sin lugar al costado: el chat se superpone al video (queda arriba) */
 }
+
+/* ---------- 5. PANEL DE OPERADORES (ventana del administrador) ----------
+   Mismo estilo azul que los demas paneles. Se usa "#admin-chat-modal"
+   para ganarle a los estilos que index.html trae escritos adentro. */
+#admin-chat-modal {
+  z-index: 1200;                 /* antes 999: los botones +/- del mapa quedaban por encima */
+  width: min(850px, 94vw);
+  height: min(700px, 88vh);
+  background: #f4f8fe;
+  border: 1px solid var(--cimu-azul-linea, #1d4a9e);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#admin-chat-modal .admin-chat-close {
+  top: 7px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--cimu-azul-seccion, #16418f);
+  color: #e8f0fc;
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3);
+}
+#admin-chat-modal .admin-chat-close:hover {
+  background: var(--cimu-azul-boton-hover, #2457b8);
+  color: #fff;
+}
+
+#admin-chat-modal .admin-chat-content { padding-top: 0; }
+
+#admin-chat-modal .admin-chat-header {
+  background: var(--cimu-azul-banda, #071d4d);
+  color: #fff;
+  padding: 10px 48px 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--cimu-azul-linea, #1d4a9e);
+  border-radius: 0;
+}
+#admin-chat-modal .admin-chat-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #fff;
+}
+
+/* Lista de operadores */
+#admin-chat-modal .operadores-sidebar {
+  width: 38%;
+  min-width: 220px;
+  background: var(--cimu-azul-fondo, #0a2a66);
+  border-right: 1px solid var(--cimu-azul-linea, #1d4a9e);
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #3d6cc4 transparent;
+}
+#admin-chat-modal .operadores-sidebar h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--cimu-texto-suave, #9fc2f5);
+}
+#admin-chat-modal .operador-btn-modal {
+  padding: 9px 10px;
+  margin-bottom: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #e8f0fc;
+  background: var(--cimu-azul-boton, #1a4799);
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3);
+  border-left: 3px solid var(--cimu-azul-borde, #2c5bb3);
+  border-radius: 6px;
+}
+#admin-chat-modal .operador-btn-modal:hover {
+  background: var(--cimu-azul-boton-hover, #2457b8);
+  color: #fff;
+}
+#admin-chat-modal .operador-btn-modal.active {
+  background: #dbe8fb;
+  color: #0b3a8c;
+  border-color: #5b8fe0;
+  border-left-color: #2457b8;
+}
+#admin-chat-modal .operador-btn-modal-name { font-size: 13px; font-weight: 600; }
+#admin-chat-modal .operador-btn-modal-status {
+  font-size: 11.5px;
+  opacity: 1;
+  color: var(--cimu-texto-suave, #9fc2f5);
+}
+#admin-chat-modal .operador-btn-modal.active .operador-btn-modal-status { color: #35609e; }
+#admin-chat-modal .operador-unread-badge { border: 2px solid var(--cimu-azul-fondo, #0a2a66); }
+
+/* Conversacion */
+#admin-chat-modal .chat-area-modal { width: 62%; background: #f4f8fe; }
+#admin-chat-modal .chat-header-modal {
+  padding: 8px 12px;
+  background: var(--cimu-azul-seccion, #16418f);
+  border-bottom: 1px solid var(--cimu-azul-linea, #1d4a9e);
+}
+#admin-chat-modal .chat-header-modal h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+#admin-chat-modal .status-indicator {
+  font-size: 11.5px;
+  opacity: 1;
+  color: var(--cimu-texto-suave, #9fc2f5);
+}
+/* "Limpiar Chat" tiene el estilo escrito en el propio boton: hace falta !important */
+#admin-chat-modal #clear-chat-btn {
+  background: transparent !important;
+  color: #ffd48a !important;
+  border: 1px solid #c98a1b !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-family: inherit;
+}
+#admin-chat-modal #clear-chat-btn:hover { background: rgba(201, 138, 27, .22) !important; }
+
+#admin-chat-modal .messages-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f4f8fe;
+  scrollbar-width: thin;
+  scrollbar-color: #3d6cc4 transparent;
+}
+#admin-chat-modal .message-modal {
+  margin: 0;
+  max-width: 85%;
+  padding: 6px 10px 5px;
+  font-size: 13px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+#admin-chat-modal .message-modal strong { font-size: 11px; letter-spacing: .2px; }
+/* Mensajes del administrador (vos): a la derecha, azul */
+#admin-chat-modal .message-modal.admin {
+  align-self: flex-end;
+  text-align: left;
+  background: var(--cimu-azul-boton, #1a4799);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+/* Mensajes del operador: a la izquierda, claros */
+#admin-chat-modal .message-modal.operador {
+  align-self: flex-start;
+  background: #fff;
+  color: #1b2a41;
+  border: 1px solid #c9d6ea;
+  border-bottom-left-radius: 3px;
+}
+/* Avisos de ingreso / salida */
+#admin-chat-modal .message-modal.system {
+  align-self: center;
+  max-width: 100%;
+  margin: 4px 0;
+  background: #fff7e0;
+  border: 1px solid #f0d98c;
+  color: #7a5b00;
+  font-size: 12px;
+  box-shadow: none;
+}
+#admin-chat-modal .message-time-modal {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: .65;
+  text-align: right;
+}
+#admin-chat-modal .message-modal.system .message-time-modal { text-align: center; }
+#admin-chat-modal .empty-messages { color: #5a6b86; font-size: 13px; }
+
+#admin-chat-modal .input-area-modal {
+  min-height: 0;
+  padding: 8px 12px;
+  align-items: center;
+  background: #fff;
+  border-top: 1px solid #d5e0f1;
+}
+#admin-chat-modal .input-area-modal input {
+  height: 36px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+}
+#admin-chat-modal .input-area-modal input:focus {
+  outline: 2px solid #5b8fe0;
+  outline-offset: 0;
+  border-color: #5b8fe0;
+  box-shadow: none;
+}
+#admin-chat-modal .send-btn-modal {
+  height: 36px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--cimu-azul-boton, #1a4799);
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3);
+  border-radius: 6px;
+}
+#admin-chat-modal .send-btn-modal:hover { background: var(--cimu-azul-boton-hover, #2457b8); }
+
+/* Pantalla del PIN */
+#admin-chat-modal .pin-modal-admin {
+  background: rgba(7, 29, 77, .80);
+  border-radius: 12px;
+}
+#admin-chat-modal .pin-box {
+  max-width: 380px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #c9d6ea;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+}
+#admin-chat-modal .pin-box h3 { color: #0b3a8c; font-size: 15px; font-weight: 600; }
+#admin-chat-modal .pin-box p { color: #5a6b86; font-size: 12.5px; }
+#admin-chat-modal .admin-pin-input {
+  font-size: 1.8em;
+  letter-spacing: 12px;
+  padding: 12px;
+  border: 1px solid #c9d6ea;
+  border-radius: 6px;
+}
+#admin-chat-modal .admin-pin-input:focus {
+  border-color: #2457b8;
+  box-shadow: 0 0 0 3px rgba(36, 87, 184, .18);
+}
+#admin-chat-modal .pin-btn-submit,
+#admin-chat-modal .pin-btn-cancel {
+  padding: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  border-radius: 6px;
+}
+#admin-chat-modal .pin-btn-submit { background: var(--cimu-azul-boton, #1a4799); color: #fff; }
+#admin-chat-modal .pin-btn-submit:hover { background: var(--cimu-azul-boton-hover, #2457b8); }
+#admin-chat-modal .pin-btn-cancel { background: #e8eef9; color: #16418f; }
+#admin-chat-modal .pin-btn-cancel:hover { background: #d6e2f6; }
+
+@media (max-width: 768px) {
+  #admin-chat-modal .operadores-sidebar { width: 42%; min-width: 0; }
+  #admin-chat-modal .chat-area-modal { width: 58%; }
+}
