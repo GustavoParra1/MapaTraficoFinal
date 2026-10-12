@@ -3,7 +3,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f2a5c">
 <title>Patrulla GPS + Cámara</title>
 
 <!-- Leaflet MAPA -->
@@ -11,47 +12,145 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-    .card h3 { font-size:2em; margin-top:24px; margin-bottom:10px; }
-  body { font-family: Arial; padding:20px; background:#f3f4f6; }
-  .card { background:white; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
-  .card h2 { font-size:2.6em; margin-bottom:10px; }
-  #movilAsignado { font-size:2.2em; margin-bottom:16px; }
-  button, input { width:100%; padding:18px 20px; margin-top:12px; border-radius:8px; border:1px solid #ccc; font-size:20px; font-family:inherit; min-height:56px; }
-  #chatInput { font-size:28px; min-height:56px; padding:18px 20px; margin-top:12px; border-radius:8px; border:1px solid #ccc; }
-  #enviarChatBtn { background:#1d4ed8; color:white; font-weight:bold; cursor:pointer; font-size:20px; min-height:56px; display:flex; align-items:center; justify-content:center; margin-top:12px; border-radius:8px; border:1px solid #ccc; }
-  #enviarChatBtn:hover { background:#1e40af; }
-  #enviarChatBtn:disabled { background:#9ca3af; cursor:not-allowed; }
-  button { background:#1d4ed8; color:white; font-weight:bold; cursor:pointer; font-size:20px; min-height:56px; display:flex; align-items:center; justify-content:center; }
-  button:hover { background:#1e40af; }
-  button:disabled { background:#9ca3af; cursor:not-allowed; }
-  #estado { margin-top:15px; padding:10px; border-radius:8px; background:#e5e7eb; }
-  .emergency { background:#dc2626 !important; }
-  .success { background:#10b981 !important; }
-  #map { height:150px; margin-top:12px; border-radius:10px; transition: height 0.3s ease; }
-  #map.expanded { height:250px; }
-  #toggleMapBtn { 
-    background:#4b5563; 
-    font-size:14px; 
-    min-height:40px; 
-    padding:8px; 
-    margin-top:8px;
+  :root {
+    --bg:#eef2f8; --surface:#ffffff; --ink:#0f1b33; --muted:#5b6b86; --line:#d6deeb;
+    --blue:#1d4ed8; --blue-press:#1e40af; --navy:#0f2a5c;
+    --red:#dc2626; --red-ink:#b91c1c; --red-soft:#fee2e2;
+    --bubble-in:#e6ebf5;
+    --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
   }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0b1220; --surface:#131d33; --ink:#e8eefc; --muted:#9aa9c7; --line:#25344f;
+      --blue:#2563eb; --blue-press:#1d4ed8; --navy:#0a1630;
+      --red-ink:#fca5a5; --red-soft:#3a1519; --bubble-in:#1d2a45;
+    }
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16px; line-height:1.4;
+    padding-bottom:calc(20px + var(--safe-bottom));
+  }
+
+  /* Barra superior fija: identidad del móvil + estado siempre visibles */
+  .topbar {
+    position:sticky; top:0; z-index:2000;
+    background:var(--navy); color:#fff;
+    padding:calc(12px + var(--safe-top)) calc(16px + env(safe-area-inset-right,0px)) 12px calc(16px + env(safe-area-inset-left,0px));
+  }
+  .topbar-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .topbar h1 { margin:0; font-size:22px; font-weight:800; }
+  #movilAsignado {
+    background:rgba(255,255,255,.16); padding:4px 12px; border-radius:999px;
+    font-weight:700; font-size:15px; white-space:nowrap;
+  }
+  #movilAsignado:empty { display:none; }
+  #estado { margin-top:6px; font-size:15px; color:rgba(255,255,255,.9); }
+
+  .app {
+    max-width:560px; margin:0 auto; padding:14px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+
+  /* Mapa */
+  .map-wrap { position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--line); background:var(--surface); }
+  #map { position:relative; height:clamp(170px,28vh,260px); transition:height .3s ease; background:var(--bubble-in); }
+  #map.expanded { height:clamp(300px,58vh,520px); }
+  #map:empty::before {
+    content:"El mapa aparece al activar el GPS";
+    position:absolute; inset:0; display:grid; place-items:center;
+    padding:16px; text-align:center; color:var(--muted); font-size:15px;
+  }
+  #toggleMapBtn {
+    position:absolute; left:10px; bottom:10px; z-index:1000;
+    width:auto; min-height:44px; padding:0 14px; border-radius:12px;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line);
+    font-family:inherit; font-size:15px; font-weight:700; cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.25);
+  }
+  #zoom-controls { position:absolute; top:10px; right:10px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
+  .zoom-btn {
+    width:48px; height:48px; padding:0; border:1px solid var(--line); border-radius:12px;
+    background:var(--surface); color:var(--ink); font-family:inherit; font-size:26px; font-weight:700;
+    display:grid; place-items:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);
+  }
+
+  /* Cámara */
   #cameraViewerContainer {
-    position: relative;
-    width: 100%;
-    height: 50vh; /* 50% de la pantalla */
-    min-height: 280px;
-    background: black;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    position:relative; width:100%; height:clamp(220px,40vh,460px);
+    background:#000; border-radius:16px; overflow:hidden;
   }
-  #localVideo { 
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Mostrar video completo sin recortar */
-    margin-top: 0;
+  #localVideo { width:100%; height:100%; object-fit:contain; display:block; }
+
+  /* Botones */
+  .btn {
+    -webkit-appearance:none; appearance:none;
+    width:100%; min-height:60px; padding:0 16px; border:0; border-radius:14px;
+    background:var(--blue); color:#fff;
+    font-family:inherit; font-size:18px; font-weight:700; line-height:1.2; text-align:center;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:transform .08s ease, background .15s ease;
+  }
+  .btn:active:not(:disabled) { transform:scale(.98); background:var(--blue-press); }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .controls { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .controls .wide { grid-column:1 / -1; }
+
+  #emergenciaBtn {
+    min-height:72px; font-size:20px;
+    background:var(--red-soft); color:var(--red-ink);
+    box-shadow:inset 0 0 0 2px var(--red);
+  }
+  #emergenciaBtn:active:not(:disabled) { background:var(--red-soft); }
+  #emergenciaBtn.emergency {
+    background:var(--red) !important; color:#fff;
+    animation:pulso 1.2s ease-in-out infinite;
+  }
+  @keyframes pulso {
+    0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.55); }
+    50%     { box-shadow:0 0 0 10px rgba(220,38,38,0); }
+  }
+  #detenerBtn { background:transparent; color:var(--red-ink); box-shadow:inset 0 0 0 2px var(--line); }
+  #detenerBtn:active:not(:disabled) { background:var(--red-soft); }
+
+  .debug { border:1px dashed var(--line); border-radius:14px; padding:2px 12px; color:var(--muted); }
+  .debug summary { min-height:48px; display:flex; align-items:center; cursor:pointer; font-size:15px; }
+  .debug .btn {
+    margin:2px 0 12px; min-height:52px; font-size:16px;
+    background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line);
+  }
+
+  /* Chat */
+  .chat { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; }
+  .chat h2 { margin:0 0 10px; font-size:18px; }
+  #chatBox {
+    height:clamp(160px,26vh,300px); overflow:auto; overscroll-behavior:contain;
+    display:flex; flex-direction:column; gap:8px; padding:2px;
+  }
+  #chatBox:empty::before { content:"Todavía no hay mensajes."; margin:auto; color:var(--muted); font-size:15px; }
+  .msg {
+    max-width:85%; padding:10px 14px; border-radius:16px 16px 16px 4px;
+    background:var(--bubble-in); font-size:16px; line-height:1.35; overflow-wrap:anywhere;
+  }
+  .msg.mine { align-self:flex-end; background:var(--blue); color:#fff; border-radius:16px 16px 4px 16px; }
+  .msg .from { display:block; font-size:13px; font-weight:700; color:var(--muted); margin-bottom:2px; }
+  .chat-form { display:flex; gap:10px; margin-top:12px; }
+  #chatInput {
+    flex:1; min-width:0; min-height:56px; padding:0 16px; border-radius:14px;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink);
+    font-family:inherit; font-size:17px;
+  }
+  #chatInput:disabled { opacity:.5; }
+  #enviarChatBtn { width:auto; min-width:96px; padding:0 20px; }
+
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline:3px solid #60a5fa; outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    #emergenciaBtn.emergency { animation:none; }
+    .btn, #map { transition:none; }
   }
 </style>
 
@@ -64,30 +163,47 @@
 
 <body>
 
-<div class="card">
-  <h2>🚓 Patrulla</h2>
-  <div id="movilAsignado" style="font-weight:bold;color:#1d4ed8"></div>
+<header class="topbar">
+  <div class="topbar-row">
+    <h1>🚓 Patrulla</h1>
+    <div id="movilAsignado"></div>
+  </div>
+  <div id="estado">🔐 Verificando sesión...</div>
+</header>
 
-  <button id="gpsBtn">📡 Activar GPS</button>
-  <button id="camaraBtn" disabled>🎥 Activar cámara</button>
-  <button id="testVideoBtn">🧪 TEST VIDEO (Debug)</button>
-  <button id="detenerBtn" disabled style="background:#dc2626;">⛔ Detener</button>
-  <button id="emergenciaBtn" disabled>🚨 Emergencia</button>
+<main class="app">
 
-  <div id="map"></div>
-  <button id="toggleMapBtn">📍 Expandir/Contraer Mapa</button>
-  
+  <section class="map-wrap">
+    <div id="map"></div>
+    <button id="toggleMapBtn" type="button">📍 Ampliar / reducir mapa</button>
+  </section>
+
   <div id="cameraViewerContainer" style="display:none;">
     <video id="localVideo" autoplay muted playsinline></video>
   </div>
 
-  <div id="estado">🔐 Verificando sesión...</div>
+  <section class="controls">
+    <button id="gpsBtn" class="btn" type="button">📡 Activar GPS</button>
+    <button id="camaraBtn" class="btn" type="button" disabled>🎥 Activar cámara</button>
+    <button id="emergenciaBtn" class="btn wide" type="button" disabled>🚨 Emergencia</button>
+    <button id="detenerBtn" class="btn wide" type="button" disabled>⛔ Detener</button>
+  </section>
 
-  <h3>💬 Chat</h3>
-  <div id="chatBox" style="height:200px;overflow:auto;border:1px solid #ccc;padding:10px;font-size:28px"></div>
-  <input id="chatInput" placeholder="Mensaje..." disabled>
-  <button id="enviarChatBtn" disabled>Enviar</button>
-</div>
+  <details class="debug">
+    <summary>Herramientas de prueba</summary>
+    <button id="testVideoBtn" class="btn" type="button">🧪 Test video (debug)</button>
+  </details>
+
+  <section class="chat">
+    <h2>💬 Chat</h2>
+    <div id="chatBox"></div>
+    <div class="chat-form">
+      <input id="chatInput" placeholder="Escribí un mensaje" enterkeyhint="send" autocomplete="off" disabled>
+      <button id="enviarChatBtn" class="btn" type="button" disabled>Enviar</button>
+    </div>
+  </section>
+
+</main>
 
 <script>
 // ============================
@@ -467,7 +583,17 @@ async function iniciarWebRTC() {
 function iniciarChat() {
   db.ref("chat/" + idPatrulla).on("child_added", s => {
     const m = s.val();
-    chatBox.innerHTML += `<div><b>${m.from}:</b> ${m.text}</div>`;
+    const propio = m.from === idPatrulla;
+    const burbuja = document.createElement('div');
+    burbuja.className = 'msg' + (propio ? ' mine' : '');
+    if (!propio) {
+      const quien = document.createElement('span');
+      quien.className = 'from';
+      quien.textContent = m.from;
+      burbuja.appendChild(quien);
+    }
+    burbuja.appendChild(document.createTextNode(m.text));
+    chatBox.appendChild(burbuja);
     chatBox.scrollTop = chatBox.scrollHeight;
   });
 }
@@ -481,6 +607,10 @@ enviarChatBtn.onclick = () => {
   });
   chatInput.value = "";
 };
+
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') enviarChatBtn.click();
+});
 
 // ============================
 // EMERGENCIA / DETENER

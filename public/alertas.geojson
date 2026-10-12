@@ -6,15 +6,31 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -57.5625377,
-          -38.0255796
+          -57.5628943,
+          -38.0259471
         ]
       },
       "properties": {
-        "titulo": "Detuvieron en Maipú a un hombre buscado por una causa de abuso sexual agravado",
-        "direccion": "Juzgado de Ejecución Penal 1",
-        "link": "https://www.infobrisas.com/noticias/2026/09/28/109531-detuvieron-en-maipu-a-un-hombre-buscado-por-una-causa-de-abuso-sexual-agravado",
-        "timestamp": 1790849656805
+        "titulo": "Detuvieron a un hombre acusado de apuñalar a otro y dejarlo al borde de la muerte",
+        "direccion": "Unidad Penal 44",
+        "link": "https://www.infobrisas.com/noticias/2026/10/11/111003-detuvieron-a-un-hombre-acusado-de-apunalar-a-otro-y-dejarlo-al-borde-de-la-muerte",
+        "timestamp": 1791826376116
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5723614,
+          -37.9888012
+        ]
+      },
+      "properties": {
+        "titulo": "Un incendio destruyó una casa y un auto en el barrio Don Bosco",
+        "direccion": "Jara y Belgrano",
+        "link": "https://quedigital.com.ar/policiales/un-incendio-destruyo-una-casa-y-un-auto-en-el-barrio-don-bosco/",
+        "timestamp": 1791826383590
       }
     }
   ]
