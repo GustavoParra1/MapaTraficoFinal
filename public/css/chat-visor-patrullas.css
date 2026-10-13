@@ -446,3 +446,266 @@
   #admin-chat-modal .operadores-sidebar { width: 42%; min-width: 0; }
   #admin-chat-modal .chat-area-modal { width: 58%; }
 }
+
+/* ---------- 6. SEGUIMIENTO DE EVENTOS (panel del administrador) ----------
+   Mismo estilo azul + adaptable a celular.
+   OJO: el panel y sus tarjetas traen el estilo escrito adentro del HTML
+   (index.html), por eso varias reglas llevan !important. */
+#toggle-events-panel-btn {
+  background: var(--cimu-azul-boton, #1a4799) !important;
+  border: 2px solid #5b8fe0 !important;
+  box-shadow: 0 4px 12px rgba(7, 29, 77, .45) !important;
+}
+#toggle-events-panel-btn:hover { background: var(--cimu-azul-boton-hover, #2457b8) !important; }
+
+/* Panel abierto = columna: encabezado y filtros fijos, la lista hace scroll sola.
+   (Solo cuando NO esta oculto: el JS lo muestra/oculta cambiando su display.) */
+#events-container:not([style*="display: none"]):not([style*="display:none"]) {
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+#events-container {
+  background: #f4f8fe !important;
+  border: 1px solid var(--cimu-azul-linea, #1d4a9e) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35) !important;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Encabezado */
+#events-container > div:nth-child(1) {
+  flex: 0 0 auto;
+  padding: 10px 14px !important;
+  background: var(--cimu-azul-banda, #071d4d) !important;
+  border-bottom: 1px solid var(--cimu-azul-linea, #1d4a9e) !important;
+  user-select: none;
+}
+#events-container > div:nth-child(1) h3 {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px;
+}
+#close-events-panel-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 14px !important;
+  color: #e8f0fc !important;
+  background: var(--cimu-azul-seccion, #16418f) !important;
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3) !important;
+  border-radius: 6px !important;
+}
+#close-events-panel-btn:hover { background: var(--cimu-azul-boton-hover, #2457b8) !important; }
+
+/* Filtro por capa */
+#events-container > div:nth-child(2) {
+  flex: 0 0 auto;
+  padding: 10px 14px !important;
+  background: var(--cimu-azul-fondo, #0a2a66) !important;
+  border-bottom: 1px solid var(--cimu-azul-linea, #1d4a9e) !important;
+}
+#events-container > div:nth-child(2) > label {
+  color: var(--cimu-texto-suave, #9fc2f5) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .3px;
+}
+#events-container [id^="filter-"] {
+  padding: 7px 8px !important;
+  font-family: inherit;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #e8f0fc !important;
+  background: var(--cimu-azul-seccion, #16418f) !important;
+  border: 1px solid var(--cimu-azul-borde, #2c5bb3) !important;
+  border-radius: 6px !important;
+}
+#events-container [id^="filter-"]:hover { background: var(--cimu-azul-boton-hover, #2457b8) !important; }
+/* Filtro activo (el HTML lo marca con el azul #007bff o con la clase "active") */
+#events-container [id^="filter-"][style*="007bff"],
+#events-container [id^="filter-"][style*="0, 123, 255"],
+#events-container [id^="filter-"].active {
+  background: #dbe8fb !important;
+  color: #0b3a8c !important;
+  border-color: #5b8fe0 !important;
+}
+
+/* Lista */
+#events-list-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #3d6cc4 transparent;
+}
+
+/* Tarjeta de evento */
+#events-container .event-card {
+  padding: 12px !important;
+  margin-bottom: 10px !important;
+  background: #fff !important;
+  border: 1px solid #c9d6ea !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(7, 29, 77, .08);
+}
+#events-container .event-card h4 {
+  margin: 0 !important;
+  color: #0b3a8c !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.25;
+}
+#events-container .event-status {
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+/* "ABIERTO" es amarillo: texto oscuro para que se lea */
+#events-container .event-status[style*="ffc107"],
+#events-container .event-status[style*="255, 193, 7"] { color: #3d2c00 !important; }
+
+#events-container .event-card > div:nth-child(2) {
+  color: #5a6b86 !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+}
+#events-container .event-card > div:nth-child(2) strong { color: #1b2a41; }
+
+/* Formulario */
+#events-container .event-card label {
+  display: block;
+  margin-bottom: 2px;
+  color: #16418f !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+#events-container .event-card input,
+#events-container .event-card select,
+#events-container .event-card textarea {
+  padding: 6px 8px !important;
+  font-family: inherit;
+  font-size: 13px !important;
+  color: #1b2a41;
+  background: #fff !important;
+  border: 1px solid #c9d6ea !important;
+  border-radius: 6px !important;
+}
+#events-container .event-card input:focus,
+#events-container .event-card select:focus,
+#events-container .event-card textarea:focus {
+  outline: 2px solid #5b8fe0;
+  outline-offset: 0;
+  border-color: #5b8fe0 !important;
+}
+/* Eventos cerrados: campos bloqueados */
+#events-container .event-card input:disabled,
+#events-container .event-card select:disabled,
+#events-container .event-card textarea:disabled,
+#events-container .event-card input[readonly],
+#events-container .event-card textarea[readonly] {
+  color: #5a6b86;
+  background: #eef2f9 !important;
+}
+
+/* Historial y mensajes del admin */
+#events-container .event-card div:has(> .event-history) {
+  background: #eef3fb !important;
+  border: 1px solid #d5e0f1 !important;
+  border-radius: 8px !important;
+}
+#events-container .event-card div:has(> .event-history) > div:first-child {
+  color: #16418f !important;
+  font-size: 12px !important;
+}
+#events-container .event-history { color: #3b4a63 !important; font-size: 12px !important; }
+#events-container .event-admin-messages {
+  background: #dbe8fb !important;
+  border: 1px solid #b9cdf0 !important;
+  border-radius: 8px !important;
+}
+
+/* Botones de la tarjeta */
+#events-container .close-event-btn,
+#events-container .remove-event-btn,
+#events-container .expand-event-btn {
+  min-height: 34px;
+  font-family: inherit;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  border: none !important;
+  border-radius: 6px !important;
+}
+#events-container .close-event-btn { background: #b3261e !important; }
+#events-container .close-event-btn:hover { background: #8f1d17 !important; }
+#events-container .remove-event-btn { background: var(--cimu-azul-seccion, #16418f) !important; }
+#events-container .remove-event-btn:hover { background: var(--cimu-azul-boton-hover, #2457b8) !important; }
+#events-container .expand-event-btn { background: var(--cimu-azul-boton, #1a4799) !important; }
+#events-container .expand-event-btn:hover { background: var(--cimu-azul-boton-hover, #2457b8) !important; }
+
+/* ---------- CELULAR: pantalla completa ----------
+   style.css lo ocultaba en celular con "display:none !important";
+   la regla de arriba (:not([style*="display: none"])) lo deja verse
+   cuando se abre con el boton 📋. */
+@media (max-width: 768px) {
+  #events-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    z-index: 2100 !important;     /* por encima del panel de filtros (2000) */
+  }
+  /* El boton redondo 📋 sube para no taparse con "Mostrar Filtros" */
+  #toggle-events-panel-btn {
+    bottom: 80px !important;
+    right: 16px !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 22px !important;
+  }
+  #events-container > div:nth-child(1) { padding: 12px 14px !important; }
+  #events-container > div:nth-child(1) h3 { font-size: 15px !important; }
+  #close-events-panel-btn { width: 38px; height: 38px; font-size: 16px !important; }
+  #events-container [id^="filter-"] { padding: 10px 8px !important; font-size: 14px !important; }
+  #events-list-container { padding: 10px !important; -webkit-overflow-scrolling: touch; }
+  #events-container .event-card h4 { font-size: 15px !important; }
+  #events-container .event-card label { font-size: 13px !important; }
+  /* 16px en los campos: evita que el celular haga zoom al tocarlos */
+  #events-container .event-card input,
+  #events-container .event-card select,
+  #events-container .event-card textarea {
+    min-height: 40px;
+    padding: 8px 10px !important;
+    font-size: 16px !important;
+  }
+  #events-container .event-card textarea { min-height: 70px; }
+  #events-container .close-event-btn,
+  #events-container .remove-event-btn,
+  #events-container .expand-event-btn { min-height: 44px; font-size: 14px !important; }
+  #events-container .event-history,
+  #events-container .event-messages-list { font-size: 13px !important; }
+}
+
+/* Celulares muy angostos: las parejas Hora / Movil pasan a una sola columna */
+@media (max-width: 380px) {
+  #events-container .event-card div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
