@@ -345,6 +345,22 @@
       <div class="filter-group"><label for="robo-automotor-year-filter">Año:</label><select id="robo-automotor-year-filter"></select></div>
       <label><input type="checkbox" id="robo-heatmap-checkbox"> Mapa de Calor (Robos)</label>
     </div>
+
+    <h3>Eventos</h3>
+    <label><input type="checkbox" id="evtlayer-checkbox"> Mostrar Eventos</label>
+    <div id="evtlayer-filtros" style="display: none;">
+      <h4>Filtros de Eventos</h4>
+      <div class="filter-group"><label for="evtlayer-anio">Año:</label><select id="evtlayer-anio"></select></div>
+      <div class="filter-group"><label for="evtlayer-mes">Mes:</label><select id="evtlayer-mes"></select></div>
+      <div style="margin:6px 0;">
+        <b>Tipo de evento</b>
+        <a href="#" id="evtlayer-todos" onclick="return false;" style="margin-left:6px;">Todos</a> |
+        <a href="#" id="evtlayer-ninguno" onclick="return false;">Ninguno</a>
+      </div>
+      <div id="evtlayer-tipos"></div>
+      <label><input type="checkbox" id="evtlayer-calor"> Mapa de Calor (Eventos)</label>
+      <div id="evtlayer-info" style="font-size:12px;opacity:.8;margin-top:4px;"></div>
+    </div>
   </div>
 
   <!-- === PANELES SECUNDARIOS === -->
@@ -876,6 +892,7 @@
 
   <script src="js/eventos-operadores.js?v=202602201400"></script>
   <script src="script.js?v=20261012001"></script>
+  <script src="js/eventos-layer.js?v=1"></script>
   <script src="js/sidebar-cimu.js?v=1"></script>
   <script src="js/tour-fix-cimu.js?v=1"></script>
 
