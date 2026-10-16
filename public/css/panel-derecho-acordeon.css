@@ -40,3 +40,6 @@
 /* Contenido */
 #right-panel .acc-body { display: none; }
 #right-panel .acc-section.open > .acc-body { display: block; }
+
+/* Botón de ayuda fuera de las secciones */
+#right-panel #btn-open-consultas { margin: 0 0 12px 0; }

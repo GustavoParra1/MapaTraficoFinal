@@ -12,11 +12,14 @@
   function init() {
     var panel = document.getElementById('right-panel');
     if (!panel || panel.dataset.accInit) return;
-    panel.dataset.accInit = '1';
 
-    var headers = Array.prototype.filter.call(panel.children, function (el) {
-      return el.tagName === 'H3';
+    // Busca los <h3> en cualquier nivel del panel (no solo hijos directos)
+    var headers = Array.prototype.filter.call(panel.querySelectorAll('h3'), function (el) {
+      return !el.closest('.acc-section');
     });
+    if (!headers.length) { console.warn('[acordeon] no se encontraron <h3> en #right-panel'); return; }
+    panel.dataset.accInit = '1';
+    console.log('[acordeon] iniciado con ' + headers.length + ' secciones');
     var sections = [];
 
     headers.forEach(function (h3) {
@@ -67,6 +70,12 @@
       sections.push(section);
     });
 
+    // El botón PREGUNTAS / AYUDA no pertenece a ninguna sección: va suelto arriba de todo
+    var btnAyuda = document.getElementById('btn-open-consultas');
+    if (btnAyuda && sections.length && sections[0].contains(btnAyuda)) {
+      sections[0].parentNode.insertBefore(btnAyuda, sections[0]);
+    }
+
     function setOpen(section, open) {
       section.classList.toggle('open', open);
       section.firstElementChild.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -101,4 +110,5 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+  window.addEventListener('load', function () { init(); setTimeout(init, 1500); });
 })();
