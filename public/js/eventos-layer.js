@@ -27,6 +27,7 @@
   var capa = null;             // markerClusterGroup
   var calor = null;            // heatLayer
   var cargando = false;
+  var etiquetas = {};          // tipo -> <span> con el texto y la cantidad
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -103,6 +104,7 @@
 
     var cont = $('evtlayer-tipos');
     cont.innerHTML = '';
+    etiquetas = {};
     tipos.forEach(function (t) {
       var lab = document.createElement('label');
       lab.style.cssText = 'display:flex;align-items:center;gap:6px;margin:2px 0;';
@@ -116,6 +118,7 @@
       punto.style.cssText = 'width:10px;height:10px;border-radius:50%;flex:none;background:' + colorDe(t);
       var txt = document.createElement('span');
       txt.textContent = t + ' (' + porTipo[t] + ')';
+      etiquetas[t] = { txt: txt, lab: lab };
       lab.appendChild(cb); lab.appendChild(punto); lab.appendChild(txt);
       cont.appendChild(lab);
     });
@@ -125,11 +128,38 @@
     selA.innerHTML = '<option value="all">Todos los Años</option>';
     anios.forEach(function (a) { selA.insertAdjacentHTML('beforeend', '<option value="' + esc(a) + '">' + esc(a) + '</option>'); });
 
-    var meses = Object.keys(contar('mes')).sort(function (a, b) { return a - b; });
+    actualizarMeses();
+  }
+
+  /* Meses disponibles segun el año elegido (mantiene la seleccion si sigue valida) */
+  function actualizarMeses() {
+    var anio = $('evtlayer-anio').value;
     var selM = $('evtlayer-mes');
+    var actual = selM.value;
+    var m = {};
+    datos.forEach(function (d) {
+      if ((anio === 'all' || d['año'] === anio) && d['mes']) m[d['mes']] = true;
+    });
+    var meses = Object.keys(m).sort(function (a, b) { return a - b; });
     selM.innerHTML = '<option value="all">Todos los Meses</option>';
-    meses.forEach(function (m) {
-      selM.insertAdjacentHTML('beforeend', '<option value="' + esc(m) + '">' + esc(MESES[+m] || m) + '</option>');
+    meses.forEach(function (x) {
+      selM.insertAdjacentHTML('beforeend', '<option value="' + esc(x) + '">' + esc(MESES[+x] || x) + '</option>');
+    });
+    selM.value = (actual !== 'all' && m[actual]) ? actual : 'all';
+  }
+
+  /* Cantidad por tipo segun año y mes elegidos (sin contar el filtro por tipo) */
+  function actualizarConteos() {
+    var anio = $('evtlayer-anio').value, mes = $('evtlayer-mes').value, c = {};
+    datos.forEach(function (d) {
+      if ((anio === 'all' || d['año'] === anio) && (mes === 'all' || d['mes'] === mes)) {
+        var t = d['Tipo de Evento']; c[t] = (c[t] || 0) + 1;
+      }
+    });
+    Object.keys(etiquetas).forEach(function (t) {
+      var n = c[t] || 0;
+      etiquetas[t].txt.textContent = t + ' (' + n + ')';
+      etiquetas[t].lab.style.opacity = n ? '1' : '0.45';
     });
   }
 
@@ -158,6 +188,7 @@
 
   function refrescar() {
     if (!datos || !capa) return;
+    actualizarConteos();
     var lista = filtrados();
     capa.clearLayers();
     var marcadores = lista.map(function (d) {
@@ -199,7 +230,7 @@
     var chk = $('evtlayer-checkbox');
     if (!chk) { console.warn('Eventos: falta el bloque HTML de la capa en index.html'); return; }
     chk.addEventListener('change', function (e) { e.target.checked ? activar() : desactivar(); });
-    $('evtlayer-anio').addEventListener('change', refrescar);
+    $('evtlayer-anio').addEventListener('change', function () { if (datos) actualizarMeses(); refrescar(); });
     $('evtlayer-mes').addEventListener('change', refrescar);
     $('evtlayer-calor').addEventListener('change', function (e) {
       var mapa = window.mymap;
