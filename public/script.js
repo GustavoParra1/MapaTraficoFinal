@@ -4646,6 +4646,16 @@ const roboIcon = L.divIcon({
     iconAnchor: [12, 24]
 });
 
+// Datos de robo automotor para las CONSULTAS del panel: respetan el filtro de año de la capa Robo Automotor
+// (solo si la capa esta activada; si no, se usan todos los años).
+function datosRoboConsulta() {
+    if (!allRoboAutomotorData) return [];
+    const chk = document.getElementById('robo-automotor-checkbox');
+    const sel = document.getElementById('robo-automotor-year-filter');
+    const y = (chk && chk.checked && sel) ? sel.value : 'all';
+    return (y && y !== 'all') ? allRoboAutomotorData.filter(i => String(i['año']) === y) : allRoboAutomotorData;
+}
+
 function loadRoboAutomotorData() {
     if (allRoboAutomotorData) {
         return Promise.resolve();
@@ -6496,7 +6506,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         });
         
         // Procesar robos
-        allRoboAutomotorData.forEach(r => {
+        datosRoboConsulta().forEach(r => {
           const coordsStr = r['Longitud y Latitud'];
           if (!coordsStr) return;
           
@@ -7461,7 +7471,7 @@ case "tendencia_no_prioridad": {
         robosPorBarrio[barrio.properties.soc_fomen] = 0;
       });
 
-      allRoboAutomotorData.forEach(robo => {
+      datosRoboConsulta().forEach(robo => {
         const coordsStr = robo['Longitud y Latitud'];
         if (!coordsStr) return;
         const parts = coordsStr.split(',').map(s => s.trim());
@@ -7508,7 +7518,7 @@ case "tendencia_no_prioridad": {
       top5Barrios.forEach(([barrio, cantidad], index) => {
         resultadoHTML += `<li><span style="color:${colores[index % colores.length]}; font-weight:bold;">${index + 1}. ${barrio}:</span> ${cantidad} eventos</li>`;
       });
-      resultadoHTML += '</ul><small>Los barrios están resaltados en el mapa.</small>';
+      resultadoHTML += '</ul><small>Período: ' + (datosRoboConsulta().length === allRoboAutomotorData.length ? 'todos los años' : 'año ' + document.getElementById('robo-automotor-year-filter').value) + '. Los barrios están resaltados en el mapa.</small>';
 
       resultadosDiv.innerHTML = resultadoHTML;
       break;
@@ -7535,7 +7545,7 @@ case "tendencia_no_prioridad": {
   const mesesCuentas = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0};
   let robosSinFecha = 0;
 
-  allRoboAutomotorData.forEach(robo => {
+  datosRoboConsulta().forEach(robo => {
     const mesNum = parseInt(robo['mes'], 10);
     if (!robo['año'] || isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
       robosSinFecha++;
@@ -8460,7 +8470,7 @@ case 'siniestros_noche': {
       }
 
       // Now filter and process the data
-      let robosConIntervencion = allRoboAutomotorData.filter(item => {
+      let robosConIntervencion = datosRoboConsulta().filter(item => {
           const resultado = item.Resultado ? item.Resultado.trim() : '';
           return resultado === 'Detencion' || resultado === 'Secuestro De Vehiculo';
       });
@@ -9685,7 +9695,7 @@ case 'robos_zonas_sin_camaras': {
       }
   
       // **MODIFICACIÓN CLAVE: Filtrar solo robos con intervención policial**
-      let robosConIntervencion = allRoboAutomotorData.filter(robo => {
+      let robosConIntervencion = datosRoboConsulta().filter(robo => {
         const resultado = robo.Resultado ? robo.Resultado.trim() : '';
         return resultado === 'Detencion' || 
                resultado === 'Persecucion Y Detencion' || 
@@ -9825,7 +9835,7 @@ case 'robos_zonas_sin_camaras': {
     });
 
     // Contar robos por barrio
-    allRoboAutomotorData.forEach(robo => {
+    datosRoboConsulta().forEach(robo => {
       const coordsStr = robo['Longitud y Latitud'];
       if (!coordsStr) return;
       
@@ -10254,7 +10264,7 @@ case 'robos_sin_intervencion': {
       }
 
       // Filtrar robos sin intervención (sin detención ni secuestro)
-      const robosSinIntervencion = allRoboAutomotorData.filter(item => {
+      const robosSinIntervencion = datosRoboConsulta().filter(item => {
         const resultado = item.Resultado ? item.Resultado.trim() : '';
         return resultado !== 'Detencion' && resultado !== 'Secuestro De Vehiculo';
       });
@@ -10318,7 +10328,7 @@ robosSinIntervencionLayer.addLayer(marker);
 
 // Calcular porcentaje
 const totalRobos = barrioFeatureSinInterv
-  ? allRoboAutomotorData.filter(robo => {
+  ? datosRoboConsulta().filter(robo => {
       const coordsStr = robo['Longitud y Latitud'];
       if (!coordsStr) return false;
       const parts = coordsStr.split(',').map(s => s.trim());
@@ -10328,7 +10338,7 @@ const totalRobos = barrioFeatureSinInterv
       if (isNaN(lat) || isNaN(lon)) return false;
       return isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeatureSinInterv.geometry.coordinates);
     }).length
-  : allRoboAutomotorData.length;
+  : datosRoboConsulta().length;
 const porcentajeSinIntervencion = totalRobos > 0 ? ((totalSinIntervencion / totalRobos) * 100).toFixed(1) : '0.0';
 
 // Top 5 barrios con más robos sin intervención
@@ -10824,7 +10834,7 @@ case 'siniestros_corredores_escolares': {
       });
 
       // Agregar robos
-      allRoboAutomotorData.forEach(r => {
+      datosRoboConsulta().forEach(r => {
         const coordsStr = r['Longitud y Latitud'];
         if (!coordsStr) return;
         const parts = coordsStr.split(',').map(s => s.trim());
@@ -11194,7 +11204,7 @@ case 'siniestros_corredores_escolares': {
         const analisis = calcularMejoraPredictivaCobertura(
           allCamerasData,
           allSiniestrosData,
-          allRoboAutomotorData,
+          datosRoboConsulta(),
           barriosData
         );
         
