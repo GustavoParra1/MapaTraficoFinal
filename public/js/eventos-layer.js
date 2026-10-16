@@ -175,12 +175,14 @@
   /* ---------- dibujo ---------- */
   function popup(d) {
     var dir = [d['Direccion 0'], d['Direccion']].filter(Boolean).join(' y ');
-    var fecha = (MESES[+d['mes']] || d['mes'] || '') + ' ' + (d['año'] || '');
+    var fecha = d['fecha'] ? (d['dia_semana'] ? d['dia_semana'] + ' ' : '') + d['fecha'] : (MESES[+d['mes']] || d['mes'] || '') + ' ' + (d['año'] || '');
     var h = '<b style="color:' + colorDe(d['Tipo de Evento']) + '">' + esc(d['Tipo de Evento']) + '</b><br>' +
             '<b>Dirección:</b> ' + esc(dir || 'No especificada') + '<br>' +
             '<b>Fecha:</b> ' + esc(fecha.trim() || 'No especificada') + '<br>' +
             '<b>Origen:</b> ' + esc(d['Origen'] || 'No especificado') + '<br>' +
             '<b>Resultado:</b> ' + esc(d['Resultado'] || 'No especificado');
+    if (d['hora']) h += '<br><b>Hora:</b> ' + esc(d['hora']) + ' hs';
+    if (d['min_arribo']) h += '<br><b>Arribo policial:</b> ' + esc(d['min_arribo']) + ' min';
     if (d['Cámaras']) h += '<br><b>Cámaras:</b> ' + esc(d['Cámaras']);
     if (d['estado_coordenada'] === 'revisar') h += '<br><i style="color:#b45309">Ubicación aproximada</i>';
     return h;
@@ -249,6 +251,12 @@
     });
     refrescar();
   }
+
+  /* API para otras partes del mapa (rutas de patrullaje, consultas) */
+  window.EventosLayer = {
+    cargar: function () { return cargarDatos(); },
+    datos: function () { return datos; }
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
   else iniciar();

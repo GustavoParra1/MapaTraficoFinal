@@ -97,6 +97,11 @@ const CONSULTA_SIZES = {
   'esquinas_peligrosas_peatones_ciclistas': 'medium',
   'heatmap_robos': 'medium',
   'robos_sin_intervencion': 'medium',
+  'eventos_franja_horaria': 'medium',
+  'eventos_dia_semana': 'medium',
+  'arribo_por_barrio': 'medium',
+  'arribo_esquinas': 'medium',
+  'eventos_mes_a_mes': 'medium',
   'proponer_ubicaciones_camaras': 'medium',
   'semaforos_mas_siniestros': 'medium',
   
@@ -4656,6 +4661,109 @@ function datosRoboConsulta() {
     return (y && y !== 'all') ? allRoboAutomotorData.filter(i => String(i['año']) === y) : allRoboAutomotorData;
 }
 
+// ============================
+// CONSULTAS DE EVENTOS: hora, dia de la semana y tiempo de arribo policial
+// (usan eventos.csv + robos automotor 2025+ de robo_automotor.csv)
+// ============================
+const _MESES_CONS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const _DIAS_CONS = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+const _DIAS_CONS_ACENTO = { Lunes: 'Lunes', Martes: 'Martes', Miercoles: 'Miércoles', Jueves: 'Jueves', Viernes: 'Viernes', Sabado: 'Sábado', Domingo: 'Domingo' };
+
+function _escConsulta(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+async function cargarEventosParaConsulta() {
+    if (window.EventosLayer) {
+        try { await window.EventosLayer.cargar(); } catch (e) { console.error('Consulta: error cargando eventos', e); }
+    }
+    try { await loadRoboAutomotorData(); } catch (e) { console.error('Consulta: error cargando robo automotor', e); }
+    const base = (window.EventosLayer && window.EventosLayer.datos()) || [];
+    const out = base.slice();
+    if (Array.isArray(allRoboAutomotorData) && !base.some(e => /automotor/i.test(e['Tipo de Evento'] || ''))) {
+        allRoboAutomotorData.forEach(r => {
+            if (!r['fecha']) return; // solo los robos 2025+ (traen fecha completa)
+            const p = String(r['Longitud y Latitud'] || '').split(',');
+            const lon = parseFloat(p[0]), lat = parseFloat(p[1]);
+            if (p.length !== 2 || isNaN(lat) || isNaN(lon)) return;
+            out.push(Object.assign({}, r, { _lat: lat, _lon: lon }));
+        });
+    }
+    return out;
+}
+
+function filtrarEventosPorBarrio(lista, barrioFeature) {
+    if (!barrioFeature) return lista;
+    return lista.filter(e => isLatLngInMultiPolygon(L.latLng(e._lat, e._lon), barrioFeature.geometry.coordinates));
+}
+
+function _percentilConsulta(arr, p) {
+    if (!arr.length) return null;
+    const s = arr.slice().sort((a, b) => a - b);
+    const i = (s.length - 1) * p;
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
+}
+
+function _periodoEventosTexto(lista) {
+    let min = Infinity, max = -Infinity;
+    lista.forEach(e => {
+        const a = parseInt(e['año'], 10), m = parseInt(e['mes'], 10);
+        if (isNaN(a) || isNaN(m)) return;
+        const i = a * 12 + m - 1;
+        if (i < min) min = i;
+        if (i > max) max = i;
+    });
+    if (!isFinite(min)) return '';
+    const et = i => _MESES_CONS[i % 12] + ' ' + Math.floor(i / 12);
+    return et(min) + ' a ' + et(max);
+}
+
+function _cajaConsulta(html) {
+    return '<div style="background:#fff3cd;padding:12px;border-radius:5px;margin-bottom:15px;border-left:4px solid #856404;font-size:0.92em;">' + html + '</div>';
+}
+
+// filas: [{etiqueta, valor, extra}] -> barras horizontales; la mas alta en rojo
+function _barrasConsultaHTML(filas, altoBarra) {
+    const max = Math.max(1, ...filas.map(f => f.valor));
+    const maxVal = Math.max(...filas.map(f => f.valor));
+    const alto = altoBarra || 20;
+    let h = '';
+    filas.forEach(f => {
+        const color = f.valor === maxVal && maxVal > 0 ? '#dc3545' : '#ffc107';
+        h += '<div style="margin-bottom:6px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:0.88em;margin-bottom:2px;">' +
+            '<span style="font-weight:' + (f.valor === maxVal ? 'bold' : 'normal') + ';">' + _escConsulta(f.etiqueta) + '</span>' +
+            '<span style="font-weight:bold;color:' + color + ';">' + f.valor + _escConsulta(f.extra || '') + '</span></div>' +
+            '<div style="background:#e0e0e0;height:' + alto + 'px;border-radius:4px;overflow:hidden;">' +
+            '<div style="background:' + color + ';width:' + (f.valor / max * 100) + '%;height:100%;"></div></div></div>';
+    });
+    return h;
+}
+
+function _tablaConsultaHTML(cabeceras, filas) {
+    let h = '<table style="width:100%;border-collapse:collapse;font-size:0.88em;"><thead><tr>';
+    cabeceras.forEach((c, i) => {
+        h += '<th style="text-align:' + (i === 0 ? 'left' : 'right') + ';padding:6px;border-bottom:2px solid #adb5bd;background:#f1f3f5;">' + _escConsulta(c) + '</th>';
+    });
+    h += '</tr></thead><tbody>';
+    filas.forEach(f => {
+        h += '<tr>';
+        f.forEach((c, i) => {
+            h += '<td style="text-align:' + (i === 0 ? 'left' : 'right') + ';padding:5px 6px;border-bottom:1px solid #dee2e6;">' + c + '</td>';
+        });
+        h += '</tr>';
+    });
+    return h + '</tbody></table>';
+}
+
+function _claveEsquinaConsulta(dir) {
+    return String(dir || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim().split(' y ').map(s => s.trim()).sort().join(' y ');
+}
+
 function loadRoboAutomotorData() {
     if (allRoboAutomotorData) {
         return Promise.resolve();
@@ -6591,7 +6699,8 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         });
         
         // Procesar eventos (solo categorías elegidas, solo ventana de 4 meses)
-        // Nota: los eventos solo traen año y mes (sin día ni hora), por eso no se filtran por turno/días.
+        // Los eventos traen hora y dia (columnas hora, dia_semana): se filtran por turno/dias igual que los siniestros.
+        let evSinFiltroPatrol = 0;
         eventosFuente.forEach(e => {
           const idxE = _mesIdxEv(e);
           if (idxE < desdeMesIdx) return;
@@ -6599,6 +6708,25 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           const lat = e._lat, lon = e._lon;
           if (barrioFeaturePatrol && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeaturePatrol.geometry.coordinates)) {
             return;
+          }
+
+          // Turno y dias: se aplican si el evento trae hora / dia (si no, se incluye sin filtrar)
+          if (turnoSeleccionado !== 'all') {
+            const mh = /^(\d{1,2}):/.exec(e['hora'] || '');
+            if (mh) {
+              const hEv = parseInt(mh[1], 10);
+              if (turnoSeleccionado === 'mañana' && (hEv < 6 || hEv >= 14)) return;
+              if (turnoSeleccionado === 'tarde' && (hEv < 14 || hEv >= 22)) return;
+              if (turnoSeleccionado === 'noche' && (hEv >= 6 && hEv < 22)) return;
+            } else { evSinFiltroPatrol++; }
+          }
+          if (diasSeleccionados !== 'all') {
+            const dsEv = _normEv(e['dia_semana']);
+            if (dsEv) {
+              const findeEv = dsEv === 'sabado' || dsEv === 'domingo';
+              if (diasSeleccionados === 'laborables' && findeEv) return;
+              if (diasSeleccionados === 'finde' && !findeEv) return;
+            } else { evSinFiltroPatrol++; }
           }
 
           const tipoEv = e['Tipo de Evento'];
@@ -6614,7 +6742,8 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
             subtipo: tipoEv,
             gravedad: conIntervencion ? base * 0.65 : base,
             direccion: [e['Direccion 0'], e['Direccion']].filter(Boolean).join(' y '),
-            fecha: `${MESES_ES_ROBO[parseInt(e['mes'], 10) - 1]} ${e['año']}`,
+            fecha: e['fecha'] || `${MESES_ES_ROBO[parseInt(e['mes'], 10) - 1]} ${e['año']}`,
+            hora: e['hora'] || '',
             resultado: e['Resultado'] || 'N/A'
           });
         });
@@ -6958,7 +7087,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           <li><b>Período analizado:</b> ${periodoTexto} (últimos ${VENTANA_MESES_PATRULLAJE} meses de datos)</li>
           <li><b>Eventos considerados:</b> robo/hurto, confrontaciones, violencia de género y robo automotor</li>${avisosDatos.length ? `
           <li style="color:#b45309;"><b>⚠️ Datos desactualizados:</b> ${avisosDatos.join('; ')}</li>` : ''}${(turnoSeleccionado !== 'all' || diasSeleccionados !== 'all') ? `
-          <li style="color:#6c757d;"><i>Los eventos no tienen hora ni día: el filtro de turno/días solo aplica a siniestros.</i></li>` : ''}
+          ${evSinFiltroPatrol > 0 ? `<li style="color:#6c757d;"><i>${evSinFiltroPatrol} eventos sin hora o día registrado se incluyeron sin filtrar.</i></li>` : ''}` : ''}
           <li><b>Turno:</b> ${turnoSeleccionado === 'all' ? 'Todos' : turnoSeleccionado.charAt(0).toUpperCase() + turnoSeleccionado.slice(1)}</li>
           <li><b>Días:</b> ${diasSeleccionados === 'all' ? 'Todos' : diasSeleccionados === 'laborables' ? 'Laborables' : 'Fines de semana'}</li>
           <li><b>Clusters identificados:</b> ${clusters.length}</li>
@@ -7544,6 +7673,217 @@ case "tendencia_no_prioridad": {
           break;
       }
       // ========================================================
+
+    // ============================================================
+    // CONSULTAS NUEVAS: eventos por franja horaria / dia / mes y tiempo de arribo policial
+    // ============================================================
+    case 'eventos_franja_horaria': {
+      const todos = await cargarEventosParaConsulta();
+      if (!todos.length) { resultadosDiv.innerHTML = '❌ No se pudieron cargar los eventos.'; return; }
+      const _bf = getSelectedBarrioFeatureCombinada();
+      const evs = filtrarEventosPorBarrio(todos, _bf);
+      const porHora = new Array(24).fill(0);
+      const porTipo = {};
+      let conHora = 0;
+      evs.forEach(e => {
+        const m = /^(\d{1,2}):/.exec(e['hora'] || '');
+        if (!m) return;
+        const h = parseInt(m[1], 10);
+        if (h > 23) return;
+        porHora[h]++; conHora++;
+        const t = e['Tipo de Evento'] || 'Sin tipo';
+        (porTipo[t] = porTipo[t] || new Array(24).fill(0))[h]++;
+      });
+      if (!conHora) { resultadosDiv.innerHTML = '⚠️ No hay eventos con hora registrada para esta zona.'; return; }
+      const franjasDef = [['Madrugada (00–06 hs)', 0, 6], ['Mañana (06–12 hs)', 6, 12], ['Tarde (12–18 hs)', 12, 18], ['Noche (18–24 hs)', 18, 24]];
+      const franjas = franjasDef.map(([n, a, b]) => {
+        const v = porHora.slice(a, b).reduce((x, y) => x + y, 0);
+        return { etiqueta: n, valor: v, extra: ' (' + (v * 100 / conHora).toFixed(1) + '%)' };
+      });
+      const horas = porHora.map((v, h) => ({ etiqueta: String(h).padStart(2, '0') + ':00', valor: v, extra: ' (' + (v * 100 / conHora).toFixed(1) + '%)' }));
+      const top3 = horas.slice().sort((a, b) => b.valor - a.valor).slice(0, 3).map(h => h.etiqueta).join(', ');
+      const franjaTop = franjas.slice().sort((a, b) => b.valor - a.valor)[0].etiqueta;
+      const filasTipo = Object.keys(porTipo).map(t => {
+        const arr = porTipo[t];
+        const total = arr.reduce((x, y) => x + y, 0);
+        const pico = arr.indexOf(Math.max(...arr));
+        return { t, total, pico };
+      }).filter(x => x.total >= 30).sort((a, b) => b.total - a.total)
+        .map(x => [_escConsulta(x.t), x.total, String(x.pico).padStart(2, '0') + ':00 a ' + String(x.pico + 1).padStart(2, '0') + ':00 hs']);
+      let html = '<h5>🕒 Eventos por franja horaria' + (_bf ? ' — Barrio: ' + _escConsulta(_bf.properties.soc_fomen) : '') + '</h5>' +
+        _cajaConsulta('<b>Eventos analizados:</b> ' + conHora + ' con hora registrada (de ' + evs.length + ')<br>' +
+          '<b>Período:</b> ' + _periodoEventosTexto(evs) + '<br>' +
+          '<b>Franja con más eventos:</b> ' + _escConsulta(franjaTop) + '<br>' +
+          '<b>Horas pico:</b> ' + top3) +
+        '<h6>Por franja</h6>' + _barrasConsultaHTML(franjas, 22) +
+        '<h6 style="margin-top:14px;">Por hora del día</h6><div style="max-height:260px;overflow-y:auto;padding-right:6px;">' + _barrasConsultaHTML(horas, 12) + '</div>';
+      if (filasTipo.length) {
+        html += '<h6 style="margin-top:14px;">Hora pico por categoría</h6>' + _tablaConsultaHTML(['Categoría', 'Eventos', 'Hora pico'], filasTipo);
+      }
+      html += '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Incluye robo automotor de 2025 en adelante. Los eventos sin hora registrada no se cuentan.</p>';
+      resultadosDiv.innerHTML = html;
+      break;
+    }
+
+    case 'eventos_dia_semana': {
+      const todos = await cargarEventosParaConsulta();
+      if (!todos.length) { resultadosDiv.innerHTML = '❌ No se pudieron cargar los eventos.'; return; }
+      const _bf = getSelectedBarrioFeatureCombinada();
+      const evs = filtrarEventosPorBarrio(todos, _bf);
+      // fechas distintas por dia de la semana, tomadas de TODOS los eventos (para promediar bien)
+      const fechasPorDia = {}; _DIAS_CONS.forEach(d => fechasPorDia[d] = new Set());
+      todos.forEach(e => { if (e['dia_semana'] && fechasPorDia[e['dia_semana']] && e['fecha']) fechasPorDia[e['dia_semana']].add(e['fecha']); });
+      const cuenta = {}; _DIAS_CONS.forEach(d => cuenta[d] = 0);
+      let conDia = 0;
+      evs.forEach(e => { if (cuenta[e['dia_semana']] !== undefined) { cuenta[e['dia_semana']]++; conDia++; } });
+      if (!conDia) { resultadosDiv.innerHTML = '⚠️ No hay eventos con día registrado para esta zona.'; return; }
+      const filas = _DIAS_CONS.map(d => {
+        const dias = fechasPorDia[d].size || 1;
+        const prom = cuenta[d] / dias;
+        return { etiqueta: _DIAS_CONS_ACENTO[d], valor: Math.round(prom * 10) / 10, total: cuenta[d], dias };
+      });
+      filas.forEach(f => f.extra = ' por día (' + f.total + ' en ' + f.dias + ' días)');
+      const top = filas.slice().sort((a, b) => b.valor - a.valor)[0];
+      const finde = (cuenta.Sabado + cuenta.Domingo) / ((fechasPorDia.Sabado.size + fechasPorDia.Domingo.size) || 1);
+      const lab = (cuenta.Lunes + cuenta.Martes + cuenta.Miercoles + cuenta.Jueves + cuenta.Viernes) /
+        ((fechasPorDia.Lunes.size + fechasPorDia.Martes.size + fechasPorDia.Miercoles.size + fechasPorDia.Jueves.size + fechasPorDia.Viernes.size) || 1);
+      resultadosDiv.innerHTML = '<h5>📅 Eventos por día de la semana' + (_bf ? ' — Barrio: ' + _escConsulta(_bf.properties.soc_fomen) : '') + '</h5>' +
+        _cajaConsulta('<b>Eventos analizados:</b> ' + conDia + '<br><b>Período:</b> ' + _periodoEventosTexto(evs) + '<br>' +
+          '<b>Día con más eventos (promedio por día):</b> ' + _escConsulta(top.etiqueta) + '<br>' +
+          '<b>Días laborables:</b> ' + lab.toFixed(1) + ' eventos por día &nbsp;|&nbsp; <b>Fin de semana:</b> ' + finde.toFixed(1) + ' eventos por día') +
+        _barrasConsultaHTML(filas, 24) +
+        '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Se muestra el promedio por día (total ÷ cantidad de fechas con datos de ese día), para que los meses cargados no distorsionen la comparación. Incluye robo automotor de 2025 en adelante.</p>';
+      break;
+    }
+
+    case 'arribo_por_barrio': {
+      const todos = await cargarEventosParaConsulta();
+      if (!todos.length || !barriosData) { resultadosDiv.innerHTML = '❌ No se pudieron cargar los datos necesarios.'; return; }
+      const porBarrio = {};
+      let global = [];
+      todos.forEach(e => {
+        const v = parseInt(e['min_arribo'], 10);
+        if (isNaN(v)) return;
+        global.push(v);
+        const ll = L.latLng(e._lat, e._lon);
+        for (const b of barriosData.features) {
+          if (isLatLngInMultiPolygon(ll, b.geometry.coordinates)) {
+            (porBarrio[b.properties.soc_fomen] = porBarrio[b.properties.soc_fomen] || []).push(v);
+            break;
+          }
+        }
+      });
+      if (!global.length) { resultadosDiv.innerHTML = '⚠️ No hay eventos con tiempo de arribo registrado.'; return; }
+      const MIN_N = 30;
+      const ranking = Object.keys(porBarrio).filter(n => porBarrio[n].length >= MIN_N).map(n => ({
+        nombre: n, n: porBarrio[n].length, med: _percentilConsulta(porBarrio[n], 0.5), p90: _percentilConsulta(porBarrio[n], 0.9)
+      })).sort((a, b) => b.med - a.med || b.p90 - a.p90);
+      const peores = ranking.slice(0, 10);
+      barriosDestacadosLayer.clearLayers();
+      const colores = ['#d53e4f', '#f46d43', '#fdae61', '#4caf50', '#8bc34a'];
+      ranking.slice(0, 5).forEach((r, i) => {
+        const feat = barriosData.features.find(f => f.properties.soc_fomen === r.nombre);
+        if (feat) {
+          L.geoJSON(feat, { style: { color: colores[i], weight: 3, opacity: 0.8, fillOpacity: 0.5 } })
+            .bindPopup('<b>' + _escConsulta(r.nombre) + '</b><br>Mediana: ' + r.med.toFixed(0) + ' min<br>9 de cada 10 llegan en ≤ ' + r.p90.toFixed(0) + ' min<br>' + r.n + ' eventos')
+            .addTo(barriosDestacadosLayer);
+        }
+      });
+      mymap.addLayer(barriosDestacadosLayer);
+      if (barriosDestacadosLayer.getLayers().length > 0) mymap.fitBounds(barriosDestacadosLayer.getBounds());
+      const rapidos = ranking.slice(-3).reverse();
+      resultadosDiv.innerHTML = '<h5>🚓 Tiempo de arribo policial por barrio</h5>' +
+        _cajaConsulta('<b>Eventos con arribo registrado:</b> ' + global.length + ' (de ' + todos.length + ')<br>' +
+          '<b>Período:</b> ' + _periodoEventosTexto(todos) + '<br>' +
+          '<b>Toda la ciudad:</b> mediana ' + _percentilConsulta(global, 0.5).toFixed(0) + ' min, 9 de cada 10 llegan en ≤ ' + _percentilConsulta(global, 0.9).toFixed(0) + ' min<br>' +
+          '<span style="color:#6c757d;">Solo barrios con al menos ' + MIN_N + ' eventos con arribo.</span>') +
+        '<h6>Barrios con mayor demora (mediana)</h6>' +
+        _tablaConsultaHTML(['Barrio', 'Eventos', 'Mediana', '90% llega en'], peores.map((r, i) => [(i + 1) + '. ' + _escConsulta(r.nombre), r.n, r.med.toFixed(0) + ' min', '≤ ' + r.p90.toFixed(0) + ' min'])) +
+        (rapidos.length ? '<h6 style="margin-top:14px;">Barrios con menor demora</h6>' +
+          _tablaConsultaHTML(['Barrio', 'Eventos', 'Mediana', '90% llega en'], rapidos.map(r => [_escConsulta(r.nombre), r.n, r.med.toFixed(0) + ' min', '≤ ' + r.p90.toFixed(0) + ' min'])) : '') +
+        '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Minutos desde el inicio del evento hasta el arribo policial. Los 5 barrios con mayor demora quedan resaltados en el mapa. Incluye robo automotor de 2025 en adelante.</p>';
+      break;
+    }
+
+    case 'arribo_esquinas': {
+      const todos = await cargarEventosParaConsulta();
+      if (!todos.length) { resultadosDiv.innerHTML = '❌ No se pudieron cargar los eventos.'; return; }
+      const _bf = getSelectedBarrioFeatureCombinada();
+      const evs = filtrarEventosPorBarrio(todos, _bf);
+      const grupos = {};
+      evs.forEach(e => {
+        const v = parseInt(e['min_arribo'], 10);
+        const dir = e['Direccion 0'];
+        if (isNaN(v) || !dir || String(dir).indexOf(' y ') === -1) return;
+        const k = _claveEsquinaConsulta(dir);
+        const g = grupos[k] = grupos[k] || { dir: dir, lat: e._lat, lon: e._lon, vals: [] };
+        g.vals.push(v);
+      });
+      const MIN_N = 5;
+      const ranking = Object.keys(grupos).map(k => grupos[k]).filter(g => g.vals.length >= MIN_N)
+        .map(g => Object.assign(g, { med: _percentilConsulta(g.vals, 0.5), p90: _percentilConsulta(g.vals, 0.9) }))
+        .sort((a, b) => b.med - a.med || b.p90 - a.p90).slice(0, 10);
+      if (!ranking.length) { resultadosDiv.innerHTML = '⚠️ No hay esquinas con ' + MIN_N + ' o más eventos con arribo registrado' + (_bf ? ' en este barrio.' : '.'); return; }
+      barriosDestacadosLayer.clearLayers();
+      ranking.forEach((g, i) => {
+        L.circleMarker([g.lat, g.lon], { radius: 11, color: '#ffffff', weight: 2, fillColor: '#d53e4f', fillOpacity: 0.9 })
+          .bindTooltip(String(i + 1), { permanent: true, direction: 'center', className: 'tooltip-top-esquina' })
+          .bindPopup('<b>' + _escConsulta(g.dir) + '</b><br>Mediana: ' + g.med.toFixed(0) + ' min<br>9 de cada 10 llegan en ≤ ' + g.p90.toFixed(0) + ' min<br>' + g.vals.length + ' eventos')
+          .addTo(barriosDestacadosLayer);
+      });
+      mymap.addLayer(barriosDestacadosLayer);
+      mymap.fitBounds(barriosDestacadosLayer.getBounds());
+      resultadosDiv.innerHTML = '<h5>⏱️ Esquinas con mayor demora policial' + (_bf ? ' — Barrio: ' + _escConsulta(_bf.properties.soc_fomen) : '') + '</h5>' +
+        _cajaConsulta('<b>Esquinas evaluadas:</b> las que tienen ' + MIN_N + ' o más eventos con arribo registrado<br><b>Período:</b> ' + _periodoEventosTexto(evs)) +
+        _tablaConsultaHTML(['Esquina', 'Eventos', 'Mediana', '90% llega en'], ranking.map((g, i) => [(i + 1) + '. ' + _escConsulta(g.dir), g.vals.length, g.med.toFixed(0) + ' min', '≤ ' + g.p90.toFixed(0) + ' min'])) +
+        '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Minutos desde el inicio del evento hasta el arribo policial. Las 10 esquinas están marcadas en el mapa con su número. Incluye robo automotor de 2025 en adelante.</p>';
+      break;
+    }
+
+    case 'eventos_mes_a_mes': {
+      const todos = await cargarEventosParaConsulta();
+      if (!todos.length) { resultadosDiv.innerHTML = '❌ No se pudieron cargar los eventos.'; return; }
+      const _bf = getSelectedBarrioFeatureCombinada();
+      const evs = filtrarEventosPorBarrio(todos, _bf);
+      const porMes = {}, porMesTipo = {};
+      evs.forEach(e => {
+        const a = parseInt(e['año'], 10), m = parseInt(e['mes'], 10);
+        if (isNaN(a) || isNaN(m) || a < 2025) return;
+        const i = a * 12 + m - 1;
+        porMes[i] = (porMes[i] || 0) + 1;
+        const t = e['Tipo de Evento'] || 'Sin tipo';
+        (porMesTipo[i] = porMesTipo[i] || {})[t] = (porMesTipo[i][t] || 0) + 1;
+      });
+      const idxs = Object.keys(porMes).map(Number).sort((a, b) => a - b);
+      if (!idxs.length) { resultadosDiv.innerHTML = '⚠️ No hay eventos para mostrar.'; return; }
+      const filas = idxs.map((i, k) => {
+        const prev = porMes[i - 1];
+        const delta = prev ? ((porMes[i] - prev) * 100 / prev) : null;
+        return { etiqueta: _MESES_CONS[i % 12] + ' ' + Math.floor(i / 12), valor: porMes[i],
+                 extra: delta === null ? '' : ' (' + (delta >= 0 ? '+' : '') + delta.toFixed(0) + '% vs mes anterior)' };
+      });
+      const ultimo = idxs[idxs.length - 1];
+      const anterior = porMesTipo[ultimo - 1] ? ultimo - 1 : null;
+      let tablaTipos = '';
+      if (anterior !== null) {
+        const tipos = Object.keys(porMesTipo[ultimo]).concat(Object.keys(porMesTipo[anterior])).filter((t, i, a) => a.indexOf(t) === i);
+        const filasT = tipos.map(t => {
+          const u = porMesTipo[ultimo][t] || 0, p = porMesTipo[anterior][t] || 0;
+          const d = p ? ((u - p) * 100 / p) : null;
+          return { t, u, p, d };
+        }).sort((a, b) => b.u - a.u).map(x => [_escConsulta(x.t), x.p, x.u,
+          x.d === null ? '—' : '<span style="color:' + (x.d > 0 ? '#dc3545' : '#28a745') + ';font-weight:bold;">' + (x.d >= 0 ? '+' : '') + x.d.toFixed(0) + '%</span>']);
+        tablaTipos = '<h6 style="margin-top:14px;">Por categoría: ' + _MESES_CONS[ultimo % 12] + ' vs ' + _MESES_CONS[anterior % 12] + '</h6>' +
+          _tablaConsultaHTML(['Categoría', _MESES_CONS[anterior % 12], _MESES_CONS[ultimo % 12], 'Variación'], filasT);
+      }
+      const faltan = idxs.some((i, k) => k > 0 && i - idxs[k - 1] > 1);
+      resultadosDiv.innerHTML = '<h5>📈 Evolución mensual de eventos' + (_bf ? ' — Barrio: ' + _escConsulta(_bf.properties.soc_fomen) : '') + '</h5>' +
+        _cajaConsulta('<b>Meses con datos:</b> ' + idxs.length + ' (' + _periodoEventosTexto(evs) + ')<br><b>Total de eventos:</b> ' + idxs.reduce((s, i) => s + porMes[i], 0) +
+          (faltan ? '<br><span style="color:#b45309;">⚠️ Hay meses sin cargar entre medio: la variación solo se calcula contra el mes inmediato anterior.</span>' : '')) +
+        _barrasConsultaHTML(filas, 22) + tablaTipos +
+        '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Incluye robo automotor de 2025 en adelante. Solo cuenta eventos con coordenadas.</p>';
+      break;
+    }
 
     case 'barrios_mas_robos': {
       await loadRoboAutomotorData();
