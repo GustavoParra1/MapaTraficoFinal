@@ -6633,13 +6633,28 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         const eventosFuente = _eventosConRobo.filter(e => _pesoBaseEvento(e['Tipo de Evento']) > 0 && _mesIdxEv(e) !== null);
 
         let ultimoMesSin = -Infinity, ultimoMesEv = -Infinity;
+        // Fechas futuras (errores de carga, por ej. 25/10/26 cuando hoy es octubre) se ignoran para no correr la ventana
+        const _hoyPatrol = new Date();
+        const mesActualIdx = _hoyPatrol.getFullYear() * 12 + _hoyPatrol.getMonth();
+        let sinFechaFutura = 0;
+        const _esFechaFutura = (f) => {
+          const q = String(f || '').split('/');
+          if (q.length !== 3) return false;
+          let y = parseInt(q[2], 10); const m = parseInt(q[1], 10), d = parseInt(q[0], 10);
+          if (isNaN(y) || isNaN(m) || isNaN(d)) return false;
+          if (y < 100) y += 2000;
+          return new Date(y, m - 1, d) > new Date();
+        };
         allSiniestrosData.features.forEach(s => {
+          if (_esFechaFutura(s.properties && s.properties.fecha)) { sinFechaFutura++; return; }
           const i = _mesIdxSin(s.properties && s.properties.fecha);
+          if (i !== null && i > mesActualIdx) { sinFechaFutura++; return; }
           if (i !== null && i > ultimoMesSin) ultimoMesSin = i;
         });
-        eventosFuente.forEach(e => { const i = _mesIdxEv(e); if (i > ultimoMesEv) ultimoMesEv = i; });
+        eventosFuente.forEach(e => { const i = _mesIdxEv(e); if (i <= mesActualIdx && i > ultimoMesEv) ultimoMesEv = i; });
 
-        const mesReferencia = Math.max(ultimoMesSin, ultimoMesEv);
+        // La ventana se ancla en el ultimo mes de EVENTOS (dato principal); si no hay eventos, en el de siniestros
+        const mesReferencia = isFinite(ultimoMesEv) ? ultimoMesEv : ultimoMesSin;
         if (!isFinite(mesReferencia)) {
           resultadosDiv.innerHTML = '⚠️ No hay siniestros ni eventos con fecha para calcular la ventana de tiempo.';
           return;
@@ -6647,6 +6662,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         const desdeMesIdx = mesReferencia - (VENTANA_MESES_PATRULLAJE - 1);
         const periodoTexto = `${_etiquetaMesIdx(desdeMesIdx)} – ${_etiquetaMesIdx(mesReferencia)}`;
         const avisosDatos = [];
+        if (sinFechaFutura > 0) avisosDatos.push(`${sinFechaFutura} siniestro(s) con fecha futura ignorado(s) (revisar la fecha en los datos)`);
         if (isFinite(ultimoMesEv) && ultimoMesEv < mesReferencia) avisosDatos.push(`Eventos cargados solo hasta ${_etiquetaMesIdx(ultimoMesEv)}`);
         if (isFinite(ultimoMesSin) && ultimoMesSin < mesReferencia) avisosDatos.push(`Siniestros cargados solo hasta ${_etiquetaMesIdx(ultimoMesSin)}`);
 
@@ -6658,8 +6674,9 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           
           const hora = s.properties.hora ? parseInt(s.properties.hora.split(':')[0]) : null;
           const fecha = s.properties.fecha;
+          if (_esFechaFutura(fecha)) return; // fecha futura = error de carga
           const _idxS = _mesIdxSin(fecha);
-          if (_idxS === null || _idxS < desdeMesIdx) return; // fuera de la ventana (o sin fecha)
+          if (_idxS === null || _idxS < desdeMesIdx || _idxS > mesActualIdx) return; // fuera de la ventana (o sin fecha / fecha futura)
           
           // Filtro de turno
           let cumpleTurno = true;
@@ -6703,7 +6720,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         let evSinFiltroPatrol = 0;
         eventosFuente.forEach(e => {
           const idxE = _mesIdxEv(e);
-          if (idxE < desdeMesIdx) return;
+          if (idxE < desdeMesIdx || idxE > mesActualIdx) return;
 
           const lat = e._lat, lon = e._lon;
           if (barrioFeaturePatrol && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeaturePatrol.geometry.coordinates)) {

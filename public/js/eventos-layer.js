@@ -175,7 +175,7 @@
   /* ---------- dibujo ---------- */
   function popup(d) {
     var dir = [d['Direccion 0'], d['Direccion']].filter(Boolean).join(' y ');
-    var fecha = d['fecha'] ? (d['dia_semana'] ? d['dia_semana'] + ' ' : '') + d['fecha'] : (MESES[+d['mes']] || d['mes'] || '') + ' ' + (d['año'] || '');
+    var fecha = d['fecha'] ? (d['dia_semana'] ? ({ Miercoles: 'Miércoles', Sabado: 'Sábado' }[d['dia_semana']] || d['dia_semana']) + ' ' : '') + d['fecha'] : (MESES[+d['mes']] || d['mes'] || '') + ' ' + (d['año'] || '');
     var h = '<b style="color:' + colorDe(d['Tipo de Evento']) + '">' + esc(d['Tipo de Evento']) + '</b><br>' +
             '<b>Dirección:</b> ' + esc(dir || 'No especificada') + '<br>' +
             '<b>Fecha:</b> ' + esc(fecha.trim() || 'No especificada') + '<br>' +
