@@ -2255,7 +2255,7 @@ function mostrarDetalleIncidentesPatrullaje(key) {
         } else {
             return `
               <tr>
-                <td style="padding:6px 8px; border-bottom:1px solid #eee;">🚗 Robo</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #eee;">🚨 ${inc.subtipo || 'Evento'}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.direccion || 'N/A'}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.fecha || 'N/A'}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid #eee;">${inc.resultado || 'N/A'}</td>
@@ -5839,6 +5839,16 @@ document.getElementById('robo-automotor-checkbox').addEventListener('change', e 
 
 document.getElementById('robo-automotor-year-filter').addEventListener('change', applyRoboAutomotorFilters);
 
+// Si hay una consulta de robos abierta en el panel de resultados, se recalcula al cambiar el anio
+document.getElementById('robo-automotor-year-filter').addEventListener('change', function () {
+    const c = window.__ultimaConsulta;
+    const panel = document.getElementById('consulta-results-panel');
+    if (!c || !panel || panel.style.display === 'none') return;
+    if (['barrios_mas_robos', 'robos_por_dia', 'robos_zonas_sin_camaras', 'robos_sin_intervencion', 'correlacion_camaras_robos'].indexOf(c) === -1) return;
+    const btn = document.querySelector('#consultas-panel [data-consulta="' + c + '"]');
+    if (btn) btn.click();
+});
+
 document.getElementById('robo-heatmap-checkbox').addEventListener('change', e => {
     if (e.target.checked) {
         if (document.getElementById('robo-automotor-checkbox').checked) {
@@ -6309,6 +6319,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
   }
 
   const consulta = e.target.dataset.consulta;
+  window.__ultimaConsulta = consulta; // para recalcularla si cambia el filtro de anio de Robo Automotor
   const resultsPanel = document.getElementById('consulta-results-panel');
   const resultsContent = document.getElementById('consulta-results-content');
   resultsContent.innerHTML = '<em>Procesando consulta...</em>';
@@ -6428,10 +6439,11 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
       
       setTimeout(async () => {
         await loadSiniestrosData();
-        await loadRoboAutomotorData();
+        if (window.EventosLayer) { try { await window.EventosLayer.cargar(); } catch (e) { console.error('Patrullaje: error cargando eventos', e); } }
+        try { await loadRoboAutomotorData(); } catch (e) { console.error('Patrullaje: error cargando robo automotor', e); }
         await loadBaseCSVData();
         
-        if (!allSiniestrosData || !allRoboAutomotorData || !barriosData) {
+        if (!allSiniestrosData || !barriosData) {
           resultadosDiv.innerHTML = '❌ No se pudieron cargar todos los datos necesarios.';
           return;
         }
@@ -6459,6 +6471,77 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         // ============================================
         // PASO 2: FILTRAR INCIDENTES POR HORARIO Y DÍA
         // ============================================
+
+        // ============================================
+        // VENTANA TEMPORAL Y CATEGORÍAS (eventos + siniestros)
+        // ============================================
+        const eventosPatrol = (window.EventosLayer && window.EventosLayer.datos()) || null;
+        if (!eventosPatrol) {
+          resultadosDiv.innerHTML = '❌ No se pudieron cargar los eventos (eventos.csv).';
+          return;
+        }
+
+        const VENTANA_MESES_PATRULLAJE = 4; // meses (calendario) hacia atrás desde el dato más reciente
+        // Peso base de criticidad por categoría de evento (editar acá para ajustar)
+        const PESOS_EVENTOS_PATRULLAJE = {
+          'robo/hurto': 1.5,
+          'robo/hurto automotor': 2.0,
+          'confrontacion': 1.5,
+          'violencia de genero': 2.0
+        };
+        const _normEv = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+        const _pesoBaseEvento = (t) => {
+          const n = _normEv(t);
+          if (PESOS_EVENTOS_PATRULLAJE[n] !== undefined) return PESOS_EVENTOS_PATRULLAJE[n];
+          if (n.includes('automotor')) return PESOS_EVENTOS_PATRULLAJE['robo/hurto automotor'];
+          return 0; // categoría no considerada
+        };
+        const _mesIdxSin = (f) => {
+          const p = String(f || '').split('/');
+          if (p.length !== 3) return null;
+          let y = parseInt(p[2], 10); const m = parseInt(p[1], 10);
+          if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return null;
+          if (y < 100) y += 2000;
+          return y * 12 + (m - 1);
+        };
+        const _mesIdxEv = (e) => {
+          const y = parseInt(e['año'], 10), m = parseInt(e['mes'], 10);
+          if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return null;
+          return y * 12 + (m - 1);
+        };
+        const _etiquetaMesIdx = (i) => `${MESES_ES_ROBO[i % 12]} ${Math.floor(i / 12)}`;
+
+        // Suma los robos automotor (robo_automotor.csv), que no estan en eventos.csv
+        const _eventosConRobo = eventosPatrol.slice();
+        if (typeof allRoboAutomotorData !== 'undefined' && Array.isArray(allRoboAutomotorData) &&
+            !eventosPatrol.some(e => _normEv(e['Tipo de Evento']).includes('automotor'))) {
+          allRoboAutomotorData.forEach(r => {
+            const p = String(r['Longitud y Latitud'] || '').split(',');
+            const lon = parseFloat(p[0]), lat = parseFloat(p[1]);
+            if (p.length !== 2 || isNaN(lat) || isNaN(lon)) return;
+            _eventosConRobo.push(Object.assign({}, r, { _lat: lat, _lon: lon }));
+          });
+        }
+        const eventosFuente = _eventosConRobo.filter(e => _pesoBaseEvento(e['Tipo de Evento']) > 0 && _mesIdxEv(e) !== null);
+
+        let ultimoMesSin = -Infinity, ultimoMesEv = -Infinity;
+        allSiniestrosData.features.forEach(s => {
+          const i = _mesIdxSin(s.properties && s.properties.fecha);
+          if (i !== null && i > ultimoMesSin) ultimoMesSin = i;
+        });
+        eventosFuente.forEach(e => { const i = _mesIdxEv(e); if (i > ultimoMesEv) ultimoMesEv = i; });
+
+        const mesReferencia = Math.max(ultimoMesSin, ultimoMesEv);
+        if (!isFinite(mesReferencia)) {
+          resultadosDiv.innerHTML = '⚠️ No hay siniestros ni eventos con fecha para calcular la ventana de tiempo.';
+          return;
+        }
+        const desdeMesIdx = mesReferencia - (VENTANA_MESES_PATRULLAJE - 1);
+        const periodoTexto = `${_etiquetaMesIdx(desdeMesIdx)} – ${_etiquetaMesIdx(mesReferencia)}`;
+        const avisosDatos = [];
+        if (isFinite(ultimoMesEv) && ultimoMesEv < mesReferencia) avisosDatos.push(`Eventos cargados solo hasta ${_etiquetaMesIdx(ultimoMesEv)}`);
+        if (isFinite(ultimoMesSin) && ultimoMesSin < mesReferencia) avisosDatos.push(`Siniestros cargados solo hasta ${_etiquetaMesIdx(ultimoMesSin)}`);
+
         const todosIncidentes = [];
         
         // Procesar siniestros
@@ -6467,6 +6550,8 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           
           const hora = s.properties.hora ? parseInt(s.properties.hora.split(':')[0]) : null;
           const fecha = s.properties.fecha;
+          const _idxS = _mesIdxSin(fecha);
+          if (_idxS === null || _idxS < desdeMesIdx) return; // fuera de la ventana (o sin fecha)
           
           // Filtro de turno
           let cumpleTurno = true;
@@ -6505,38 +6590,35 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           }
         });
         
-        // Procesar robos
-        datosRoboConsulta().forEach(r => {
-          const coordsStr = r['Longitud y Latitud'];
-          if (!coordsStr) return;
-          
-          const parts = coordsStr.split(',').map(s => s.trim());
-          if (parts.length !== 2) return;
-          
-          const lon = parseFloat(parts[0]);
-          const lat = parseFloat(parts[1]);
-          if (isNaN(lat) || isNaN(lon)) return;
+        // Procesar eventos (solo categorías elegidas, solo ventana de 4 meses)
+        // Nota: los eventos solo traen año y mes (sin día ni hora), por eso no se filtran por turno/días.
+        eventosFuente.forEach(e => {
+          const idxE = _mesIdxEv(e);
+          if (idxE < desdeMesIdx) return;
 
-          // Filtro de barrio seleccionado
+          const lat = e._lat, lon = e._lon;
           if (barrioFeaturePatrol && !isLatLngInMultiPolygon(L.latLng(lat, lon), barrioFeaturePatrol.geometry.coordinates)) {
             return;
           }
-          
-          // Para robos, no hay filtro de hora (puedes agregarlo si tienes ese dato)
-          const resultado = r.Resultado?.trim() || '';
-          const sinIntervencion = resultado !== 'Detencion' && resultado !== 'Secuestro De Vehiculo';
-          
+
+          const tipoEv = e['Tipo de Evento'];
+          const base = _pesoBaseEvento(tipoEv);
+          const resNorm = _normEv(e['Resultado']);
+          const esRobo = _normEv(tipoEv).startsWith('robo');
+          const conIntervencion = esRobo && (resNorm === 'detencion' || resNorm === 'secuestro de vehiculo');
+
           todosIncidentes.push({
             lat: lat,
             lon: lon,
-            tipo: 'robo',
-            gravedad: sinIntervencion ? 2.0 : 1.3,
-            direccion: `${r['Direccion 0'] || ''} ${r['Direccion'] || ''}`.trim(),
-            fecha: getFechaLegibleRobo(r),
-            resultado: resultado || 'N/A'
+            tipo: 'evento',
+            subtipo: tipoEv,
+            gravedad: conIntervencion ? base * 0.65 : base,
+            direccion: [e['Direccion 0'], e['Direccion']].filter(Boolean).join(' y '),
+            fecha: `${MESES_ES_ROBO[parseInt(e['mes'], 10) - 1]} ${e['año']}`,
+            resultado: e['Resultado'] || 'N/A'
           });
         });
-    
+
         if (todosIncidentes.length === 0) {
           const zonaMsg = selectedBarrioNamePatrol !== 'all' ? ` en el barrio ${selectedBarrioNamePatrol}` : '';
           resultadosDiv.innerHTML = `⚠️ No se encontraron incidentes${zonaMsg} para los filtros seleccionados.`;
@@ -6562,7 +6644,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
             centroLon: incidente.lon,
             pesoTotal: incidente.gravedad,
             siniestros: incidente.tipo === 'siniestro' ? 1 : 0,
-            robos: incidente.tipo === 'robo' ? 1 : 0
+            eventos: incidente.tipo === 'evento' ? 1 : 0
           };
     
           incidentesProcesados.add(idx);
@@ -6580,7 +6662,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
               cluster.incidentes.push(otroIncidente);
               cluster.pesoTotal += otroIncidente.gravedad;
               if (otroIncidente.tipo === 'siniestro') cluster.siniestros++;
-              if (otroIncidente.tipo === 'robo') cluster.robos++;
+              if (otroIncidente.tipo === 'evento') cluster.eventos++;
               incidentesProcesados.add(otroIdx);
             }
           });
@@ -6827,7 +6909,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
             <p style="margin: 5px 0;"><b>📍 Barrio:</b> ${punto.barrio}</p>
             <p style="margin: 5px 0;"><b>🔢 Incidentes:</b> ${punto.incidentes.length}</p>
             <p style="margin: 5px 0;"><b>⚠️ Siniestros:</b> ${punto.siniestros}</p>
-            <p style="margin: 5px 0;"><b>🚗 Robos:</b> ${punto.robos}</p>
+            <p style="margin: 5px 0;"><b>🚨 Eventos:</b> ${punto.eventos}</p>
             <p style="margin: 5px 0;"><b>🎯 Criticidad:</b> <span style="color: ${color}; font-weight: bold;">${punto.pesoTotal.toFixed(1)}</span></p>
             <hr style="margin: 8px 0;">
             <p style="margin: 5px 0; font-size: 0.85em; color: #666;">
@@ -6872,7 +6954,11 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         <p style="margin: 5px 0;"><b>📊 Parámetros de análisis:</b></p>
         <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
           <li><b>Zona:</b> ${selectedBarrioNamePatrol !== 'all' ? selectedBarrioNamePatrol : 'Toda la ciudad'}</li>
-          <li><b>Incidentes analizados:</b> ${todosIncidentes.length} (${todosIncidentes.filter(i => i.tipo === 'siniestro').length} siniestros + ${todosIncidentes.filter(i => i.tipo === 'robo').length} robos)</li>
+          <li><b>Incidentes analizados:</b> ${todosIncidentes.length} (${todosIncidentes.filter(i => i.tipo === 'siniestro').length} siniestros + ${todosIncidentes.filter(i => i.tipo === 'evento').length} eventos)</li>
+          <li><b>Período analizado:</b> ${periodoTexto} (últimos ${VENTANA_MESES_PATRULLAJE} meses de datos)</li>
+          <li><b>Eventos considerados:</b> robo/hurto, confrontaciones, violencia de género y robo automotor</li>${avisosDatos.length ? `
+          <li style="color:#b45309;"><b>⚠️ Datos desactualizados:</b> ${avisosDatos.join('; ')}</li>` : ''}${(turnoSeleccionado !== 'all' || diasSeleccionados !== 'all') ? `
+          <li style="color:#6c757d;"><i>Los eventos no tienen hora ni día: el filtro de turno/días solo aplica a siniestros.</i></li>` : ''}
           <li><b>Turno:</b> ${turnoSeleccionado === 'all' ? 'Todos' : turnoSeleccionado.charAt(0).toUpperCase() + turnoSeleccionado.slice(1)}</li>
           <li><b>Días:</b> ${diasSeleccionados === 'all' ? 'Todos' : diasSeleccionados === 'laborables' ? 'Laborables' : 'Fines de semana'}</li>
           <li><b>Clusters identificados:</b> ${clusters.length}</li>
@@ -6884,7 +6970,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
         <h6 style="margin-top: 0; color: #856404;">🧮 Algoritmo Aplicado:</h6>
         <div style="font-size: 0.85em; line-height: 1.5;">
           <p style="margin: 5px 0;"><b>1. Clustering K-Means adaptado:</b> Agrupación de incidentes cercanos (radio ${RADIO_CLUSTER}m)</p>
-          <p style="margin: 5px 0;"><b>2. Ponderación por gravedad:</b> Robos sin intervención > Siniestros NSD > Otros</p>
+          <p style="margin: 5px 0;"><b>2. Ponderación por gravedad:</b> Violencia de género y robo automotor > Robo/hurto y confrontaciones > Siniestros NSD > Otros siniestros (robos con detención/secuestro pesan menos)</p>
           <p style="margin: 5px 0;"><b>3. TSP Greedy (Vecino más cercano):</b> Optimización de recorridos</p>
           <p style="margin: 5px 0;"><b>4. Balanceo de carga:</b> Distribución equitativa entre rutas</p>
         </div>
@@ -6970,7 +7056,7 @@ document.getElementById('consultas-panel').addEventListener('click', async (e) =
           <li style="margin-bottom: 5px;">
             ${icono} <b>${punto.barrio}</b> 
             <span style="color: #666; font-size: 0.9em;">
-              (${punto.incidentes.length} incidentes: ${punto.siniestros}⚠️ + ${punto.robos}🚗)
+              (${punto.incidentes.length} incidentes: ${punto.siniestros}⚠️ + ${punto.eventos}🚨)
             </span>
         `;
         

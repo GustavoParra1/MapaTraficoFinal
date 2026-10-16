@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="css/paneles-igualar.css?v=1">
   <link rel="stylesheet" href="css/chat-visor-patrullas.css?v=1">
   <link rel="stylesheet" href="css/tour-cimu-azul.css?v=1">
-  <link rel="stylesheet" href="css/panel-derecho-acordeon.css?v=2">
+  <link rel="stylesheet" href="css/panel-derecho-acordeon.css?v=1">
 
   <!-- ============================================================
        INFORME DE SEGURIDAD - ESTILOS
@@ -578,6 +578,7 @@
           <button class="informe-tab"         data-tab="siniestros"      onclick="switchInformeTab('siniestros',this)">Siniestros</button>
           <button class="informe-tab"         data-tab="camaras"         onclick="switchInformeTab('camaras',this)">Cámaras</button>
           <button class="informe-tab"         data-tab="escolares"       onclick="switchInformeTab('escolares',this)">Corredores Escolares</button>
+          <button class="informe-tab"         data-tab="eventos"         onclick="switchInformeTab('eventos',this)">Eventos</button>
           <button class="informe-tab"         data-tab="recomendaciones" onclick="switchInformeTab('recomendaciones',this)">Recomendaciones</button>
           <button class="informe-tab"         data-tab="campo"           onclick="switchInformeTab('campo',this)">📝 Observaciones de Campo</button>
         </div>
@@ -625,6 +626,7 @@
         <div style="display:flex;gap:0;overflow-x:auto;">
           <button class="informe-tab active" data-cruce-tab="resumen"    onclick="switchInformeCruceTab('resumen',this)">Resumen</button>
           <button class="informe-tab"        data-cruce-tab="movilidad" onclick="switchInformeCruceTab('movilidad',this)">🚌 Colectivos y Aforos</button>
+          <button class="informe-tab"        data-cruce-tab="eventos"   onclick="switchInformeCruceTab('eventos',this)">📌 Eventos</button>
           <button class="informe-tab"        data-cruce-tab="campo"     onclick="switchInformeCruceTab('campo',this)">📝 Observaciones de Campo</button>
         </div>
       </div>
@@ -892,10 +894,10 @@
   <script>let emergenciaZoomActiva = false;</script>
 
   <script src="js/eventos-operadores.js?v=202602201400"></script>
-  <script src="script.js?v=20261016001"></script>
-  <script src="js/eventos-layer.js?v=2"></script>
+  <script src="script.js?v=20261016003"></script>
+  <script src="js/eventos-layer.js?v=3"></script>
   <script src="js/sidebar-cimu.js?v=1"></script>
-  <script src="js/panel-derecho-acordeon.js?v=2"></script>
+  <script src="js/panel-derecho-acordeon.js?v=1"></script>
   <script src="js/tour-fix-cimu.js?v=1"></script>
 
   <!-- ============================================================
@@ -1001,6 +1003,8 @@
       typeof loadSiniestrosData    === 'function' ? loadSiniestrosData()    : Promise.resolve(),
       typeof loadBaseCSVData       === 'function' ? loadBaseCSVData()       : Promise.resolve(),
       typeof loadRoboAutomotorData === 'function' ? loadRoboAutomotorData() : Promise.resolve(),
+      // Eventos (capa Eventos, eventos.csv)
+      window.EventosLayer ? window.EventosLayer.cargar().catch(()=>{}) : Promise.resolve(),
       // Cargar colegios si no están en memoria todavía
       (!window._colegiosGeoJSON && !window.colegiosData)
         ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
@@ -1125,6 +1129,11 @@
     const coberturaEst = areaCamKm2>0 ? Math.min(Math.round((camarasBarrio.length*Math.PI*0.01)/areaCamKm2*100),100) : 0;
 
     // ROBOS
+    // EVENTOS (capa Eventos): mismo criterio de polígono que siniestros
+    const _evtTodos = (window.EventosLayer && window.EventosLayer.datos()) || [];
+    const eventosBarrio = _evtTodos.filter(e => isLatLngInMultiPolygon(L.latLng(e._lat, e._lon), geo.coordinates));
+    const eventosInfo = _resumirEventos(eventosBarrio, !!(window.EventosLayer && window.EventosLayer.datos()));
+
     const robosBarrio = (allRoboAutomotorData||[]).filter(r => {
       const coordsStr=r['Longitud y Latitud']; if(!coordsStr) return false;
       const parts=coordsStr.split(',').map(s=>s.trim()); if(parts.length!==2) return false;
@@ -1172,8 +1181,8 @@
         .catch(() => {});
     }
 
-    const criticidad = Math.min(Math.round((siniestrosBarrio.length/10)*2+(robosBarrio.length/5)*1.5+(sinSinCamara/Math.max(siniestrosBarrio.length,1))*30+(colegiosSinCam*5)),100);
-    const recomendaciones = _generarRecomendaciones({nombreBarrio,siniestros:siniestrosBarrio.length,causas,participantes,camaras:camarasBarrio.length,cobertura:coberturaEst,nsd,colegiosSinCam,robos:robosBarrio.length,sinSinCamara,horarioCritico,diaMax:diaMax?.[0]||'No determinado'});
+    const criticidad = Math.min(Math.round((siniestrosBarrio.length/10)*2+(robosBarrio.length/5)*1.5+(sinSinCamara/Math.max(siniestrosBarrio.length,1))*30+(colegiosSinCam*5)+(eventosInfo.criticos/5)*1.5),100);
+    const recomendaciones = _generarRecomendaciones({nombreBarrio,siniestros:siniestrosBarrio.length,causas,participantes,camaras:camarasBarrio.length,cobertura:coberturaEst,nsd,colegiosSinCam,robos:robosBarrio.length,eventosCrit:eventosInfo.criticos,sinSinCamara,horarioCritico,diaMax:diaMax?.[0]||'No determinado'});
 
 // === COLECTIVOS: líneas que atraviesan el barrio (combina fuente OSM + fuente por línea) ===
     let lineasColectivo = [];
@@ -1283,11 +1292,102 @@
     }).sort((a,b)=>b.total-a.total).slice(0,5);
     const camarasConAforo = Object.keys(aforoPorCamara).length;
 
-    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo,siniestrosPorAnio,siniestrosPorDia,siniestrosConPeatones,siniestrosConCiclistas};
+    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo,siniestrosPorAnio,siniestrosPorDia,siniestrosConPeatones,siniestrosConCiclistas,eventos:eventosInfo};
+  }
+
+  // Tipos de evento que suman al puntaje de criticidad y peso de cada evento.
+  // Para ajustar: agregar/quitar tipos acá (nombres en minúscula y sin tildes).
+  const PESOS_EVENTOS_CRITICIDAD = { 'robo/hurto': 1, 'confrontacion': 1, 'violencia de genero': 1 };
+  const _normTipoEv = (t) => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+
+  // === EVENTOS: resumen por barrio o cruce (capa Eventos / eventos.csv) ===
+  function _resumirEventos(lista, cargado) {
+    const MESES_EV = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const porTipoM = {}, porAnioM = {}, porMesM = {}, dirM = {};
+    let aprox = 0, criticos = 0;
+    lista.forEach(e => {
+      const t = e['Tipo de Evento'] || 'Sin tipo';
+      porTipoM[t] = (porTipoM[t]||0) + 1;
+      criticos += PESOS_EVENTOS_CRITICIDAD[_normTipoEv(t)] || 0;
+      const a = e['año'], m = e['mes'];
+      if (a) porAnioM[a] = (porAnioM[a]||0) + 1;
+      if (a && m) { const k = a + '-' + String(m).padStart(2,'0'); porMesM[k] = (porMesM[k]||0) + 1; }
+      const dir = [e['Direccion 0'], e['Direccion']].filter(Boolean).join(' y ');
+      if (dir) {
+        const k = dir.toUpperCase();
+        if (!dirM[k]) dirM[k] = {dir, lat: e._lat, lng: e._lon, cant: 0};
+        dirM[k].cant++;
+      }
+      if (e['estado_coordenada'] === 'revisar') aprox++;
+    });
+    const colorDe = (t) => (window.EventosLayer && window.EventosLayer.color) ? window.EventosLayer.color(t) : '#64748b';
+    return {
+      cargado: !!cargado,
+      total: lista.length,
+      aprox,
+      criticos,
+      porTipo: Object.entries(porTipoM).map(([tipo,cant]) => ({tipo, cant, color: colorDe(tipo)})).sort((a,b) => b.cant - a.cant),
+      porAnio: Object.entries(porAnioM).map(([anio,cant]) => ({anio: Number(anio), cant})).sort((a,b) => a.anio - b.anio),
+      porMes: Object.entries(porMesM).sort((a,b) => b[0].localeCompare(a[0])).slice(0,12)
+        .map(([k,cant]) => { const [y,mm] = k.split('-'); return {periodo: (MESES_EV[+mm]||mm) + ' ' + y, cant}; }),
+      topDirecciones: Object.values(dirM).sort((a,b) => b.cant - a.cant).slice(0,8)
+    };
+  }
+
+  // --- TAB EVENTOS ---
+  function _htmlEventos(d) {
+    const ev = d.eventos;
+    const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    if (!ev || !ev.cargado) {
+      return '<div class="informe-card"><p style="color:#94a3b8;font-size:14px;margin:0;">No se pudieron cargar los eventos (eventos.csv). Verificá que el archivo exista en el sitio y recargá el informe.</p></div>';
+    }
+    const maxTipo = Math.max(1, ...ev.porTipo.map(t => t.cant));
+    return `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;">
+        ${_metric('📌',d.radioMetros?'Eventos en el radio':'Eventos en el barrio',ev.total,'','#1d4ed8')}
+        ${_metric('🗂️','Tipos de evento',ev.porTipo.length,'','#7c3aed')}
+        ${_metric('📍','Ubicación aproximada',ev.aprox,'','#d97706')}
+        ${_metric('🚨','Suman a criticidad',ev.criticos,'','#b91c1c')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="informe-card">
+          <h4>📊 Eventos por tipo</h4>
+          ${ev.porTipo.map(t => _causaBar(esc(t.tipo), t.cant, maxTipo, t.color)).join('')}
+          ${ev.porTipo.length===0?'<p style="color:#94a3b8;font-size:13px">Sin eventos en esta zona</p>':''}
+        </div>
+        <div class="informe-card">
+          <h4>📅 Evolución (últimos períodos)</h4>
+          <table class="informe-tabla">
+            <thead><tr><th>Período</th><th style="text-align:right">Eventos</th></tr></thead>
+            <tbody>
+              ${ev.porMes.map(m => `<tr><td>${esc(m.periodo)}</td><td style="text-align:right;font-weight:700;color:#1d4ed8;">${m.cant}</td></tr>`).join('')}
+              ${ev.porMes.length===0?'<tr><td colspan="2" style="color:#94a3b8;">Sin datos</td></tr>':''}
+            </tbody>
+          </table>
+          ${ev.porAnio.length>1?`<div style="margin-top:12px;font-size:13px;color:#64748b;">Por año: ${ev.porAnio.map(a => `<strong>${a.anio}</strong>: ${a.cant}`).join(' · ')}</div>`:''}
+        </div>
+      </div>
+      <div class="informe-card">
+        <h4>📍 Direcciones con más eventos</h4>
+        <table class="informe-tabla">
+          <thead><tr><th>#</th><th>Dirección</th><th style="text-align:right">Eventos</th><th></th></tr></thead>
+          <tbody>
+            ${ev.topDirecciones.map((p,i) => `
+              <tr>
+                <td>${i+1}</td>
+                <td style="font-size:13px">${esc(p.dir)}</td>
+                <td style="text-align:right;font-weight:700;color:#1d4ed8;font-size:14px">${p.cant}</td>
+                <td><button class="btn-accion" style="font-size:12px;padding:4px 10px" onclick="informeZoomPunto(${p.lat},${p.lng})" title="Ver en mapa">📍</button></td>
+              </tr>`).join('')}
+            ${ev.topDirecciones.length===0?'<tr><td colspan="4" style="color:#94a3b8;">Sin datos</td></tr>':''}
+          </tbody>
+        </table>
+      </div>
+      ${d.radioMetros?'':`<p style="font-size:12px;color:#64748b;margin:0;">Para el puntaje de criticidad del barrio se cuentan los eventos de tipo Robo/Hurto, Confrontación y Violencia De Género.</p>`}`;
   }
 
   function _datosVacios(nombre) {
-    return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[],siniestrosPorAnio:[],siniestrosPorDia:[],siniestrosConPeatones:0,siniestrosConCiclistas:0};
+    return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[],siniestrosPorAnio:[],siniestrosPorDia:[],siniestrosConPeatones:0,siniestrosConCiclistas:0,eventos:_resumirEventos([],false)};
   }
 
   // === ANÁLISIS POR CRUCE (mismo patrón que _calcularDatosBarrio, pero filtrando
@@ -1390,6 +1490,10 @@
       const clng=parseFloat(parts[0]), clat=parseFloat(parts[1]);
       return dentroDelRadio(clat, clng);
     });
+
+    // EVENTOS (capa Eventos) dentro del radio
+    const _evtDatosC = (window.EventosLayer && window.EventosLayer.datos()) || null;
+    const eventosCruceInfo = _resumirEventos((_evtDatosC||[]).filter(e => dentroDelRadio(e._lat, e._lon)), !!_evtDatosC);
 
     // Robos por año (robo_automotor.csv solo trae el campo "año", no hay mes ni día disponibles)
     const robosPorAnioMap = {};
@@ -1526,6 +1630,7 @@
       siniestrosConCiclistas,
       nsd,
       robosPorAnio,
+      eventos: eventosCruceInfo,
       lineasColectivo,
       aforoTotal,
       aforoPorTipo,
@@ -1542,7 +1647,7 @@
       densidadCamaras: 0, areaCamKm2: '0', pctSiniConCam: 0, sinSinCamara: 0,
       participantes: [], causas: [], horarioCritico: '-', diaMaxSiniestros: '-',
       siniestrosPorAnio: [], siniestrosPorMes: [], siniestrosPorDia: [], siniestrosConPeatones: 0,
-      siniestrosConCiclistas: 0, nsd: 0, robosPorAnio: [],
+      siniestrosConCiclistas: 0, nsd: 0, robosPorAnio: [], eventos: _resumirEventos([], false),
       lineasColectivo: [], aforoTotal: 0, aforoPorTipo: {}, aforoPorMes: [], aforoPorAnio: [], camarasConAforo: 0
     };
   }
@@ -1560,6 +1665,7 @@
     if(d.horarioCritico&&d.diaMax) recs.push(`🕐 Reforzar patrullaje en horario ${d.horarioCritico} los días ${d.diaMax}, que concentran la mayor siniestralidad del barrio.`);
     if(d.colegiosSinCam>0) recs.push(`🏫 ${d.colegiosSinCam} colegio(s) sin cámara pública a 100m. Priorizar en horarios de entrada/salida (7:00–8:30 y 16:30–17:30).`);
     if(d.robos>5) recs.push(`🚗 ${d.robos} eventos de robo automotor. Coordinar operativos LPR en accesos al barrio y reforzar vigilancia en puntos de concentración.`);
+    if(d.eventosCrit>5) recs.push(`🚨 ${d.eventosCrit} eventos de robo/hurto, confrontación o violencia de género registrados en la capa Eventos. Priorizar presencia preventiva y coordinación con las áreas operativas en los puntos de mayor concentración.`);
     if(d.nsd>0) recs.push(`🔍 ${d.nsd} siniestros sin causa determinada (NSD). Revisar cobertura de cámara en esos puntos específicos.`);
     if(recs.length===0) recs.push('✅ El barrio presenta indicadores dentro del rango normal. Mantener estrategias actuales y monitoreo periódico.');
     return recs;
@@ -1594,6 +1700,7 @@
       case 'siniestros':      cont.innerHTML=_htmlSiniestros(d);      break;
       case 'camaras':         cont.innerHTML=_htmlCamaras(d);         break;
       case 'escolares':       cont.innerHTML=_htmlEscolares(d);       break;
+      case 'eventos':         cont.innerHTML=_htmlEventos(d);         break;
       case 'recomendaciones': cont.innerHTML=_htmlRecomendaciones(d); break;
       case 'movilidad':       cont.innerHTML=_htmlMovilidad(d);       break;
       case 'campo':           cont.innerHTML=_htmlCampo(d);           _initCampoTab(d.nombre); break;
@@ -1612,6 +1719,7 @@
         ${_metric('%','Cobertura cámaras',pctCob,'%',cobColor)}
         ${_metric('◌','Sin cobertura',d.sinSinCamara,' sin.','#d97706')}
         ${_metric('🚗','Robos automotor',d.robos,'','#b91c1c')}
+        ${_metric('📌','Eventos',(d.eventos&&d.eventos.total)||0,'','#1d4ed8')}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
         <div class="informe-card">
@@ -2002,12 +2110,13 @@
       }
       btn.innerHTML = '⏳ Generando PDF...';
 
-      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'movilidad', 'recomendaciones'];
+      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'eventos', 'movilidad', 'recomendaciones'];
       const titulos = {
         resumen: 'Resumen General',
         siniestros: 'Siniestros',
         camaras: 'Cámaras y Cobertura',
         escolares: 'Corredores Escolares',
+        eventos: 'Eventos',
         movilidad: 'Colectivos y Aforos',
         recomendaciones: 'Recomendaciones'
       };
@@ -2494,6 +2603,7 @@
       typeof loadSiniestrosData    === 'function' ? loadSiniestrosData()    : Promise.resolve(),
       typeof loadBaseCSVData       === 'function' ? loadBaseCSVData()       : Promise.resolve(),
       typeof loadRoboAutomotorData === 'function' ? loadRoboAutomotorData() : Promise.resolve(),
+      window.EventosLayer ? window.EventosLayer.cargar().catch(()=>{}) : Promise.resolve(),
       (!window._colegiosGeoJSON && !window.colegiosData)
         ? fetch('colegios_escuelas.geojson').then(r=>r.json()).then(d=>{ window._colegiosGeoJSON=d; }).catch(()=>{})
         : Promise.resolve(),
@@ -2522,6 +2632,7 @@
       return;
     }
     if (tab === 'movilidad') { cont.innerHTML = _htmlCruceMovilidad(d); return; }
+    if (tab === 'eventos')   { cont.innerHTML = _htmlEventos(d); return; }
     if (tab === 'campo')     { cont.innerHTML = _htmlCruceCampo(d); _initCampoTabCruce(d); return; }
     cont.innerHTML = _htmlCruceResumen(d);
   }
@@ -2830,8 +2941,8 @@
       // porque sus notas y fotos ya quedaron incorporadas al texto de la IA
       // (sección 5 del prompt) — mismo criterio que usa barrio, que tampoco
       // captura su tab de observaciones de campo como página aparte.
-      const tabs = ['resumen', 'movilidad'];
-      const titulos = { resumen: 'Resumen General', movilidad: 'Colectivos y Aforos' };
+      const tabs = ['resumen', 'movilidad', 'eventos'];
+      const titulos = { resumen: 'Resumen General', movilidad: 'Colectivos y Aforos', eventos: 'Eventos' };
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
