@@ -1,0 +1,42 @@
+/* Panel derecho plegable (acordeón) - CIMU */
+#right-panel .acc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+#right-panel .acc-header:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+#right-panel .acc-header .acc-right { display: flex; align-items: center; gap: 8px; }
+
+/* Flechita ">" igual a la del panel izquierdo */
+#right-panel .acc-header .acc-chevron {
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+#right-panel .acc-section.open > .acc-header .acc-chevron { transform: rotate(90deg); }
+
+/* Contador de capas activas (se ve aunque la sección esté cerrada) */
+#right-panel .acc-header .acc-badge {
+  display: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+#right-panel .acc-section.has-active:not(.open) > .acc-header .acc-badge { display: inline-block; }
+
+/* Contenido */
+#right-panel .acc-body { display: none; }
+#right-panel .acc-section.open > .acc-body { display: block; }
