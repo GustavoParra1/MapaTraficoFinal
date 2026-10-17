@@ -1302,7 +1302,7 @@
     }).sort((a,b)=>b.total-a.total).slice(0,5);
     const camarasConAforo = Object.keys(aforoPorCamara).length;
 
-    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo,siniestrosPorAnio,siniestrosPorDia,siniestrosConPeatones,siniestrosConCiclistas,eventos:eventosInfo};
+    return {nombre:nombreBarrio,siniestros:siniestrosBarrio.length,camarasPublicas:camarasBarrio.length,camarasPrivadas:camarasPrivBarrio.length,robos:robosBarrio.length,cobertura:coberturaEst,densidadCamaras,areaCamKm2:areaCamKm2.toFixed(2),pctSiniConCam,sinSinCamara,colegios:colegiosBarrio,colegiosSinCam,participantes,causas,puntosCriticos,horarioCritico,diaMaxSiniestros:diaMax?.[0]||'No determinado',nsd,criticidad,recomendaciones,barrioFeature,lineasColectivo,aforoTotal,aforoPorTipo,aforoTopCamaras,camarasConAforo,siniestrosPorAnio,siniestrosPorDia,siniestrosConPeatones,siniestrosConCiclistas,eventos:eventosInfo,policial:_resumenPolicial(eventosBarrio,robosBarrio)};
   }
 
   // Tipos de evento que suman al puntaje de criticidad y peso de cada evento.
@@ -1311,6 +1311,77 @@
   const _normTipoEv = (t) => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 
   // === EVENTOS: resumen por barrio o cruce (capa Eventos / eventos.csv) ===
+  // ---------- Respuesta policial (eventos + robo automotor) ----------
+  function _periodosFuentes() {
+    const rango = (arr) => {
+      const ys = (arr || []).map(r => parseInt(r['año'], 10)).filter(y => !isNaN(y));
+      if (!ys.length) return '';
+      const a = Math.min(...ys), b = Math.max(...ys);
+      return a === b ? String(a) : a + '–' + b;
+    };
+    const ev = (window.EventosLayer && window.EventosLayer.datos && window.EventosLayer.datos()) || [];
+    return { robos: rango(typeof allRoboAutomotorData !== 'undefined' ? allRoboAutomotorData : []) || 's/d', eventos: rango(ev) || 's/d' };
+  }
+  function _statsPolicial(lista) {
+    const total = lista.length;
+    const arr = lista.map(e => parseFloat(e['min_arribo'])).filter(v => !isNaN(v) && v >= 0).sort((a, b) => a - b);
+    let arribo = null;
+    if (arr.length) { const m = Math.floor(arr.length / 2); arribo = arr.length % 2 ? arr[m] : (arr[m - 1] + arr[m]) / 2; }
+    const bloques = {}; let conHora = 0;
+    lista.forEach(e => {
+      const m = /^(\d{1,2}):/.exec(e['hora'] || '');
+      if (!m) return;
+      const h = parseInt(m[1], 10); if (h > 23) return;
+      const ini = h - (h % 2); bloques[ini] = (bloques[ini] || 0) + 1; conHora++;
+    });
+    let franja = null, nFranja = 0;
+    Object.keys(bloques).forEach(k => { if (bloques[k] > nFranja) { nFranja = bloques[k]; franja = String(k).padStart(2, '0') + ':00 – ' + String((+k + 2) % 24).padStart(2, '0') + ':00'; } });
+    const res = {};
+    lista.forEach(e => { const r = (e['Resultado'] || '').trim(); if (r) res[r] = (res[r] || 0) + 1; });
+    const top = Object.entries(res).sort((a, b) => b[1] - a[1])[0];
+    const conRes = Object.values(res).reduce((s, v) => s + v, 0);
+    return { total, arribo, nArribo: arr.length, franja, nFranja, nHora: conHora,
+             resultado: top ? top[0] : null, nResultado: top ? top[1] : 0, pctResultado: conRes ? Math.round(top[1] / conRes * 100) : 0 };
+  }
+  function _resumenPolicial(eventosLista, robosLista) {
+    const robosAnio = {};
+    (robosLista || []).forEach(r => { const y = r['año']; if (y) robosAnio[y] = (robosAnio[y] || 0) + 1; });
+    return {
+      eventos: _statsPolicial(eventosLista || []),
+      robos: _statsPolicial(robosLista || []),
+      robosPorAnio: Object.entries(robosAnio).sort((a, b) => a[0].localeCompare(b[0])).map(([anio, cant]) => ({ anio, cant }))
+    };
+  }
+  function _htmlPolicial(d) {
+    const p = d.policial; if (!p) return '';
+    const per = _periodosFuentes();
+    const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const peq = (x) => '<span style="font-size:11px;color:#94a3b8;">' + x + '</span>';
+    const fila = (titulo, per_, s) => {
+      if (!s.total) return '<tr><td>' + titulo + '<br>' + peq(per_) + '</td><td colspan="4" style="color:#94a3b8;">Sin casos en esta zona</td></tr>';
+      const nd = '<span style="color:#94a3b8;">sin datos</span>';
+      return '<tr><td>' + titulo + '<br>' + peq(per_) + '</td>' +
+        '<td style="text-align:right;font-weight:700;">' + s.total + '</td>' +
+        '<td style="text-align:right;">' + (s.arribo != null ? '<b>' + (Math.round(s.arribo * 10) / 10) + ' min</b><br>' + peq(s.nArribo + ' de ' + s.total + ' casos') : nd) + '</td>' +
+        '<td>' + (s.franja ? '<b>' + s.franja + '</b><br>' + peq(s.nFranja + ' de ' + s.nHora + ' con hora') : nd) + '</td>' +
+        '<td>' + (s.resultado ? esc(s.resultado) + '<br>' + peq(s.pctResultado + '% (' + s.nResultado + ')') : nd) + '</td></tr>';
+    };
+    const porAnio = (p.robosPorAnio || []).map(a => a.anio + ': <b>' + a.cant + '</b>').join(' · ');
+    return `
+      <div class="informe-card">
+        <h4>🚓 Respuesta policial</h4>
+        <table class="informe-tabla">
+          <thead><tr><th>Tipo</th><th style="text-align:right">Casos</th><th style="text-align:right">Arribo (mediana)</th><th>Franja más frecuente</th><th>Resultado más frecuente</th></tr></thead>
+          <tbody>
+            ${fila('Eventos', per.eventos, p.eventos)}
+            ${fila('Robo automotor', per.robos, p.robos)}
+          </tbody>
+        </table>
+        ${porAnio ? '<p style="font-size:12px;color:#64748b;margin:8px 0 0;">Robos automotor por año: ' + porAnio + '</p>' : ''}
+        <p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">Hora y minutos de arribo solo existen en parte de los casos (en robo automotor, desde 2025). Cada cifra indica con cuántos casos se calculó.</p>
+      </div>`;
+  }
+
   function _resumirEventos(lista, cargado) {
     const MESES_EV = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const porTipoM = {}, porAnioM = {}, porMesM = {}, dirM = {};
@@ -1641,6 +1712,7 @@
       nsd,
       robosPorAnio,
       eventos: eventosCruceInfo,
+      policial: _resumenPolicial((_evtDatosC||[]).filter(e => dentroDelRadio(e._lat, e._lon)), robosCruce),
       lineasColectivo,
       aforoTotal,
       aforoPorTipo,
@@ -1728,8 +1800,8 @@
         ${_metric('🔒','Cámaras privadas',d.camarasPrivadas,'','#7c3aed')}
         ${_metric('%','Cobertura cámaras',pctCob,'%',cobColor)}
         ${_metric('◌','Sin cobertura',d.sinSinCamara,' sin.','#d97706')}
-        ${_metric('🚗','Robos automotor',d.robos,'','#b91c1c')}
-        ${_metric('📌','Eventos',(d.eventos&&d.eventos.total)||0,'','#1d4ed8')}
+        ${_metric('🚗','Robos automotor ('+_periodosFuentes().robos+')',d.robos,'','#b91c1c')}
+        ${_metric('📌','Eventos ('+_periodosFuentes().eventos+')',(d.eventos&&d.eventos.total)||0,'','#1d4ed8')}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
         <div class="informe-card">
@@ -1757,6 +1829,7 @@
           </div>
         </div>
       </div>
+      ${_htmlPolicial(d)}
       <div class="informe-card" style="background:#fffbeb;border-color:#fbbf24;">
         <h4>🔎 Síntesis del barrio ${d.nombre}</h4>
         <p style="font-size:14px;color:#334155;line-height:1.75;margin:0 0 12px;">
@@ -2658,7 +2731,7 @@
         ${_metric('💥','Siniestros',d.siniestros,'','#dc2626')}
         ${_metric('📷','Cámaras públicas',d.camarasPublicas,'','#1a2332')}
         ${_metric('🔒','Cámaras privadas',d.camarasPrivadas,'','#1a2332')}
-        ${_metric('🚗','Robos automotor',d.robos,'','#1a2332')}
+        ${_metric('🚗','Robos automotor ('+_periodosFuentes().robos+')',d.robos,'','#1a2332')}
         ${_metric('🏫','Colegios',d.colegios,'','#1a2332')}
         ${_metric('📡','Con cobertura',d.pctSiniConCam,'%','#0f6e56')}
         ${_metric('🕐','Horario crítico',d.horarioCritico,'','#1a2332')}
@@ -2700,6 +2773,7 @@
           </div>
         </div>
       </div>
+      ${_htmlPolicial(d)}
       <div class="informe-card">
         <h4>🚗 Robos de automotor por año</h4>
         <table class="informe-tabla">
@@ -2709,7 +2783,7 @@
             ${d.robosPorAnio.length===0?`<tr><td colspan="2" style="color:#94a3b8;">${d.robos>0?'Sin campo de año en los registros':'Sin robos registrados en el radio'}</td></tr>`:''}
           </tbody>
         </table>
-        <p style="font-size:12px;color:#94a3b8;margin:8px 0 0;">El dataset de robos de automotor solo trae el año del hecho, no mes ni día.</p>
+        <p style="font-size:12px;color:#94a3b8;margin:8px 0 0;">Los robos de 2023–2024 solo traen el año; desde 2025 incluyen mes, hora y respuesta policial.</p>
       </div>
       <div class="informe-card" style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:#64748b;">
         <span>🚶 Con peatones: <b style="color:#1e293b">${d.siniestrosConPeatones}</b></span>
