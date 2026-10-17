@@ -137,6 +137,12 @@ function construirPromptCruce(d, observaciones, cantidadImagenes) {
   const listaCausas = (d.causas || []).map(c => `${c.nombre} (${c.cant})`).join(', ') || 'sin datos';
   const listaSiniestrosPorAnio = (d.siniestrosPorAnio || []).map(a => `${a.anio}: ${a.cant}`).join(', ') || 'sin datos';
   const listaSiniestrosPorDia = (d.siniestrosPorDia || []).map(x => `${x.dia}: ${x.cant}`).join(', ') || 'sin datos';
+  // Eventos operativos (capa Eventos / eventos.csv)
+  const ev = d.eventos || null;
+  const eventosDisponibles = !!(ev && ev.cargado);
+  const listaEventosPorTipo = (ev?.porTipo || []).map(t => `${t.tipo} (${t.cant})`).join(', ') || 'sin datos';
+  const listaEventosPorPeriodo = (ev?.porMes || []).map(m => `${m.periodo}: ${m.cant}`).join(', ') || 'sin datos';
+  const listaEventosDirecciones = (ev?.topDirecciones || []).slice(0, 5).map(p => `${p.dir} (${p.cant})`).join('; ') || 'sin datos';
   const tieneCampo = !!observaciones || tieneImagenes;
 
   const bloqueCampo = tieneCampo ? `
@@ -187,7 +193,7 @@ Contenido esperado de cada sección:
 
 - 1. INTRODUCCION Y CONTEXTO DEL CRUCE: presentá "${d.nombre}" como objeto del informe, aclarando que el análisis corresponde a un radio de ${d.radioMetros} metros alrededor del punto (no al barrio completo), y un perfil general según el volumen de siniestros registrado. Si hay observaciones de campo, mencioná brevemente que se incorporó relevamiento in situ complementario.
 
-- 2. FUENTES DE DATOS Y METODOLOGIA: describí de dónde sale cada dato (módulo de siniestros del sistema CIMU, red de cámaras públicas y privadas, colegios, robos de automotor${tieneCampo ? ', y relevamiento de campo manual con notas y fotos' : ''}), y explicá explícitamente el criterio de radio: todos los datos corresponden a hechos/elementos ubicados dentro de ${d.radioMetros} metros del punto central del cruce, no al barrio completo. Si algún dato falta, aclararlo acá.
+- 2. FUENTES DE DATOS Y METODOLOGIA: describí de dónde sale cada dato (módulo de siniestros del sistema CIMU, red de cámaras públicas y privadas, colegios, robos de automotor, capa de eventos operativos (eventos.csv)${tieneCampo ? ', y relevamiento de campo manual con notas y fotos' : ''}), y explicá explícitamente el criterio de radio: todos los datos corresponden a hechos/elementos ubicados dentro de ${d.radioMetros} metros del punto central del cruce, no al barrio completo. Si algún dato falta, aclararlo acá.
 
 - 3. DIAGNOSTICO DE SINIESTRALIDAD: con subsecciones si el contenido lo amerita (por ejemplo "## 3.1 Evolución histórica", "## 3.2 Causas y patrones horarios", "## 3.3 Participantes involucrados", "## 3.4 Peatones y ciclistas"):
   · Evolución histórica año a año (usá los datos de siniestros por año provistos) y si hay tendencia creciente, decreciente o estable.
@@ -200,13 +206,13 @@ Contenido esperado de cada sección:
 
 - 5. FACTORES DE RIESGO Y OBSERVACIONES DE CAMPO: sección donde se integra el relevamiento manual si existe. ${bloqueCampo}
 
-- 6. ROBOS DE AUTOMOTOR: cifra de robos de automotor registrada dentro del radio. Podés mencionar la cobertura de cámaras del cruce como dato de contexto, pero NO afirmes correlación causal entre robos y cámaras salvo que los datos provistos incluyan la ubicación geográfica de cada robo — si no está, no la supongas.
+- 6. ROBOS DE AUTOMOTOR: cifra de robos de automotor registrada dentro del radio. Podés mencionar la cobertura de cámaras del cruce como dato de contexto, pero NO afirmes correlación causal entre robos y cámaras salvo que los datos provistos incluyan la ubicación geográfica de cada robo — si no está, no la supongas. Además, dentro de esta misma sección agregá una subsección "## 6.2 Eventos operativos registrados" (y titulá "## 6.1 Robos de automotor" a la parte anterior) con los datos de la capa de Eventos dentro del radio: total, desglose por tipo, evolución por período usando SOLO los períodos provistos y direcciones con más eventos. Aclará que esta capa tiene su propio período de cobertura y no es comparable con la serie histórica de siniestros. Si hay eventos con ubicación aproximada, mencionalo como limitación. NO afirmes correlación causal entre eventos y cámaras ni entre eventos y siniestros. Si los datos de eventos figuran como "sin datos", omití la subsección 6.2 y aclaralo en la sección 2.
 
 - 7. RECOMENDACIONES DE INTERVENCION: a diferencia de un informe de barrio, acá NO hay una lista de recomendaciones pre-calculada por el sistema — tenés que derivarlas vos directamente de los datos de este cruce (cobertura, causa principal, horario crítico, participantes vulnerables). Organizalas con subsecciones "## 7.1 Corto plazo (0-6 meses)", "## 7.2 Mediano plazo (6-18 meses)" según urgencia, en prosa y/o listas con "-". Cada recomendación tiene que estar anclada explícitamente en un dato del bloque de abajo (ej. "dado que el horario más crítico es X..."), nunca en una cifra o franja horaria inventada. Considerá cerrar con una TABLA resumen (columnas: Acción | Plazo | Dato que la justifica).
 
 - 8. CONCLUSIONES: cierre integrador breve que retome el diagnóstico central del cruce, los factores de riesgo más relevantes (incluidos los de campo si los hay) y la recomendación más urgente.
 
-- 9. FUENTES: listá en formato de lista ("- ") las fuentes de datos reales usadas (módulo de siniestros CIMU, red de cámaras, colegios, robos de automotor${tieneCampo ? ', relevamiento de campo manual' : ''}), sin inventar fuentes externas.
+- 9. FUENTES: listá en formato de lista ("- ") las fuentes de datos reales usadas (módulo de siniestros CIMU, red de cámaras, colegios, robos de automotor, capa de eventos operativos (eventos.csv)${tieneCampo ? ', relevamiento de campo manual' : ''}), sin inventar fuentes externas.
 
 Reglas generales:
 - Español rioplatense, tono profesional y técnico pero legible.
@@ -238,5 +244,10 @@ DATOS DEL CRUCE "${d.nombre}":
 - Cámaras públicas: ${d.camarasPublicas} | Cámaras privadas registradas: ${d.camarasPrivadas}
 - Colegios dentro del radio: ${d.colegios}
 - Robos de automotor registrados dentro del radio: ${d.robos}
+- Eventos operativos registrados dentro del radio (capa Eventos, eventos.csv): ${eventosDisponibles ? ev.total : 'sin datos (la capa de eventos no estuvo disponible)'}
+- Eventos por tipo: ${listaEventosPorTipo}
+- Eventos por período (más recientes primero): ${listaEventosPorPeriodo}
+- Direcciones con más eventos: ${listaEventosDirecciones}
+- Eventos con ubicación aproximada (coordenada a revisar): ${eventosDisponibles ? ev.aprox : 'sin datos'}
 `.trim();
 }

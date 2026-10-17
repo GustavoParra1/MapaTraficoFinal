@@ -157,6 +157,12 @@ function construirPrompt(d, observaciones, cantidadImagenes) {
   const listaRecomendacionesAuto = (d.recomendaciones || []).join(' | ') || 'sin datos';
   const listaSiniestrosPorAnio = (d.siniestrosPorAnio || []).map(a => `${a.anio}: ${a.cant}`).join(', ') || 'sin datos';
   const listaSiniestrosPorDia = (d.siniestrosPorDia || []).map(x => `${x.dia}: ${x.cant}`).join(', ') || 'sin datos';
+  // Eventos operativos (capa Eventos / eventos.csv)
+  const ev = d.eventos || null;
+  const eventosDisponibles = !!(ev && ev.cargado);
+  const listaEventosPorTipo = (ev?.porTipo || []).map(t => `${t.tipo} (${t.cant})`).join(', ') || 'sin datos';
+  const listaEventosPorPeriodo = (ev?.porMes || []).map(m => `${m.periodo}: ${m.cant}`).join(', ') || 'sin datos';
+  const listaEventosDirecciones = (ev?.topDirecciones || []).slice(0, 5).map(p => `${p.dir} (${p.cant})`).join('; ') || 'sin datos';
   const tieneCampo = !!observaciones || tieneImagenes;
 
   const bloqueCampo = tieneCampo ? `
@@ -209,7 +215,7 @@ Contenido esperado de cada sección (informe extenso, denso, tipo trabajo técni
 
 - 1. INTRODUCCION Y CONTEXTO DEL BARRIO: presentá "${d.nombre}" como objeto del informe, su perfil general según los datos disponibles (nivel de criticidad, volumen de siniestros) y por qué amerita este análisis. Si hay observaciones de campo, mencioná brevemente que se incorporó relevamiento in situ complementario.
 
-- 2. FUENTES DE DATOS Y METODOLOGIA: describí brevemente de dónde sale cada dato (módulo de siniestros del sistema CIMU, red de cámaras públicas y privadas, corredores escolares, líneas de colectivo, aforo vehicular${tieneCampo ? ', y relevamiento de campo manual con notas y fotos' : ''}), y sus alcances/limitaciones (por ejemplo, si algún dato es "sin datos", aclararlo acá).
+- 2. FUENTES DE DATOS Y METODOLOGIA: describí brevemente de dónde sale cada dato (módulo de siniestros del sistema CIMU, red de cámaras públicas y privadas, corredores escolares, líneas de colectivo, aforo vehicular, capa de eventos operativos (eventos.csv)${tieneCampo ? ', y relevamiento de campo manual con notas y fotos' : ''}), y sus alcances/limitaciones (por ejemplo, si algún dato es "sin datos", aclararlo acá).
 
 - 3. DIAGNOSTICO DE SINIESTRALIDAD: desarrollo profundo con subsecciones (por ejemplo "## 3.1 Evolución histórica", "## 3.2 Puntos críticos", "## 3.3 Causas y patrones horarios", "## 3.4 Participantes involucrados", "## 3.5 Peatones y ciclistas") analizando:
   · Evolución histórica año a año (usá los datos de siniestros por año provistos) y si hay una tendencia creciente, decreciente o estable a lo largo del período disponible.
@@ -224,7 +230,7 @@ Contenido esperado de cada sección (informe extenso, denso, tipo trabajo técni
 
 - 6. MOVILIDAD Y TRANSITO: rol de las líneas de colectivo que atraviesan el barrio y volumen de vehículos aforados, y su relación posible con la siniestralidad y los puntos críticos. Si los datos de aforo o líneas son escasos, decilo explícitamente.
 
-- 7. ROBOS DE AUTOMOTOR: cifra de robos de automotor registrada. Podés mencionar la cobertura de cámaras del barrio como dato de contexto general (por ejemplo, "el barrio tiene X% de cobertura"), pero NO afirmes que las zonas de robo coinciden o no con zonas de menor cobertura, ni ningún tipo de correlación causal entre robos y cámaras, salvo que los datos provistos incluyan explícitamente la ubicación geográfica de cada robo — si esa ubicación no está en los datos, no la supongas ni la insinúes.
+- 7. ROBOS DE AUTOMOTOR: cifra de robos de automotor registrada. Podés mencionar la cobertura de cámaras del barrio como dato de contexto general (por ejemplo, "el barrio tiene X% de cobertura"), pero NO afirmes que las zonas de robo coinciden o no con zonas de menor cobertura, ni ningún tipo de correlación causal entre robos y cámaras, salvo que los datos provistos incluyan explícitamente la ubicación geográfica de cada robo — si esa ubicación no está en los datos, no la supongas ni la insinúes. Además, dentro de esta misma sección agregá una subsección "## 7.2 Eventos operativos registrados" (y titulá "## 7.1 Robos de automotor" a la parte anterior) que desarrolle los datos de la capa de Eventos del sistema: total, desglose por tipo, evolución por período usando SOLO los períodos provistos y direcciones con más eventos. Aclará que esta capa tiene su propio período de cobertura (el de los períodos provistos) y que no es comparable con la serie histórica de siniestros. Explicá que los eventos de tipo Robo/Hurto, Confrontación y Violencia De Género integran el puntaje de criticidad del barrio. Si hay eventos con ubicación aproximada, mencionalo como limitación. NO afirmes correlación causal entre eventos y cámaras ni entre eventos y siniestros, y no compares con otros barrios. Si los datos de eventos figuran como "sin datos", omití la subsección 7.2 y aclaralo en la sección 2.
 
 - 8. COMPARACION CON REFERENCIAS: esta sección compara al barrio ÚNICAMENTE contra sus propios datos históricos, nunca contra promedios, estándares o "ciudades intermedias" inventados de memoria. Usá la serie de siniestros por año provista para caracterizar la tendencia interna (mejora, empeora o se mantiene respecto a años anteriores) y compará la cobertura de cámaras del barrio (${d.cobertura}%) contra el estándar recomendado por el propio sistema si ese estándar figura en los datos o recomendaciones provistas. PROHIBIDO inventar un porcentaje, promedio o ranking de "otros barrios" o "ciudades similares" que no esté en el bloque de datos. Si no hay datos suficientes para una comparación interna sólida, decilo explícitamente y limitá la sección a describir la evolución temporal disponible.
 
@@ -232,7 +238,7 @@ Contenido esperado de cada sección (informe extenso, denso, tipo trabajo técni
 
 - 10. CONCLUSIONES: cierre integrador que retome el diagnóstico central, los factores de riesgo más relevantes (incluidos los de campo si los hay) y la prioridad de acción más urgente.
 
-- 11. FUENTES: listá en formato de lista ("- ") las fuentes de datos reales usadas (módulo de siniestros CIMU, red de cámaras, corredores escolares, líneas de colectivo, aforo vehicular${tieneCampo ? ', relevamiento de campo manual' : ''}), sin inventar fuentes externas ni bibliografía que no se haya usado realmente.
+- 11. FUENTES: listá en formato de lista ("- ") las fuentes de datos reales usadas (módulo de siniestros CIMU, red de cámaras, corredores escolares, líneas de colectivo, aforo vehicular, capa de eventos operativos (eventos.csv)${tieneCampo ? ', relevamiento de campo manual' : ''}), sin inventar fuentes externas ni bibliografía que no se haya usado realmente.
 
 Reglas generales:
 - Español rioplatense, tono profesional y técnico pero legible.
@@ -267,6 +273,12 @@ DATOS DEL BARRIO "${d.nombre}":
 - Líneas de colectivo que atraviesan el barrio: ${listaLineas}
 - Vehículos aforados (conteo de tránsito): ${(d.aforoTotal || 0).toLocaleString('es-AR')}
 - Robos de automotor registrados: ${d.robos}
+- Eventos operativos registrados en el barrio (capa Eventos, eventos.csv): ${eventosDisponibles ? ev.total : 'sin datos (la capa de eventos no estuvo disponible)'}
+- Eventos por tipo: ${listaEventosPorTipo}
+- Eventos por período (más recientes primero): ${listaEventosPorPeriodo}
+- Direcciones con más eventos: ${listaEventosDirecciones}
+- Eventos con ubicación aproximada (coordenada a revisar): ${eventosDisponibles ? ev.aprox : 'sin datos'}
+- Eventos que integran el puntaje de criticidad (Robo/Hurto, Confrontación, Violencia De Género): ${eventosDisponibles ? ev.criticos : 'sin datos'}
 - Recomendaciones ya calculadas por el sistema (para que las reformules y distribuyas por horizonte temporal, no las repitas literal): ${listaRecomendacionesAuto}
 `.trim();
 }
