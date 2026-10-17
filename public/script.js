@@ -4927,6 +4927,16 @@ function applyRoboAutomotorFilters() {
         });
     }
     
+    // Contador de robos que quedan en el mapa segun los filtros (solo los que tienen coordenadas)
+    const roboInfo = document.getElementById('robo-info');
+    if (roboInfo) {
+        const conCoords = filteredData.filter(item => {
+            const p = (item['Longitud y Latitud'] || '').split(',').map(s => s.trim());
+            return p.length === 2 && !isNaN(parseFloat(p[0])) && !isNaN(parseFloat(p[1]));
+        }).length;
+        roboInfo.textContent = conCoords + ' robos automotor en el mapa';
+    }
+
     processAndDisplayRobos(filteredData);
 }
 
