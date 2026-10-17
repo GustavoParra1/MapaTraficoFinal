@@ -1362,9 +1362,9 @@
       const nd = '<span style="color:#94a3b8;">sin datos</span>';
       return '<tr><td>' + titulo + '<br>' + peq(per_) + '</td>' +
         '<td style="text-align:right;font-weight:700;">' + s.total + '</td>' +
-        '<td style="text-align:right;">' + (s.arribo != null ? '<b>' + (Math.round(s.arribo * 10) / 10) + ' min</b><br>' + peq(s.nArribo + ' de ' + s.total + ' casos') : nd) + '</td>' +
-        '<td>' + (s.franja ? '<b>' + s.franja + '</b><br>' + peq(s.nFranja + ' de ' + s.nHora + ' con hora') : nd) + '</td>' +
-        '<td>' + (s.resultado ? esc(s.resultado) + '<br>' + peq(s.pctResultado + '% (' + s.nResultado + ')') : nd) + '</td></tr>';
+        '<td style="text-align:right;">' + (s.arribo != null ? '<b>' + (Math.round(s.arribo * 10) / 10) + ' min</b><br>' + peq('calculado con ' + s.nArribo + ' de ' + s.total + ' casos') : nd) + '</td>' +
+        '<td>' + (s.franja ? '<b>' + s.franja + '</b><br>' + peq(s.nFranja + ' casos (' + Math.round(s.nFranja / s.nHora * 100) + '% de los ' + s.nHora + ' con hora)') : nd) + '</td>' +
+        '<td>' + (s.resultado ? esc(s.resultado) + '<br>' + peq(s.nResultado + ' casos (' + s.pctResultado + '%)') : nd) + '</td></tr>';
     };
     const porAnio = (p.robosPorAnio || []).map(a => a.anio + ': <b>' + a.cant + '</b>').join(' · ');
     return `
