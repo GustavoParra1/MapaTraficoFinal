@@ -102,6 +102,7 @@ const CONSULTA_SIZES = {
   'arribo_por_barrio': 'medium',
   'arribo_esquinas': 'medium',
   'eventos_mes_a_mes': 'medium',
+  'tendencias_eventos': 'medium',
   'proponer_ubicaciones_camaras': 'medium',
   'semaforos_mas_siniestros': 'medium',
   
@@ -4769,6 +4770,80 @@ function _claveEsquinaConsulta(dir) {
         .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim().split(' y ').map(s => s.trim()).sort().join(' y ');
 }
 
+// ===== TENDENCIAS DE EVENTOS: compara los ultimos N meses contra los N anteriores =====
+async function consultaTendenciasEventos(div, tipo, N) {
+  tipo = tipo || 'all'; N = N || 3;
+  const todos = await cargarEventosParaConsulta();
+  if (!todos.length || !barriosData) { div.innerHTML = '❌ No se pudieron cargar los datos necesarios.'; return; }
+  const idx = e => { const a = parseInt(e['año'], 10), m = parseInt(e['mes'], 10); return (isNaN(a) || isNaN(m)) ? null : a * 12 + m - 1; };
+  const meses = new Set(todos.map(idx).filter(i => i !== null));   // meses con datos (de cualquier tipo)
+  const tipos = [...new Set(todos.map(e => e['Tipo de Evento']).filter(Boolean))].sort();
+  const base = todos.filter(e => idx(e) !== null && (tipo === 'all' || e['Tipo de Evento'] === tipo));
+  const fin = Math.max(...meses), ini = Math.min(...meses);
+  const vAct = [], vPrev = [];
+  for (let k = 0; k < N; k++) { vAct.push(fin - k); vPrev.push(fin - N - k); }
+  const nA = vAct.filter(i => meses.has(i)).length, nP = vPrev.filter(i => meses.has(i)).length;
+  const et = i => _MESES_CONS[i % 12] + ' ' + Math.floor(i / 12);
+  window._tendRefrescar = () => consultaTendenciasEventos(div, document.getElementById('tend-tipo').value, parseInt(document.getElementById('tend-n').value, 10));
+  const cab = '<h5>📊 Tendencias: ¿qué zonas están empeorando?</h5><div style="margin-bottom:10px;">' +
+    '<select id="tend-tipo" onchange="window._tendRefrescar()">' + ['all'].concat(tipos).map(t => '<option value="' + _escConsulta(t) + '"' + (t === tipo ? ' selected' : '') + '>' + (t === 'all' ? 'Todos los tipos' : _escConsulta(t)) + '</option>').join('') + '</select> ' +
+    '<select id="tend-n" onchange="window._tendRefrescar()">' + [1, 2, 3, 6].map(n => '<option value="' + n + '"' + (n === N ? ' selected' : '') + '>Últimos ' + n + (n === 1 ? ' mes' : ' meses') + '</option>').join('') + '</select></div>';
+  if (!nP) { div.innerHTML = cab + _cajaConsulta('⚠️ No hay datos en el período anterior (' + et(fin - 2 * N + 1) + ' a ' + et(fin - N) + '). Probá con menos meses.'); return; }
+
+  const sensible = /suicid|genero/i.test(tipo);   // datos sensibles: solo totales por barrio, sin esquinas
+  const porBarrio = {}, esq = {};
+  base.forEach(e => {
+    const i = idx(e), act = vAct.includes(i), prev = vPrev.includes(i);
+    if (!act && !prev) return;
+    if (e._lat === undefined || e._lon === undefined || isNaN(e._lat) || isNaN(e._lon) || e['estado_coordenada'] === 'revisar') return;
+    const ll = L.latLng(e._lat, e._lon);
+    for (const b of barriosData.features) {
+      if (isLatLngInMultiPolygon(ll, b.geometry.coordinates)) {
+        const o = porBarrio[b.properties.soc_fomen] = porBarrio[b.properties.soc_fomen] || { a: 0, p: 0 };
+        if (act) o.a++; else o.p++;
+        break;
+      }
+    }
+    if (!sensible) {
+      const dir = e['Direccion 0'] || e['Direccion'], k = _claveEsquinaConsulta(dir);
+      if (k) { const o = esq[k] = esq[k] || { a: 0, p: 0, n: dir, lat: e._lat, lon: e._lon }; if (act) o.a++; else o.p++; }
+    }
+  });
+
+  const MIN_N = 10;   // minimo de hechos (ambos periodos) para que el porcentaje sea confiable
+  const rows = Object.keys(porBarrio).filter(n => porBarrio[n].a + porBarrio[n].p >= MIN_N).map(n => {
+    const ra = porBarrio[n].a / nA, rp = porBarrio[n].p / nP;
+    return { n, ra, rp, d: rp ? (ra - rp) * 100 / rp : null, dif: ra - rp };
+  }).sort((x, y) => y.dif - x.dif);
+  const sube = rows.filter(r => r.dif > 0).slice(0, 10), baja = rows.filter(r => r.dif < 0).slice(-5).reverse();
+  const fila = r => [_escConsulta(r.n), r.rp.toFixed(1), r.ra.toFixed(1), r.d === null ? '—' : '<span style="color:' + (r.d > 0 ? '#dc3545' : '#28a745') + ';font-weight:bold;">' + (r.d >= 0 ? '+' : '') + r.d.toFixed(0) + '%</span>'];
+  const cabT = ['Barrio', 'Antes (prom/mes)', 'Ahora (prom/mes)', 'Variación'];
+  const focos = Object.values(esq).filter(o => o.a >= 3 && o.p === 0).sort((x, y) => y.a - x.a).slice(0, 8);
+
+  barriosDestacadosLayer.clearLayers();
+  sube.slice(0, 5).forEach(r => {
+    const f = barriosData.features.find(x => x.properties.soc_fomen === r.n);
+    if (f) L.geoJSON(f, { style: { color: '#d53e4f', weight: 3, opacity: 0.8, fillOpacity: 0.4 } }).bindPopup('<b>' + _escConsulta(r.n) + '</b><br>' + r.rp.toFixed(1) + ' → ' + r.ra.toFixed(1) + ' por mes').addTo(barriosDestacadosLayer);
+  });
+  focos.forEach(o => L.circleMarker([o.lat, o.lon], { radius: 9, color: '#7b1fa2', weight: 3, fillOpacity: 0.5 }).bindPopup('<b>Foco nuevo</b><br>' + _escConsulta(o.n) + '<br>' + o.a + ' hechos').addTo(barriosDestacadosLayer));
+  mymap.addLayer(barriosDestacadosLayer);
+  if (barriosDestacadosLayer.getLayers().length) mymap.fitBounds(barriosDestacadosLayer.getBounds());
+
+  const cnt = {}; base.forEach(e => { const i = idx(e); cnt[i] = (cnt[i] || 0) + 1; });
+  const serie = []; for (let i = ini; i <= fin; i++) serie.push({ etiqueta: et(i), valor: meses.has(i) ? (cnt[i] || 0) : 0, extra: meses.has(i) ? '' : ' — sin datos' });
+  const totA = base.filter(e => vAct.includes(idx(e))).length, totP = base.filter(e => vPrev.includes(idx(e))).length;
+  const incompleto = nA < N || nP < N;
+  div.innerHTML = cab +
+    _cajaConsulta('<b>Ahora:</b> ' + et(fin - N + 1) + ' a ' + et(fin) + ' (' + totA + ' hechos)<br><b>Antes:</b> ' + et(fin - 2 * N + 1) + ' a ' + et(fin - N) + ' (' + totP + ' hechos)' +
+      (incompleto ? '<br><span style="color:#b45309;">⚠️ Faltan meses sin cargar en uno de los períodos: se comparan promedios mensuales de los meses con datos.</span>' : '') +
+      '<br><span style="color:#6c757d;">Solo barrios con al menos ' + MIN_N + ' hechos entre ambos períodos.' + (sensible ? ' Tipo sensible: no se muestran esquinas.' : '') + '</span>') +
+    '<h6>Barrios donde más aumentó</h6>' + (sube.length ? _tablaConsultaHTML(cabT, sube.map(fila)) : '<p>Ningún barrio aumentó.</p>') +
+    (baja.length ? '<h6 style="margin-top:14px;">Barrios donde más bajó</h6>' + _tablaConsultaHTML(cabT, baja.map(fila)) : '') +
+    (!sensible ? '<h6 style="margin-top:14px;">Focos nuevos (3 o más hechos ahora, ninguno antes)</h6>' + (focos.length ? _tablaConsultaHTML(['Esquina', 'Hechos'], focos.map(o => [_escConsulta(o.n), o.a])) : '<p>No hay focos nuevos.</p>') : '') +
+    '<h6 style="margin-top:14px;">Evolución mensual</h6>' + _barrasConsultaHTML(serie, 18) +
+    '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Solo eventos con coordenadas válidas. Incluye robo automotor de 2025 en adelante.</p>';
+}
+
 function loadRoboAutomotorData() {
     if (allRoboAutomotorData) {
         return Promise.resolve();
@@ -7891,6 +7966,11 @@ case "tendencia_no_prioridad": {
         _cajaConsulta('<b>Esquinas evaluadas:</b> las que tienen ' + MIN_N + ' o más eventos con arribo registrado<br><b>Período:</b> ' + _periodoEventosTexto(evs)) +
         _tablaConsultaHTML(['Esquina', 'Eventos', 'Mediana', '90% llega en'], ranking.map((g, i) => [(i + 1) + '. ' + _escConsulta(g.dir), g.vals.length, g.med.toFixed(0) + ' min', '≤ ' + g.p90.toFixed(0) + ' min'])) +
         '<p style="font-size:0.8em;color:#6c757d;margin-top:10px;">Minutos desde el inicio del evento hasta el arribo policial. Las 10 esquinas están marcadas en el mapa con su número. Incluye robo automotor de 2025 en adelante.</p>';
+      break;
+    }
+
+    case 'tendencias_eventos': {
+      await consultaTendenciasEventos(resultadosDiv);
       break;
     }
 
