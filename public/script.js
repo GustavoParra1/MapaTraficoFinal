@@ -1676,6 +1676,7 @@ function displayConsultaResults(htmlContent) {
   
       // 7. Limpiar selects de filtros
       document.getElementById('year-filter').value = 'all';
+      if (document.getElementById('month-filter')) document.getElementById('month-filter').value = 'all';
       document.getElementById('participant-filter').value = 'all';
       document.getElementById('cause-filter').value = 'all';
       document.getElementById('start-hour-filter').value = 'all';
@@ -3236,6 +3237,7 @@ function applySiniestrosFilters() {
   }
 
     const selectedYear = yearFilterSelect.value;
+    const selectedMonth = (typeof monthFilterSelect !== 'undefined' && monthFilterSelect) ? monthFilterSelect.value : 'all';
     const selectedParticipant = participantFilterSelect.value;
     const selectedCause = causeFilterSelect.value;
     const selectedStartHour = startHourFilterSelect.value;
@@ -3249,6 +3251,9 @@ function applySiniestrosFilters() {
       if (!props || !feature.geometry || !feature.geometry.coordinates) return false;
 
       const yearMatch = selectedYear === 'all' || (props.fecha && props.fecha.split('/').length === 3 && (props.fecha.split('/')[2].length === 2 ? '20' + props.fecha.split('/')[2] : props.fecha.split('/')[2]) === selectedYear);
+
+      // Filtro por mes (fecha en formato dd/mm/aa o dd/mm/aaaa)
+      const monthMatch = selectedMonth === 'all' || (props.fecha && props.fecha.split('/').length === 3 && parseInt(props.fecha.split('/')[1], 10) === parseInt(selectedMonth, 10));
 
       // Participantes: acepta 'participantes_codigos', 'participantes' o 'Participante'
       let participantesRaw = props.participantes_codigos || props.participantes || props.Participante;
@@ -3282,7 +3287,7 @@ function applySiniestrosFilters() {
         barrioMatch = isLatLngInMultiPolygon(latlng, selectedBarrioFeature.geometry.coordinates);
       }
 
-      return yearMatch && participantMatch && causeMatch && hourMatch && streetMatch && barrioMatch;
+      return yearMatch && monthMatch && participantMatch && causeMatch && hourMatch && streetMatch && barrioMatch;
     });
 
     // Determinar si el mapa de calor debe estar activo
@@ -5501,6 +5506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 yearFilterSelect.value = 'all';
+                if (typeof monthFilterSelect !== 'undefined') monthFilterSelect.value = 'all';
 
                 participantFilterSelect.value = 'all';
                 barrioFilterSelect.value = 'all';
@@ -5719,6 +5725,7 @@ document.getElementById('clear-filters-btn').addEventListener('click', () => {
   const ids = [
       'barrio-filter',
       'year-filter',
+      'month-filter',
       'participant-filter',
       'cause-filter',
       'start-hour-filter',
@@ -5919,6 +5926,25 @@ document.getElementById('clear-filters-btn').addEventListener('click', () => {
 
 // --- Selects para los filtros de siniestros ---
 const yearFilterSelect = document.getElementById('year-filter');
+
+// --- Filtro de mes (se crea debajo del filtro de año) ---
+const monthFilterSelect = (function () {
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const prev = yearFilterSelect.previousElementSibling;
+  const label = (prev && prev.tagName === 'LABEL') ? prev.cloneNode(false) : document.createElement('label');
+  label.textContent = 'Filtrar por Mes:';
+  label.removeAttribute('for');
+  label.htmlFor = 'month-filter';
+  const sel = yearFilterSelect.cloneNode(false);
+  sel.id = 'month-filter';
+  sel.removeAttribute('name');
+  let html = '<option value="all">Todos los Meses</option>';
+  nombresMeses.forEach((n, i) => { html += '<option value="' + String(i + 1).padStart(2, '0') + '">' + n + '</option>'; });
+  sel.innerHTML = html;
+  sel.value = 'all';
+  yearFilterSelect.after(label, sel);
+  return sel;
+})();
 const participantFilterSelect = document.getElementById('participant-filter');
 const causeFilterSelect = document.getElementById('cause-filter');
 const startHourFilterSelect = document.getElementById('start-hour-filter');
@@ -5929,6 +5955,7 @@ const streetFilterInput = document.getElementById('street-filter');
 
 // Event listeners para filtros de siniestros
 yearFilterSelect.addEventListener('change', applySiniestrosFilters);
+monthFilterSelect.addEventListener('change', applySiniestrosFilters);
 participantFilterSelect.addEventListener('change', applySiniestrosFilters);
 causeFilterSelect.addEventListener('change', applySiniestrosFilters);
 startHourFilterSelect.addEventListener('change', applySiniestrosFilters);
@@ -12790,6 +12817,7 @@ rtdb.ref("patrullas").on("child_changed", snapshot => {
   document.getElementById("street-filter").value = "";
   document.getElementById("participant-filter").value = "all";
   document.getElementById("year-filter").value = "all";
+  if (document.getElementById("month-filter")) document.getElementById("month-filter").value = "all";
   document.getElementById("barrio-filter").value = "all";
 
   if (document.getElementById("top-siniestros-panel")) {

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import csv
 import json
 
@@ -88,3 +88,4 @@ print("────────────────────────�
 print(f"✅ Proceso completado: {len(features)} siniestros convertidos a GeoJSON.")
 print(f"📦 Archivo generado en: {archivo_salida}")
 print("───────────────────────────────────────")
+
