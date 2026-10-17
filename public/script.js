@@ -4686,6 +4686,13 @@ function _escConsulta(s) {
 // ============================================================
 // CONSULTAS: recorridos de vehiculos robados (camaras que siguieron al vehiculo)
 // ============================================================
+function _distanciaMetrosFuga(lat1, lon1, lat2, lon2) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function _camarasPorNumero() {
     if (window.__camPorNum && window.__camPorNumDe === allCamerasData) return window.__camPorNum;
     const m = {};
@@ -4739,7 +4746,7 @@ async function cargarRecorridosFuga() {
         const evLon = parseFloat(p[0]), evLat = parseFloat(p[1]);
         if (bf && (isNaN(evLat) || isNaN(evLon) || !isLatLngInMultiPolygon(L.latLng(evLat, evLon), bf.geometry.coordinates))) return;
         let km = 0;
-        for (let i = 1; i < pts.length; i++) km += calcularDistancia(pts[i - 1].lat, pts[i - 1].lon, pts[i].lat, pts[i].lon) / 1000;
+        for (let i = 1; i < pts.length; i++) km += _distanciaMetrosFuga(pts[i - 1].lat, pts[i - 1].lon, pts[i].lat, pts[i].lon) / 1000;
         rutas.push({ pts: pts, evLat: evLat, evLon: evLon, km: km, res: r['Resultado'] || 'Sin dato', dir: r['Direccion 0'] || '', fecha: r['fecha'] || '', hora: r['hora'] || '' });
     });
     return { rutas: rutas, filtroBarrio: bf };
