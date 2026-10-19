@@ -595,6 +595,7 @@
           <button class="informe-tab"         data-tab="camaras"         onclick="switchInformeTab('camaras',this)">Cámaras</button>
           <button class="informe-tab"         data-tab="escolares"       onclick="switchInformeTab('escolares',this)">Corredores Escolares</button>
           <button class="informe-tab"         data-tab="eventos"         onclick="switchInformeTab('eventos',this)">Eventos</button>
+          <button class="informe-tab"         data-tab="policial"        onclick="switchInformeTab('policial',this)">🚓 Respuesta policial y Robo Auto</button>
           <button class="informe-tab"         data-tab="recomendaciones" onclick="switchInformeTab('recomendaciones',this)">Recomendaciones</button>
           <button class="informe-tab"         data-tab="campo"           onclick="switchInformeTab('campo',this)">📝 Observaciones de Campo</button>
         </div>
@@ -1040,6 +1041,7 @@
       window._colegiosGeoJSON = window.colegiosData;
     }
 
+    try { await _prepararPolicialRobo(barrio); } catch (errPol) { console.warn('Informe: pestaña policial', errPol); }
     const datos = _calcularDatosBarrio(barrio);
     _mostrarBadgeCriticidad(datos.criticidad);
     _renderTab(datos, _informeTabActual);
@@ -1473,6 +1475,314 @@
       ${d.radioMetros?'':`<p style="font-size:12px;color:#64748b;margin:0;">Para el puntaje de criticidad del barrio se cuentan los eventos de tipo Robo/Hurto, Confrontación y Violencia De Género.</p>`}`;
   }
 
+  // ============================================================
+  // TAB: RESPUESTA POLICIAL Y ROBO AUTOMOTOR (por barrio)
+  // Reutiliza las funciones de las consultas del panel (script.js).
+  // ============================================================
+  window._cachePolicialInforme = window._cachePolicialInforme || {};
+
+  async function _prepararPolicialRobo(nombre) {
+    const out = { ok: false, ev: null, fuga: null };
+    window._cachePolicialInforme[nombre] = out;
+    const feat = (typeof barriosData !== 'undefined' && barriosData && barriosData.features) ? barriosData.features.find(f => f.properties.soc_fomen === nombre) : null;
+    if (!feat) return out;
+    const coords = feat.geometry.coordinates;
+    const dentro = function (lat, lon) { return isLatLngInMultiPolygon(L.latLng(lat, lon), coords); };
+    const et = function (i) { return _MESES_CONS[i % 12] + ' ' + Math.floor(i / 12); };
+    const idx = function (e) { const a = parseInt(e['año'], 10), m = parseInt(e['mes'], 10); return (isNaN(a) || isNaN(m)) ? null : a * 12 + m - 1; };
+
+    // ---------- EVENTOS ----------
+    let todos = [];
+    try { todos = await cargarEventosParaConsulta(); } catch (e) { console.warn('Informe: no se pudieron cargar los eventos', e); }
+    if (todos.length) {
+      const evs = filtrarEventosPorBarrio(todos, feat);
+      const ev = { total: evs.length, periodo: _periodoEventosTexto(evs) };
+
+      // franja horaria
+      const porHora = new Array(24).fill(0); let conHora = 0;
+      evs.forEach(function (e) {
+        const m = /^(\d{1,2}):/.exec(e['hora'] || ''); if (!m) return;
+        const h = parseInt(m[1], 10); if (h > 23) return;
+        porHora[h]++; conHora++;
+      });
+      ev.conHora = conHora;
+      ev.franjas = [['Madrugada (00–06 hs)', 0, 6], ['Mañana (06–12 hs)', 6, 12], ['Tarde (12–18 hs)', 12, 18], ['Noche (18–24 hs)', 18, 24]].map(function (f) {
+        return { nombre: f[0], cant: porHora.slice(f[1], f[2]).reduce(function (x, y) { return x + y; }, 0) };
+      });
+      ev.horasPico = porHora.map(function (v, h) { return { h: h, v: v }; }).sort(function (a, b) { return b.v - a.v; }).slice(0, 3).filter(function (x) { return x.v > 0; })
+        .map(function (x) { return String(x.h).padStart(2, '0') + ':00'; });
+
+      // dia de la semana (promedio por dia, con las fechas de toda la ciudad)
+      const fechasPorDia = {}; _DIAS_CONS.forEach(function (d) { fechasPorDia[d] = new Set(); });
+      todos.forEach(function (e) { if (e['dia_semana'] && fechasPorDia[e['dia_semana']] && e['fecha']) fechasPorDia[e['dia_semana']].add(e['fecha']); });
+      const cuenta = {}; _DIAS_CONS.forEach(function (d) { cuenta[d] = 0; });
+      let conDia = 0;
+      evs.forEach(function (e) { if (cuenta[e['dia_semana']] !== undefined) { cuenta[e['dia_semana']]++; conDia++; } });
+      ev.conDia = conDia;
+      ev.dias = _DIAS_CONS.map(function (d) {
+        const nd = fechasPorDia[d].size || 1;
+        return { nombre: _DIAS_CONS_ACENTO[d], prom: Math.round(cuenta[d] / nd * 10) / 10, total: cuenta[d], dias: nd };
+      });
+      const sumaDias = function (lista) { return lista.reduce(function (s, d) { return s + cuenta[d]; }, 0); };
+      const sumaFechas = function (lista) { return lista.reduce(function (s, d) { return s + fechasPorDia[d].size; }, 0) || 1; };
+      ev.laborable = sumaDias(['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes']) / sumaFechas(['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes']);
+      ev.finde = sumaDias(['Sabado', 'Domingo']) / sumaFechas(['Sabado', 'Domingo']);
+
+      // tiempo de arribo: barrio vs ciudad
+      const arr = function (lista) { return lista.map(function (e) { return parseInt(e['min_arribo'], 10); }).filter(function (v) { return !isNaN(v); }); };
+      const ab = arr(evs), ac = arr(todos);
+      ev.arribo = { n: ab.length, med: ab.length ? _percentilConsulta(ab, 0.5) : null, p90: ab.length ? _percentilConsulta(ab, 0.9) : null,
+                    nCiudad: ac.length, medCiudad: ac.length ? _percentilConsulta(ac, 0.5) : null, p90Ciudad: ac.length ? _percentilConsulta(ac, 0.9) : null };
+
+      // esquinas con mayor demora policial (minimo 5 eventos con arribo)
+      const grupos = {};
+      evs.forEach(function (e) {
+        const v = parseInt(e['min_arribo'], 10), dir = e['Direccion 0'];
+        if (isNaN(v) || !dir || String(dir).indexOf(' y ') === -1) return;
+        const k = _claveEsquinaConsulta(dir);
+        const g = grupos[k] = grupos[k] || { dir: dir, vals: [] };
+        g.vals.push(v);
+      });
+      ev.esquinas = Object.keys(grupos).map(function (k) { return grupos[k]; }).filter(function (g) { return g.vals.length >= 5; })
+        .map(function (g) { return { dir: g.dir, n: g.vals.length, med: _percentilConsulta(g.vals, 0.5), p90: _percentilConsulta(g.vals, 0.9) }; })
+        .sort(function (a, b) { return b.med - a.med || b.p90 - a.p90; }).slice(0, 5);
+
+      // evolucion mensual (2025 en adelante)
+      const porMes = {};
+      evs.forEach(function (e) {
+        const a = parseInt(e['año'], 10), m = parseInt(e['mes'], 10);
+        if (isNaN(a) || isNaN(m) || a < 2025) return;
+        const i = a * 12 + m - 1; porMes[i] = (porMes[i] || 0) + 1;
+      });
+      ev.meses = Object.keys(porMes).map(Number).sort(function (a, b) { return a - b; }).map(function (i) {
+        const prev = porMes[i - 1];
+        return { periodo: et(i), cant: porMes[i], delta: prev ? (porMes[i] - prev) * 100 / prev : null };
+      }).slice(-12);
+
+      // tendencia: ultimos 3 meses contra los 3 anteriores
+      const mesesSet = new Set(todos.map(idx).filter(function (i) { return i !== null; }));
+      if (mesesSet.size) {
+        const N = 3, fin = Math.max.apply(null, Array.from(mesesSet));
+        const vAct = [], vPrev = [];
+        for (let k = 0; k < N; k++) { vAct.push(fin - k); vPrev.push(fin - N - k); }
+        const nA = vAct.filter(function (i) { return mesesSet.has(i); }).length, nP = vPrev.filter(function (i) { return mesesSet.has(i); }).length;
+        const valido = function (e) { return idx(e) !== null && isFinite(e._lat) && isFinite(e._lon) && e['estado_coordenada'] !== 'revisar'; };
+        const contar = function (lista) { let a = 0, p = 0; lista.forEach(function (e) { if (!valido(e)) return; const i = idx(e); if (vAct.indexOf(i) >= 0) a++; else if (vPrev.indexOf(i) >= 0) p++; }); return { a: a, p: p }; };
+        const resumen = function (c) { const ra = nA ? c.a / nA : 0, rp = nP ? c.p / nP : 0; return { a: c.a, p: c.p, ra: ra, rp: rp, d: rp ? (ra - rp) * 100 / rp : null }; };
+        const cats = {};
+        const focos = {};
+        evs.forEach(function (e) {
+          if (!valido(e)) return;
+          const i = idx(e), act = vAct.indexOf(i) >= 0, prev = vPrev.indexOf(i) >= 0;
+          if (!act && !prev) return;
+          const t = e['Tipo de Evento'] || 'Sin tipo';
+          const o = cats[t] = cats[t] || { t: t, a: 0, p: 0 };
+          if (act) o.a++; else o.p++;
+          if (/suicid|genero|género/i.test(t)) return;
+          const dir = e['Direccion 0'] || e['Direccion'], k = _claveEsquinaConsulta(dir);
+          if (k) { const f = focos[k] = focos[k] || { dir: dir, a: 0, p: 0 }; if (act) f.a++; else f.p++; }
+        });
+        ev.tend = {
+          N: N, nA: nA, nP: nP, incompleto: nA < N || nP < N,
+          actual: et(fin - N + 1) + ' a ' + et(fin), previo: et(fin - 2 * N + 1) + ' a ' + et(fin - N),
+          barrio: resumen(contar(evs)), ciudad: resumen(contar(todos)),
+          cats: Object.keys(cats).map(function (k) { return cats[k]; }).filter(function (o) { return o.a + o.p >= 6; })
+            .map(function (o) { const ra = nA ? o.a / nA : 0, rp = nP ? o.p / nP : 0; return { t: o.t, ra: ra, rp: rp, d: rp ? (ra - rp) * 100 / rp : null, tot: o.a + o.p }; })
+            .sort(function (x, y) { return y.tot - x.tot; }).slice(0, 6),
+          focos: Object.keys(focos).map(function (k) { return focos[k]; }).filter(function (f) { return f.a >= 3 && f.p === 0; }).sort(function (x, y) { return y.a - x.a; }).slice(0, 5)
+        };
+      }
+      out.ev = ev;
+    }
+
+    // ---------- ROBO AUTOMOTOR: FUGAS QUE ARRANCARON EN EL BARRIO ----------
+    try {
+      const rf = await cargarRecorridosFuga({ sinBarrio: true });
+      const NOMBRES = ['Norte', 'Noreste', 'Este', 'Sudeste', 'Sur', 'Sudoeste', 'Oeste', 'Noroeste'];
+      const sel = [];
+      rf.rutas.forEach(function (r) {
+        if (!isFinite(r.evLat) || !isFinite(r.evLon) || !dentro(r.evLat, r.evLon)) return;
+        const ult = r.pts[r.pts.length - 1];
+        r.distFin = _distanciaMetrosFuga(r.evLat, r.evLon, ult.lat, ult.lon);
+        r.dirTxt = r.distFin < 300 ? 'Quedó en la zona (menos de 300 m)' : NOMBRES[Math.round(_rumboFuga(r.evLat, r.evLon, ult.lat, ult.lon) / 45) % 8];
+        sel.push(r);
+      });
+      sel.sort(function (a, b) { return b.distFin - a.distFin; });
+      const f = { totalCiudad: rf.rutas.length, n: sel.length };
+      if (sel.length) {
+        f.nHall = sel.filter(function (r) { return r.tipo === 'hallazgo'; }).length;
+        f.nSeg = sel.length - f.nHall;
+        f.camProm = sel.reduce(function (s, r) { return s + r.pts.length; }, 0) / sel.length;
+        f.medKm = _percentilConsulta(sel.map(function (r) { return r.km; }), 0.5);
+        f.medFin = _percentilConsulta(sel.map(function (r) { return r.distFin / 1000; }), 0.5);
+        const porDir = {};
+        sel.forEach(function (r) { porDir[r.dirTxt] = (porDir[r.dirTxt] || 0) + 1; });
+        f.porDir = Object.keys(porDir).map(function (k) { return { nombre: k, cant: porDir[k] }; }).sort(function (a, b) { return b.cant - a.cant; });
+        const porBarrio = {};
+        sel.forEach(function (r) { const b = _barrioDeCamara(r.pts[r.pts.length - 1]); porBarrio[b] = (porBarrio[b] || 0) + 1; });
+        f.barrios = Object.keys(porBarrio).map(function (k) { return { nombre: k, cant: porBarrio[k] }; }).sort(function (a, b) { return b.cant - a.cant; }).slice(0, 5);
+        const camFin = {};
+        sel.forEach(function (r) { const c = r.pts[r.pts.length - 1]; const g = camFin[c.n] = camFin[c.n] || { dir: c.dir, cant: 0 }; g.cant++; });
+        f.camFin = Object.keys(camFin).map(function (k) { return camFin[k]; }).sort(function (a, b) { return b.cant - a.cant; }).slice(0, 5);
+        const porCam = {};
+        sel.forEach(function (r) {
+          const vistas = {};
+          r.pts.forEach(function (c) { if (vistas[c.n]) return; vistas[c.n] = true; const g = porCam[c.n] = porCam[c.n] || { dir: c.dir, cant: 0 }; g.cant++; });
+        });
+        f.camPaso = Object.keys(porCam).map(function (k) { return porCam[k]; }).sort(function (a, b) { return b.cant - a.cant; }).slice(0, 5);
+        const tr = {};
+        sel.forEach(function (r) {
+          for (let i = 1; i < r.pts.length; i++) {
+            const a = r.pts[i - 1], b = r.pts[i], k = Math.min(a.n, b.n) + '-' + Math.max(a.n, b.n);
+            const t = tr[k] = tr[k] || { a: a.dir, b: b.dir, ids: [] };
+            if (t.ids.indexOf(r) < 0) t.ids.push(r);
+          }
+        });
+        f.tramos = Object.keys(tr).map(function (k) { return { a: tr[k].a, b: tr[k].b, cant: tr[k].ids.length }; }).filter(function (t) { return t.cant >= 2; }).sort(function (a, b) { return b.cant - a.cant; }).slice(0, 5);
+        f.casos = sel.map(function (r) { return { dir: r.dir || 'sin dirección', fecha: r.fecha || '', tipo: r.tipo, cams: r.pts.length, km: r.km, hacia: r.dirTxt, fin: _barrioDeCamara(r.pts[r.pts.length - 1]) }; });
+      }
+      out.fuga = f;
+    } catch (e) { console.warn('Informe: no se pudieron cargar los recorridos de fuga', e); }
+
+    out.ok = !!(out.ev || out.fuga);
+    return out;
+  }
+
+  function _htmlPolicialRobo(d) {
+    const c = (window._cachePolicialInforme || {})[d.nombre];
+    const esc = function (x) { return String(x == null ? '' : x).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); };
+    const peq = function (x) { return '<span style="font-size:11px;color:#94a3b8;">' + x + '</span>'; };
+    const nota = function (x) { return '<p style="font-size:12px;color:#94a3b8;margin:10px 0 0;">' + x + '</p>'; };
+    const vacio = function (x) { return '<p style="color:#94a3b8;font-size:13px;margin:0;">' + x + '</p>'; };
+    const varTxt = function (v) { return v === null || v === undefined ? '—' : '<b style="color:' + (v > 0 ? '#b91c1c' : (v < 0 ? '#15803d' : '#64748b')) + ';">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '%</b>'; };
+    const th = function (t, der) { return '<th' + (der ? ' style="text-align:right"' : '') + '>' + t + '</th>'; };
+    if (!c || !c.ok) {
+      return '<div class="informe-card">' + vacio('No se pudieron cargar los datos de eventos y recorridos de fuga. Verificá que eventos.csv y robo_automotor.csv estén disponibles y recargá el informe.') + '</div>';
+    }
+    let h = '';
+    const ev = c.ev;
+
+    // ---------------- EVENTOS ----------------
+    h += '<h3 style="margin:0 0 12px;font-size:17px;color:#1a2332;">⏱️ Eventos: horarios y respuesta policial</h3>';
+    if (!ev) {
+      h += '<div class="informe-card">' + vacio('No se pudieron cargar los eventos (eventos.csv).') + '</div>';
+    } else {
+      const ar = ev.arribo;
+      let tendMetric = '—', tendColor = '#64748b';
+      if (ev.tend && ev.tend.barrio.d !== null && ev.tend.barrio.a + ev.tend.barrio.p >= 10) {
+        const dd = ev.tend.barrio.d; tendMetric = (dd >= 0 ? '+' : '') + dd.toFixed(0) + '%'; tendColor = dd > 0 ? '#b91c1c' : '#15803d';
+      }
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px;">' +
+        _metric('📌', 'Eventos en el barrio', ev.total, '', '#1d4ed8') +
+        _metric('🚓', 'Arribo policial (mediana)', ar.med != null ? (Math.round(ar.med * 10) / 10) : 's/d', ar.med != null ? 'min' : '', '#b91c1c') +
+        _metric('📈', 'Tendencia (3 meses)', tendMetric, '', tendColor) +
+        _metric('🚗', 'Fugas de vehículos robados', c.fuga ? c.fuga.n : 's/d', '', '#7c3aed') + '</div>';
+
+      // franja + dia
+      const maxF = Math.max.apply(null, [1].concat(ev.franjas.map(function (f) { return f.cant; })));
+      const topF = ev.franjas.slice().sort(function (a, b) { return b.cant - a.cant; })[0];
+      const maxD = Math.max.apply(null, [0.1].concat(ev.dias.map(function (x) { return x.prom; })));
+      const topD = ev.dias.slice().sort(function (a, b) { return b.prom - a.prom; })[0];
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
+        '<div class="informe-card"><h4>🕒 Franja horaria con más eventos</h4>' +
+        (ev.conHora ? ev.franjas.map(function (f) { return _causaBar(esc(f.nombre), f.cant, maxF, f === topF ? '#b91c1c' : '#d97706'); }).join('') +
+          '<p style="font-size:13px;color:#334155;margin:10px 0 0;"><b>Franja con más eventos:</b> ' + esc(topF.nombre) + '<br><b>Horas pico:</b> ' + esc(ev.horasPico.join(', ')) + '</p>' +
+          nota('Calculado con ' + ev.conHora + ' de ' + ev.total + ' eventos que tienen hora registrada.') : vacio('Sin eventos con hora registrada en este barrio.')) + '</div>' +
+        '<div class="informe-card"><h4>📅 Día de la semana con más eventos</h4>' +
+        (ev.conDia ? ev.dias.map(function (x) { return _causaBar(esc(x.nombre), x.prom, maxD, x === topD ? '#b91c1c' : '#1d4ed8'); }).join('') +
+          '<p style="font-size:13px;color:#334155;margin:10px 0 0;"><b>Día con más eventos:</b> ' + esc(topD.nombre) + '<br><b>Laborables:</b> ' + ev.laborable.toFixed(1) + ' por día · <b>Fin de semana:</b> ' + ev.finde.toFixed(1) + ' por día</p>' +
+          nota('Promedio por día (total ÷ cantidad de fechas con datos de ese día en la ciudad).') : vacio('Sin eventos con día registrado en este barrio.')) + '</div></div>';
+
+      // arribo + esquinas
+      h += '<div class="informe-card"><h4>🚓 Tiempo de arribo policial</h4>';
+      if (ar.n) {
+        const dif = ar.medCiudad != null ? ar.med - ar.medCiudad : null;
+        h += '<table class="informe-tabla"><thead><tr><th></th>' + th('Eventos con arribo', true) + th('Mediana', true) + th('9 de cada 10 llegan en', true) + '</tr></thead><tbody>' +
+          '<tr><td><b>' + esc(d.nombre) + '</b></td><td style="text-align:right;">' + ar.n + '</td><td style="text-align:right;font-weight:700;">' + ar.med.toFixed(0) + ' min</td><td style="text-align:right;">≤ ' + ar.p90.toFixed(0) + ' min</td></tr>' +
+          '<tr><td>Toda la ciudad</td><td style="text-align:right;">' + ar.nCiudad + '</td><td style="text-align:right;">' + ar.medCiudad.toFixed(0) + ' min</td><td style="text-align:right;">≤ ' + ar.p90Ciudad.toFixed(0) + ' min</td></tr></tbody></table>';
+        if (dif !== null) h += '<p style="font-size:13px;color:#334155;margin:10px 0 0;">' + (Math.abs(dif) < 0.5 ? 'La demora es similar a la del promedio de la ciudad.' : 'La mediana del barrio es <b style="color:' + (dif > 0 ? '#b91c1c' : '#15803d') + ';">' + Math.abs(dif).toFixed(0) + ' min ' + (dif > 0 ? 'mayor' : 'menor') + '</b> que la de la ciudad.') + '</p>';
+        if (ar.n < 30) h += nota('⚠️ Solo ' + ar.n + ' eventos con arribo registrado: tomalo como orientativo.');
+      } else h += vacio('No hay eventos con tiempo de arribo registrado en este barrio.');
+      h += '<h4 style="margin-top:18px;">⏱️ Esquinas con mayor demora policial</h4>';
+      if (ev.esquinas.length) {
+        h += '<table class="informe-tabla"><thead><tr><th>#</th><th>Esquina</th>' + th('Eventos', true) + th('Mediana', true) + th('90% llega en', true) + '</tr></thead><tbody>' +
+          ev.esquinas.map(function (g, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(g.dir) + '</td><td style="text-align:right;">' + g.n + '</td><td style="text-align:right;font-weight:700;">' + g.med.toFixed(0) + ' min</td><td style="text-align:right;">≤ ' + g.p90.toFixed(0) + ' min</td></tr>'; }).join('') + '</tbody></table>';
+      } else h += vacio('Ninguna esquina del barrio reúne 5 o más eventos con arribo registrado.');
+      h += nota('Minutos desde el inicio del evento hasta el arribo policial. Incluye robo automotor de 2025 en adelante.') + '</div>';
+
+      // evolucion + tendencias
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
+        '<div class="informe-card"><h4>📈 Evolución mensual de eventos</h4>';
+      if (ev.meses.length) {
+        h += '<table class="informe-tabla"><thead><tr><th>Mes</th>' + th('Eventos', true) + th('Vs. mes anterior', true) + '</tr></thead><tbody>' +
+          ev.meses.map(function (m) { return '<tr><td>' + esc(m.periodo) + '</td><td style="text-align:right;font-weight:700;color:#1d4ed8;">' + m.cant + '</td><td style="text-align:right;">' + varTxt(m.delta) + '</td></tr>'; }).join('') + '</tbody></table>' +
+          nota('Últimos 12 meses con datos. Solo cuenta eventos con coordenadas.');
+      } else h += vacio('Sin eventos desde 2025 en este barrio.');
+      h += '</div><div class="informe-card"><h4>📊 Tendencia: ¿está empeorando?</h4>';
+      const T = ev.tend;
+      if (!T) h += vacio('No hay datos mensuales suficientes.');
+      else if (!T.nP) h += vacio('No hay datos en el período anterior (' + esc(T.previo) + ').');
+      else {
+        const b = T.barrio, ci = T.ciudad;
+        h += '<table class="informe-tabla"><thead><tr><th></th>' + th('Antes (prom/mes)', true) + th('Ahora (prom/mes)', true) + th('Variación', true) + '</tr></thead><tbody>' +
+          '<tr><td><b>' + esc(d.nombre) + '</b></td><td style="text-align:right;">' + b.rp.toFixed(1) + '</td><td style="text-align:right;">' + b.ra.toFixed(1) + '</td><td style="text-align:right;">' + varTxt(b.d) + '</td></tr>' +
+          '<tr><td>Toda la ciudad</td><td style="text-align:right;">' + ci.rp.toFixed(1) + '</td><td style="text-align:right;">' + ci.ra.toFixed(1) + '</td><td style="text-align:right;">' + varTxt(ci.d) + '</td></tr></tbody></table>' +
+          '<p style="font-size:12px;color:#64748b;margin:8px 0 0;">Ahora: ' + esc(T.actual) + ' · Antes: ' + esc(T.previo) + '</p>';
+        if (b.a + b.p < 10) h += nota('⚠️ Solo ' + (b.a + b.p) + ' hechos entre ambos períodos: el porcentaje no es confiable.');
+        if (T.incompleto) h += nota('⚠️ Faltan meses sin cargar en uno de los períodos: se comparan promedios mensuales de los meses con datos.');
+        if (T.cats.length) {
+          h += '<h4 style="margin-top:14px;">Por categoría</h4><table class="informe-tabla"><thead><tr><th>Categoría</th>' + th('Antes', true) + th('Ahora', true) + th('Var.', true) + '</tr></thead><tbody>' +
+            T.cats.map(function (o) { return '<tr><td>' + esc(o.t) + '</td><td style="text-align:right;">' + o.rp.toFixed(1) + '</td><td style="text-align:right;">' + o.ra.toFixed(1) + '</td><td style="text-align:right;">' + varTxt(o.d) + '</td></tr>'; }).join('') + '</tbody></table>';
+        }
+        if (T.focos.length) {
+          h += '<h4 style="margin-top:14px;">Focos nuevos (3 o más hechos ahora, ninguno antes)</h4><table class="informe-tabla"><tbody>' +
+            T.focos.map(function (f) { return '<tr><td>' + esc(f.dir) + '</td><td style="text-align:right;font-weight:700;">' + f.a + '</td></tr>'; }).join('') + '</tbody></table>';
+        }
+      }
+      h += '</div></div>';
+    }
+
+    // ---------------- ROBO AUTOMOTOR ----------------
+    h += '<h3 style="margin:24px 0 12px;font-size:17px;color:#1a2332;">🚗 Robo automotor: recorridos y destinos</h3>';
+    const f = c.fuga;
+    if (!f) {
+      h += '<div class="informe-card">' + vacio('No se pudieron cargar los recorridos de vehículos robados.') + '</div>';
+    } else if (!f.n) {
+      h += '<div class="informe-card">' + vacio('No hay recorridos de fuga (Hallazgo Automotor o Seguimiento del Evento con 2 o más cámaras) con origen en este barrio. En toda la ciudad hay ' + f.totalCiudad + ' recorridos de ese tipo desde 2025.') + '</div>';
+    } else {
+      let aviso = '';
+      if (f.n < 5) aviso = '<p style="font-size:13px;color:#b91c1c;margin:0 0 12px;"><b>⚠️ Solo ' + f.n + ' caso(s):</b> tomalo como orientativo, no como una probabilidad.</p>';
+      else if (f.n < 10) aviso = '<p style="font-size:13px;color:#92400e;margin:0 0 12px;">Pocos casos (' + f.n + '): la tendencia es una pista, no una certeza.</p>';
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px;">' +
+        _metric('🚗', 'Recorridos de fuga', f.n, 'de ' + f.totalCiudad + ' en la ciudad', '#7c3aed') +
+        _metric('📷', 'Cámaras por recorrido', f.camProm.toFixed(1), '', '#1d4ed8') +
+        _metric('📏', 'Distancia mediana', f.medKm.toFixed(1), 'km', '#b91c1c') + '</div>' + aviso;
+      const maxP = Math.max.apply(null, [1].concat(f.porDir.map(function (x) { return x.cant; })));
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
+        '<div class="informe-card"><h4>🧭 ¿Hacia dónde se van?</h4>' +
+        f.porDir.map(function (x, i) { return _causaBar(esc(x.nombre), x.cant, maxP, i === 0 ? '#b91c1c' : '#d97706'); }).join('') +
+        nota('Dirección desde el lugar del hecho hasta la última cámara que vio al vehículo (en línea recta). Distancia mediana: ' + f.medFin.toFixed(1) + ' km.') + '</div>' +
+        '<div class="informe-card"><h4>📍 ¿Dónde se pierde el rastro?</h4>' +
+        '<table class="informe-tabla"><thead><tr><th>Barrio donde termina</th>' + th('Casos', true) + '</tr></thead><tbody>' +
+        f.barrios.map(function (b) { return '<tr><td>' + esc(b.nombre) + '</td><td style="text-align:right;font-weight:700;">' + b.cant + '</td></tr>'; }).join('') + '</tbody></table>' +
+        '<h4 style="margin-top:14px;">Cámaras donde más recorridos terminan</h4><table class="informe-tabla"><tbody>' +
+        f.camFin.map(function (g) { return '<tr><td>' + esc(g.dir) + '</td><td style="text-align:right;font-weight:700;">' + g.cant + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+      h += '<div class="informe-card"><h4>🛣️ Corredores: cámaras y tramos más usados</h4>' +
+        '<table class="informe-tabla"><thead><tr><th>Cámara por donde más pasaron</th>' + th('Recorridos', true) + '</tr></thead><tbody>' +
+        f.camPaso.map(function (g) { return '<tr><td>' + esc(g.dir) + '</td><td style="text-align:right;font-weight:700;">' + g.cant + '</td></tr>'; }).join('') + '</tbody></table>' +
+        (f.tramos.length ? '<h4 style="margin-top:14px;">Tramos repetidos</h4><table class="informe-tabla"><tbody>' + f.tramos.map(function (t) { return '<tr><td>' + esc(t.a) + ' ↔ ' + esc(t.b) + '</td><td style="text-align:right;font-weight:700;">' + t.cant + '</td></tr>'; }).join('') + '</tbody></table>' : '') + '</div>';
+      const MAXC = 10;
+      h += '<div class="informe-card"><h4>📋 Recorridos de fuga con origen en el barrio</h4>' +
+        '<table class="informe-tabla"><thead><tr><th>Hecho</th><th>Resultado</th><th>Hacia</th><th>Termina en</th>' + th('Cám.', true) + th('Dist.', true) + '</tr></thead><tbody>' +
+        f.casos.slice(0, MAXC).map(function (x) {
+          return '<tr><td>' + esc(x.dir) + '<br>' + peq(esc(x.fecha)) + '</td><td>' + (x.tipo === 'hallazgo' ? 'Hallazgo automotor' : 'Seguimiento del evento') + '</td><td>' + esc(x.hacia) + '</td><td>' + esc(x.fin) + '</td><td style="text-align:right;">' + x.cams + '</td><td style="text-align:right;">' + x.km.toFixed(1) + ' km</td></tr>';
+        }).join('') + '</tbody></table>' +
+        (f.casos.length > MAXC ? nota('Se muestran los ' + MAXC + ' de mayor distancia, de ' + f.casos.length + ' casos.') : '') +
+        nota('Solo se cuentan fugas reales (Hallazgo Automotor y Seguimiento del Evento: ' + f.nHall + ' y ' + f.nSeg + ' en este barrio). Los recorridos son entre cámaras, no el trayecto exacto por las calles, y solo hay datos desde 2025.') + '</div>';
+    }
+    return h;
+  }
+
   function _datosVacios(nombre) {
     return {nombre,siniestros:0,camarasPublicas:0,camarasPrivadas:0,robos:0,cobertura:0,densidadCamaras:0,areaCamKm2:'0',pctSiniConCam:0,sinSinCamara:0,colegios:0,colegiosSinCam:0,participantes:[],causas:[],puntosCriticos:[],horarioCritico:'-',diaMaxSiniestros:'-',nsd:0,criticidad:0,recomendaciones:[],siniestrosPorAnio:[],siniestrosPorDia:[],siniestrosConPeatones:0,siniestrosConCiclistas:0,eventos:_resumirEventos([],false)};
   }
@@ -1789,6 +2099,7 @@
       case 'camaras':         cont.innerHTML=_htmlCamaras(d);         break;
       case 'escolares':       cont.innerHTML=_htmlEscolares(d);       break;
       case 'eventos':         cont.innerHTML=_htmlEventos(d);         break;
+      case 'policial':        cont.innerHTML=_htmlPolicialRobo(d);    break;
       case 'recomendaciones': cont.innerHTML=_htmlRecomendaciones(d); break;
       case 'movilidad':       cont.innerHTML=_htmlMovilidad(d);       break;
       case 'campo':           cont.innerHTML=_htmlCampo(d);           _initCampoTab(d.nombre); break;
@@ -1913,7 +2224,7 @@
         ${_progressBar('Siniestros con cámara a 100m',d.pctSiniConCam,'#3b82f6')}
         <div style="margin-top:14px;padding:12px;background:${d.cobertura<60?'#fef3c7':'#f0fdf4'};border-radius:8px;font-size:12px;color:${d.cobertura<60?'#92400e':'#065f46'};">
           <strong>${d.cobertura<60?'⚠ Cobertura insuficiente':d.cobertura<80?'~ Cobertura aceptable':'✓ Buena cobertura'}:</strong>
-          ${d.cobertura<60?` El ${100-d.cobertura}% del barrio sin cobertura. Se estiman ~${Math.ceil(d.sinSinCamara/3)} cámaras adicionales necesarias.`:` Red actual cubre el ${d.cobertura}%. Hay ${d.sinSinCamara} siniestros en zonas sin cobertura.`}
+          ${d.cobertura<60?` El ${100-d.cobertura}% del barrio queda sin cobertura.${d.sinSinCamara>0?` Se estiman ~${Math.ceil(d.sinSinCamara/3)} cámaras adicionales para cubrir los ${d.sinSinCamara} siniestros que ocurrieron lejos de una cámara.`:' Todos los siniestros registrados ocurrieron cerca de una cámara, pero conviene ampliar la red para cubrir más superficie del barrio.'}`:` Red actual cubre el ${d.cobertura}%. Hay ${d.sinSinCamara} siniestros en zonas sin cobertura.`}
         </div>
       </div>
       <div class="informe-card">
@@ -2163,6 +2474,776 @@
     cerrarInformeBarrio();
   }
 
+/* === PDFX_START ===================================================================
+   PdfX: arma el PDF "explicado" (barrio y cruce). Todo lo que se dibuja sale de los datos
+   reales del informe: los textos explicativos se completan solos con los números de cada
+   barrio o cruce. No depende de ninguna otra función del sistema (recibe todo por parámetro).
+   =================================================================================== */
+const PdfX = (function () {
+  const COL = {
+    navy: [23, 35, 58], blue: [37, 99, 235], red: [198, 40, 40], amber: [180, 83, 9], green: [21, 128, 61],
+    purple: [109, 40, 217], ink: [30, 41, 59], gray: [71, 85, 105], line: [213, 221, 232], soft: [244, 247, 251],
+    track: [227, 233, 242], blueBg: [234, 241, 254], greenBg: [232, 246, 236], amberBg: [255, 244, 219], redBg: [253, 236, 236],
+    white: [255, 255, 255], pale: [184, 199, 227]
+  };
+
+  // Las fuentes estándar de PDF solo dibujan caracteres Latin-1: se sacan emojis, flechas, etc.
+  const limpiar = (t) => String(t == null ? '' : t)
+    .replace(/\*\*/g, '')
+    .replace(/[^\u0020-\u007E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026]/gu, '')
+    .replace(/[ \t]{2,}/g, ' ').trim();
+  const fmt = (x) => (x == null || isNaN(x)) ? '-' : Number(x).toLocaleString('es-AR');
+  const dec = (x, k) => Number(x).toFixed(k == null ? 1 : k).replace('.', ',');
+
+  function nivel(v) {
+    if (v >= 80) return { label: 'Crítico', color: COL.red, frase: 'indica una situación que requiere atención inmediata.' };
+    if (v >= 60) return { label: 'Alto', color: COL.red, frase: 'indica varias situaciones juntas que conviene atender con prioridad. No quiere decir que el barrio sea peligroso en todo momento.' };
+    if (v >= 40) return { label: 'Moderado', color: COL.amber, frase: 'indica algunas situaciones que conviene vigilar.' };
+    return { label: 'Bajo', color: COL.green, frase: 'indica indicadores dentro de un rango normal.' };
+  }
+
+  // ---------------------------------------------------------------------------------
+  function crear(pdf, cfg) {
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const M = 14, W = pageW - M * 2, TOP = 22, BOT = pageH - 16;
+    const st = { y: TOP, seccion: '', toc: [] };
+    const pagina = () => pdf.internal.getCurrentPageInfo().pageNumber;
+    const setC = (c) => pdf.setTextColor(c[0], c[1], c[2]);
+    const setF = (c) => pdf.setFillColor(c[0], c[1], c[2]);
+    const setD = (c) => pdf.setDrawColor(c[0], c[1], c[2]);
+    const fuente = (size, estilo, color) => { pdf.setFont('helvetica', estilo || 'normal'); pdf.setFontSize(size); setC(color || COL.ink); };
+
+    function cabecera() {
+      setF(COL.navy); pdf.rect(0, 0, pageW, 12, 'F');
+      setF(COL.blue); pdf.rect(0, 0, 5, 12, 'F');
+      fuente(8.5, 'bold', COL.white); pdf.text(limpiar(cfg.titulo), M, 7.6);
+      fuente(8.5, 'normal', COL.pale); pdf.text(limpiar(st.seccion), pageW - M, 7.6, { align: 'right' });
+    }
+    function nuevaPagina() { pdf.addPage(); cabecera(); st.y = TOP; }
+    function espacio(h) { if (st.y + h > BOT) nuevaPagina(); }
+    function recortar(txt, w, size) {
+      fuente(size, 'normal'); let t = limpiar(txt);
+      if (pdf.getTextWidth(t) <= w) return t;
+      while (t.length > 3 && pdf.getTextWidth(t + '...') > w) t = t.slice(0, -1);
+      return t + '...';
+    }
+
+    function parrafo(txt, o) {
+      o = o || {};
+      const size = o.size || 10, lh = o.lh || size * 0.5, w = o.w || W, x = o.x == null ? M : o.x;
+      fuente(size, o.estilo, o.color);
+      const ls = pdf.splitTextToSize(limpiar(txt), w);
+      ls.forEach((l) => { espacio(lh); fuente(size, o.estilo, o.color); pdf.text(l, x, st.y + size * 0.36); st.y += lh; });
+      st.y += (o.despues == null ? 2 : o.despues);
+    }
+    function titulo1(t) { espacio(14); st.y += 2; parrafo(t, { size: 13, estilo: 'bold', color: COL.navy, despues: 3 }); }
+    function titulo2(t) { espacio(10); parrafo(t, { size: 10.5, estilo: 'bold', color: COL.navy, despues: 2 }); }
+    function h2(t) { espacio(34); st.y += 2; fuente(12.5, 'bold', COL.navy); pdf.text(limpiar(t), M, st.y + 5); st.y += 9; }
+    function lista(items, o) {
+      o = o || {};
+      items.forEach((b) => {
+        fuente(10, 'normal');
+        const ls = pdf.splitTextToSize(limpiar(b), W - 6);
+        ls.forEach((l, i) => { espacio(5); fuente(10, 'normal'); pdf.text((i === 0 ? '\u2022' : ''), M + 1, st.y + 3.6); pdf.text(l, M + 6, st.y + 3.6); st.y += 5; });
+        st.y += 0.8;
+      });
+      st.y += 2;
+    }
+
+    function caja(tipo, titulo, texto) {
+      const c = { info: [COL.blue, COL.blueBg], ok: [COL.green, COL.greenBg], warn: [COL.amber, COL.amberBg], alert: [COL.red, COL.redBg] }[tipo] || [COL.blue, COL.blueBg];
+      const parrs = (Array.isArray(texto) ? texto : [texto]).filter(Boolean);
+      const size = 9.5, lh = 4.7, w = W - 12;
+      fuente(size, 'normal');
+      const bloques = parrs.map((t) => pdf.splitTextToSize(limpiar(t), w));
+      const nLin = bloques.reduce((s, b) => s + b.length, 0);
+      const h = (titulo ? 10.5 : 5) + nLin * lh + Math.max(0, bloques.length - 1) * 1.5 + 2.5;
+      espacio(h);
+      setF(c[1]); pdf.rect(M, st.y, W, h, 'F'); setF(c[0]); pdf.rect(M, st.y, 1.2, h, 'F');
+      if (titulo) { fuente(8.3, 'bold', c[0]); pdf.text(limpiar(titulo), M + 6, st.y + 5.4); }
+      let yy = st.y + (titulo ? 10.8 : 6);
+      bloques.forEach((b) => { b.forEach((l) => { fuente(size, 'normal'); pdf.text(l, M + 6, yy); yy += lh; }); yy += 1.5; });
+      st.y += h + 4;
+    }
+
+    function tarjetas(items) {
+      const n = items.length, gap = 3, cw = (W - gap * (n - 1)) / n, h = 27;
+      espacio(h + 3);
+      items.forEach((it, i) => {
+        const x = M + i * (cw + gap), col = it.color || COL.blue;
+        setF(COL.soft); pdf.rect(x, st.y, cw, h, 'F'); setD(COL.line); pdf.rect(x, st.y, cw, h, 'S');
+        setF(col); pdf.rect(x, st.y, cw, 0.9, 'F');
+        fuente(16, 'bold', col); pdf.text(limpiar(String(it.v)), x + 3, st.y + 9.8);
+        fuente(8, 'bold', COL.ink); pdf.text(pdf.splitTextToSize(limpiar(it.l), cw - 5).slice(0, 2), x + 3, st.y + 14.2);
+        fuente(7, 'normal', COL.gray); pdf.text(pdf.splitTextToSize(limpiar(it.n || ''), cw - 5).slice(0, 2), x + 3, st.y + h - 5.6);
+      });
+      st.y += h + 5;
+    }
+
+    function tabla(head, rows, pcts, o) {
+      o = o || {};
+      const size = 8.6, pad = 2.2, lh = 4.1, cw = pcts.map((p) => W * p);
+      const medir = (cells, esHead) => {
+        fuente(size, esHead ? 'bold' : 'normal');
+        const wr = cells.map((c, i) => pdf.splitTextToSize(limpiar(c), cw[i] - pad * 2));
+        return { wr, h: Math.max.apply(null, wr.map((w) => w.length)) * lh + pad * 2 };
+      };
+      const pintar = (m, esHead, zebra) => {
+        if (esHead) { setF(COL.navy); pdf.rect(M, st.y, W, m.h, 'F'); }
+        else if (zebra) { setF(COL.soft); pdf.rect(M, st.y, W, m.h, 'F'); }
+        if (!esHead) { setD(COL.line); pdf.line(M, st.y + m.h, M + W, st.y + m.h); }
+        let x = M;
+        m.wr.forEach((lines, i) => {
+          const neg = esHead || (i === 0 && o.negritaPrimera !== false);
+          fuente(size, neg ? 'bold' : 'normal', esHead ? COL.white : COL.ink);
+          lines.forEach((l, k) => pdf.text(l, x + pad, st.y + pad + 2.9 + k * lh));
+          x += cw[i];
+        });
+        st.y += m.h;
+      };
+      espacio(medir(head, true).h + 12);
+      pintar(medir(head, true), true, false);
+      rows.forEach((r, idx) => {
+        const m = medir(r, false);
+        if (st.y + m.h > BOT) { nuevaPagina(); pintar(medir(head, true), true, false); }
+        pintar(m, false, idx % 2 === 1);
+      });
+      st.y += 5;
+    }
+
+    function barras(items, o) {
+      o = o || {};
+      if (!items.length) return;
+      const lw = o.labelW || 54, rh = 6.6, bh = 4.4, vmax = o.vmax || Math.max.apply(null, [1].concat(items.map((i) => i.v)));
+      const tw = W - lw - 16;
+      if (items.length * rh < BOT - TOP) espacio(items.length * rh + 2);
+      items.forEach((it, i) => {
+        espacio(rh);
+        fuente(8.6, 'normal', COL.ink); pdf.text(recortar(it.l, lw - 3, 8.6), M + lw - 2, st.y + 3.6, { align: 'right' });
+        setF(COL.track); pdf.roundedRect(M + lw, st.y, tw, bh, 1.2, 1.2, 'F');
+        setF((o.colores && o.colores[i]) || o.color || COL.blue);
+        pdf.roundedRect(M + lw, st.y, Math.max(1.5, tw * it.v / vmax), bh, 1.2, 1.2, 'F');
+        fuente(8.6, 'bold', COL.ink); pdf.text(limpiar((o.fmt || fmt)(it.v)), M + lw + tw + 2, st.y + 3.6);
+        st.y += rh;
+      });
+      st.y += 3;
+    }
+
+    function columnas(items, o) {
+      o = o || {};
+      if (!items.length) return;
+      const H = o.altura || 38; espacio(H + 14);
+      const n = items.length, slot = Math.min(38, (W - 10) / n), x0 = M + (W - slot * n) / 2;
+      const vmax = Math.max.apply(null, [1].concat(items.map((i) => i.v))), base = st.y + H + 4;
+      setD(COL.line); pdf.line(M, base, M + W, base);
+      items.forEach((it, i) => {
+        const bw = slot * 0.55, x = x0 + i * slot + (slot - bw) / 2, h = Math.max(0.8, (H - 4) * it.v / vmax);
+        setF((o.colores && o.colores[i]) || o.color || COL.blue); pdf.roundedRect(x, base - h, bw, h, 1, 1, 'F');
+        fuente(9, 'bold', COL.ink); pdf.text(limpiar((o.fmt || fmt)(it.v)), x + bw / 2, base - h - 1.6, { align: 'center' });
+        fuente(8.6, 'normal', COL.ink); pdf.text(limpiar(String(it.l)), x + bw / 2, base + 4.6, { align: 'center' });
+      });
+      st.y += H + 12;
+    }
+
+    function medidor(v) {
+      espacio(26);
+      const y0 = st.y + 11, h = 4.6, n = 100;
+      const g = [34, 165, 94], a = [245, 176, 46], r = [220, 38, 38];
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1), u = t < 0.5 ? t / 0.5 : (t - 0.5) / 0.5, p = t < 0.5 ? [g, a] : [a, r];
+        pdf.setFillColor(Math.round(p[0][0] + (p[1][0] - p[0][0]) * u), Math.round(p[0][1] + (p[1][1] - p[0][1]) * u), Math.round(p[0][2] + (p[1][2] - p[0][2]) * u));
+        pdf.rect(M + i * W / n, y0, W / n + 0.3, h, 'F');
+      }
+      const x = M + W * Math.min(100, Math.max(0, v)) / 100;
+      setF(COL.navy); pdf.triangle(x, y0 - 0.4, x - 2.3, y0 - 4.6, x + 2.3, y0 - 4.6, 'F');
+      fuente(9.5, 'bold', COL.navy); pdf.text(v + ' / 100', x, y0 - 6.2, { align: 'center' });
+      fuente(7.8, 'normal', COL.gray);
+      [['Bajo', 20], ['Moderado', 50], ['Alto', 70], ['Crítico', 90]].forEach((e) => pdf.text(e[0], M + W * e[1] / 100, y0 + h + 4, { align: 'center' }));
+      setD(COL.white); pdf.setLineWidth(0.4); [40, 60, 80].forEach((k) => pdf.line(M + W * k / 100, y0, M + W * k / 100, y0 + h)); pdf.setLineWidth(0.2);
+      st.y += 24;
+    }
+
+    function puntoClave(n, titulo, texto, color) {
+      const size = 9.5; fuente(size, 'normal');
+      const ls = pdf.splitTextToSize(limpiar(texto), W - 14), h = 7 + ls.length * 4.6 + 3;
+      espacio(h);
+      setF(color || COL.blue); pdf.circle(M + 4.5, st.y + 5.2, 3.9, 'F');
+      fuente(9, 'bold', COL.white); pdf.text(String(n), M + 4.5, st.y + 6.5, { align: 'center' });
+      fuente(10.5, 'bold', COL.navy); pdf.text(limpiar(titulo), M + 12, st.y + 5.6);
+      ls.forEach((l, i) => { fuente(size, 'normal'); pdf.text(l, M + 12, st.y + 11 + i * 4.6); });
+      setD(COL.line); pdf.line(M, st.y + h, M + W, st.y + h);
+      st.y += h + 2.5;
+    }
+
+    function banner(num, titulo, sub) {
+      st.seccion = num ? num + '. ' + titulo : titulo;
+      if (st.y > TOP + 40) nuevaPagina(); else if (st.y > TOP + 1) st.y += 6;
+      setF(COL.navy); pdf.roundedRect(M, st.y, W, 17, 3, 3, 'F');
+      setF(COL.blue); pdf.circle(M + 9, st.y + 8.5, 5, 'F');
+      fuente(num && String(num).length > 1 ? 9 : 11, 'bold', COL.white); pdf.text(String(num || '+'), M + 9, st.y + 10.2, { align: 'center' });
+      fuente(14.5, 'bold', COL.white); pdf.text(limpiar(titulo), M + 18, st.y + 7.6);
+      fuente(8.5, 'normal', COL.pale); pdf.text(limpiar(sub || ''), M + 18, st.y + 13.2);
+      st.toc.push({ texto: st.seccion, pagina: pagina() });
+      try { pdf.outline.add(null, limpiar(st.seccion), { pageNumber: pagina() }); } catch (e) { /* sin marcadores */ }
+      st.y += 22;
+    }
+
+    // Dibuja una captura (canvas) entera: si no entra, la parte en páginas cortando en lugares seguros
+    function imagen(canvas, cortes) {
+      const mm = W / canvas.width, imgH = canvas.height * mm;
+      if (imgH > BOT - st.y && imgH <= BOT - TOP) nuevaPagina(); else if (BOT - st.y < 50) nuevaPagina();
+      let sY = 0;
+      while (sY < canvas.height - 1) {
+        let sH = Math.floor((BOT - st.y) / mm);
+        if (sY + sH >= canvas.height) sH = canvas.height - sY;
+        else {
+          const lim = sY + sH, ok = (cortes || []).filter((c) => c > sY + sH * 0.35 && c <= lim);
+          if (ok.length) sH = Math.max.apply(null, ok) - sY;
+        }
+        const tmp = document.createElement('canvas'); tmp.width = canvas.width; tmp.height = sH;
+        const c2 = tmp.getContext('2d'); c2.fillStyle = '#ffffff'; c2.fillRect(0, 0, tmp.width, tmp.height);
+        c2.drawImage(canvas, 0, sY, canvas.width, sH, 0, 0, canvas.width, sH);
+        pdf.addImage(tmp.toDataURL('image/jpeg', 0.82), 'JPEG', M, st.y, W, sH * mm);
+        st.y += sH * mm; sY += sH;
+        if (sY < canvas.height - 1) nuevaPagina();
+      }
+      st.y += 2;
+    }
+    function leyenda(t) { if (t) parrafo(t, { size: 8, estilo: 'italic', color: COL.gray, despues: 4 }); }
+
+    function bloques(arr) {
+      (arr || []).forEach((b) => {
+        if (!b) return;
+        if (b.t === 'h2') h2(b.x);
+        else if (b.t === 'p') parrafo(b.x, b.o);
+        else if (b.t === 'caja') caja(b.tipo, b.titulo, b.x);
+        else if (b.t === 'tabla') tabla(b.head, b.rows, b.w, b.o);
+        else if (b.t === 'barras') barras(b.items, b.o);
+        else if (b.t === 'columnas') columnas(b.items, b.o);
+        else if (b.t === 'tarjetas') tarjetas(b.items);
+        else if (b.t === 'medidor') medidor(b.v);
+        else if (b.t === 'lista') lista(b.items);
+      });
+    }
+
+    // Página reservada para el índice: se completa al final, cuando se sabe en qué página cae cada sección
+    function indice(nroPagina, intro) {
+      const previa = pagina(); pdf.setPage(nroPagina);
+      const yPrev = st.y, secPrev = st.seccion; st.seccion = 'Índice'; st.y = TOP - 2;
+      cabecera();
+      fuente(20, 'bold', COL.navy); pdf.text('Cómo leer este informe', M, st.y + 6); st.y += 12;
+      parrafo('Cada sección tiene tres tipos de cuadros para que sea fácil de recorrer:', { size: 10, color: COL.gray, despues: 3 });
+      caja('info', 'QUÉ ESTAMOS VIENDO', 'Explica de qué trata la pantalla o el gráfico, antes de entrar en los números.');
+      caja('ok', 'EN PALABRAS SIMPLES', 'Traduce los datos a una idea clara, sin tecnicismos. Si solo querés lo esencial, leé estos cuadros.');
+      caja('warn', 'OJO CON ESTO', 'Aclara límites o detalles que conviene saber para no sacar conclusiones equivocadas.');
+      parrafo('Las imágenes de cada sección son capturas del panel interactivo del CIMU. Los botones que aparecen en ellas (por ejemplo «Top esquinas» u «Horas pico») sirven en la pantalla del panel para consultar más detalle; en este PDF son solo ilustrativos.', { size: 8.5, color: COL.gray, despues: 8 });
+      fuente(20, 'bold', COL.navy); pdf.text('Índice', M, st.y + 6); st.y += 14;
+      st.toc.forEach((e) => {
+        fuente(11.5, 'normal', COL.ink); pdf.text(limpiar(e.texto), M + 2, st.y);
+        fuente(11.5, 'bold', COL.navy); pdf.text(String(e.pagina), M + W - 2, st.y, { align: 'right' });
+        const x1 = M + 4 + pdf.getTextWidth(limpiar(e.texto)) + 2, x2 = M + W - 8;
+        setD(COL.line); pdf.setLineDashPattern([0.4, 1.2], 0); pdf.line(x1, st.y - 0.8, x2, st.y - 0.8); pdf.setLineDashPattern([], 0);
+        try { pdf.link(M, st.y - 5, W, 7, { pageNumber: e.pagina }); } catch (x) { /* sin links */ }
+        st.y += 8.5;
+      });
+      st.y = yPrev; st.seccion = secPrev; pdf.setPage(previa);
+    }
+
+    function pies(texto) {
+      const n = pdf.internal.getNumberOfPages();
+      for (let i = 2; i <= n; i++) {
+        pdf.setPage(i);
+        setD(COL.line); pdf.line(M, pageH - 11, M + W, pageH - 11);
+        fuente(8, 'normal', COL.gray); pdf.text(limpiar(texto), M, pageH - 7);
+        pdf.text('Página ' + i + ' de ' + n, M + W, pageH - 7, { align: 'right' });
+      }
+    }
+
+    return { pdf, st, M, W, TOP, BOT, pageW, pageH, COL, fuente, setF, setD, nuevaPagina, espacio, parrafo, titulo1, titulo2, h2, lista, caja, tarjetas, tabla,
+      barras, columnas, medidor, puntoClave, banner, imagen, leyenda, bloques, indice, pies, pagina };
+  }
+
+  // ---------------------------------------------------------------------------------
+  // Captura de una pestaña del informe: altura COMPLETA (no solo la parte visible del
+  // modal) y lista de lugares "seguros" donde cortar si no entra en una página.
+  async function capturar(cont, escala) {
+    escala = escala || 2;
+    const alto = cont.scrollHeight;
+    const base = cont.getBoundingClientRect().top - cont.scrollTop;
+    const atomos = [];
+    cont.querySelectorAll('*').forEach((e) => {
+      if (e.children.length === 0 || e.tagName === 'TR') {
+        const r = e.getBoundingClientRect();
+        if (r.height > 0) atomos.push([r.top - base, r.bottom - base]);
+      }
+    });
+    const cand = {};
+    atomos.forEach((a) => { cand[Math.ceil(a[1]) + 1] = 1; });
+    const cortes = Object.keys(cand).map(Number).filter((y) => !atomos.some((a) => y > a[0] + 1 && y < a[1] - 1)).sort((a, b) => a - b).map((y) => Math.round(y * escala));
+    const canvas = await html2canvas(cont, {
+      scale: escala, backgroundColor: '#ffffff', useCORS: true, height: alto, windowHeight: alto + 400, scrollX: 0, scrollY: 0,
+      onclone: (doc) => {
+        const c = doc.getElementById(cont.id); if (!c) return;
+        let p = c; while (p && p !== doc.body) { p.style.overflow = 'visible'; p.style.maxHeight = 'none'; p = p.parentElement; }
+        c.style.height = 'auto'; c.style.flex = 'none';
+      }
+    });
+    return { canvas, cortes };
+  }
+
+  return { COL, limpiar, fmt, dec, nivel, crear, capturar };
+})();
+/* === PDFX_CORE_END === */
+/* === PDFX_CONTENT_START ============================================================
+   Textos explicativos (se completan con los datos reales) + armado del documento.
+   =================================================================================== */
+(function (X) {
+  const C = X.COL, n = X.fmt, dec = X.dec, limpiar = X.limpiar;
+  const pct = (a, b) => b ? Math.round(a * 100 / b) : 0;
+  const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const pl = (k, s, p) => k === 1 ? s : p;
+  const lim = (t) => limpiar(t);
+
+  const DESC_EV = {
+    'robo/hurto': 'Sustracción de bienes, con o sin violencia sobre la persona.',
+    'sistema de alerta / alarmas': 'Alarmas (por ejemplo, de comercios o viviendas) que se activaron y dieron aviso.',
+    'emergencia de salud': 'Personas que necesitaron asistencia médica urgente.',
+    'confrontacion': 'Situaciones de conflicto entre personas, como discusiones o peleas.',
+    'incendio': 'Incendios o principios de incendio.',
+    'violencia de genero': 'Situaciones de violencia de género que requirieron intervención.',
+    'lpr': 'Alertas del sistema que lee automáticamente las patentes de los vehículos (LPR).',
+    'suicidio / tentativa de suicidio': 'Situaciones de riesgo para la vida de una persona.',
+    'procedimiento policial': 'Intervenciones policiales registradas en el sistema.'
+  };
+  const EXPL_REC = [
+    [/c[aá]maras adicionales/i, 'Hay siniestros que ocurrieron lejos de cualquier cámara pública. Instalar cámaras en esa zona permitiría registrar mejor lo que pasa.'],
+    [/Cobertura del/i, 'La cobertura está por debajo del mínimo recomendado. Un análisis predictivo estima dónde conviene ubicar cada nueva cámara para que rinda más.'],
+    [/Causa principal/i, 'Actuar sobre la causa más frecuente es la forma más directa de reducir los accidentes.'],
+    [/patrullaje/i, 'Es el día y la hora con más siniestros. Más presencia en ese momento ayuda a prevenirlos.'],
+    [/colegio/i, 'Los colegios sin cámara pública cerca tienen menos cobertura justo cuando los chicos entran y salen.'],
+    [/robo automotor/i, 'Los controles de patentes (LPR) en los accesos dificultan el robo y la fuga de vehículos.'],
+    [/robo\/hurto/i, 'Estos eventos suman puntos a la nota de criticidad. Conviene reforzar la presencia preventiva donde se concentran.'],
+    [/sin causa determinada/i, 'Si hay cámaras cerca, es más fácil entender cómo ocurrió cada accidente y evitar que se repita.'],
+    [/rango normal/i, 'No se detectaron indicadores fuera de lo esperable: alcanza con mantener el monitoreo.']
+  ];
+  const GLOSARIO = [
+    ['Siniestro (vial)', 'Accidente de tránsito: choque, caída, atropello, etc.'],
+    ['Criticidad', 'Nota de 0 a 100 que resume cuánta atención necesita un barrio. A mayor nota, mayor atención. Bajo: menos de 40. Moderado: 40 a 59. Alto: 60 a 79. Crítico: 80 o más.'],
+    ['Punto crítico', 'Lugar (esquina o cruce) donde los accidentes se repiten.'],
+    ['Cobertura de cámaras', 'Porcentaje de la superficie que queda a menos de 100 metros de una cámara pública. Es una estimación.'],
+    ['Densidad de cámaras', 'Cantidad de cámaras por kilómetro cuadrado.'],
+    ['Radio de 100 metros', 'Distancia que se usa para decir que una cámara está «cerca» de un lugar.'],
+    ['Cámara pública / privada', 'Pública: la instala el Estado en la vía pública. Privada: la instalan comercios u otros particulares.'],
+    ['Corredor escolar', 'La zona alrededor de un colegio por donde circulan chicos y familias.'],
+    ['Evento operativo', 'Cualquier incidencia registrada por llamado o alarma: robos, emergencias, incendios, etc.'],
+    ['Aforo', 'Conteo de vehículos que pasan por un punto, según su tipo.'],
+    ['Mediana', 'El valor del medio de una lista ordenada. Es una forma de decir «lo habitual» sin que lo distorsionen casos extremos.'],
+    ['Arribo (policial)', 'La llegada de la policía al lugar del evento.'],
+    ['LPR', 'Lectura automática de patentes: cámaras que reconocen las patentes de los vehículos.'],
+    ['NSD (No se pudo Determinar)', 'Cuando, en el registro de un accidente, no quedó establecida la causa.'],
+    ['Análisis predictivo', 'Usar los datos históricos para estimar dónde conviene actuar o instalar cámaras.'],
+    ['Tendencia', 'Hacia dónde van los números con el tiempo: suben, bajan o se mantienen.']
+  ];
+
+  // ---------- piezas comunes ----------
+  function bloquesEventos(d, esCruce, per) {
+    const ev = d.eventos || {}, out = [];
+    if (!ev.cargado || !ev.total) {
+      out.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'No hay eventos cargados para esta zona, o no se pudo leer el archivo de eventos.' });
+      return out;
+    }
+    const zona = esCruce ? 'en el radio de análisis' : 'en el barrio';
+    const tipos = ev.porTipo || [];
+    out.push({ t: 'h2', x: '¿De qué tipo son los eventos?' });
+    out.push({ t: 'barras', items: tipos.slice(0, 9).map((x) => ({ l: x.tipo, v: x.cant })), o: { colores: tipos.map((x, i) => i === 0 ? C.red : C.blue), labelW: 58 } });
+    const top = tipos[0];
+    out.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `Se registraron ${n(ev.total)} eventos de ${tipos.length} ${pl(tipos.length, 'tipo', 'tipos')} ${zona}${per && per.eventos ? ' (' + per.eventos + ')' : ''}. ${top ? `El más frecuente es «${top.tipo}»: ${n(top.cant)} (${pct(top.cant, ev.total)}%).` : ''}` });
+    const filas = tipos.filter((t) => DESC_EV[norm(t.tipo)]).map((t) => [t.tipo, DESC_EV[norm(t.tipo)]]);
+    if (filas.length) out.push({ t: 'tabla', head: ['Tipo de evento', 'Qué incluye'], rows: filas, w: [0.32, 0.68] });
+    if (!esCruce) {
+      out.push({ t: 'h2', x: '«Suman a criticidad»' });
+      out.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `De los ${n(ev.total)} eventos, ${n(ev.criticos)} se cuentan para calcular la nota de criticidad del barrio: los de tipo Robo/Hurto, Confrontación y Violencia de Género.` });
+    }
+    const anios = ev.porAnio || [], meses = ev.porMes || [];
+    if (anios.length > 1 || meses.length) {
+      out.push({ t: 'h2', x: '¿Cómo evolucionaron en el tiempo?' });
+      if (anios.length > 1) out.push({ t: 'columnas', items: anios.map((a) => ({ l: String(a.anio), v: a.cant })), o: { altura: 30 } });
+      if (meses.length) {
+        const mx = meses.reduce((m, x) => x.cant > m.cant ? x : m, meses[0]), mn = meses.reduce((m, x) => x.cant < m.cant ? x : m, meses[0]);
+        out.push({ t: 'p', x: `El mes con más eventos fue ${mx.periodo} (${mx.cant}) y el de menos, ${mn.periodo} (${mn.cant}).` });
+        if (mx.cant >= 2 * Math.max(1, mn.cant)) out.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'Los números cambian mucho de un mes a otro, así que conviene mirar la tendencia general y no un mes aislado.' });
+      }
+    }
+    if (ev.topDirecciones && ev.topDirecciones.length) {
+      const t = ev.topDirecciones[0];
+      out.push({ t: 'p', x: `Las direcciones con más eventos: ${ev.topDirecciones.slice(0, 3).map((x) => `${x.dir} (${x.cant})`).join('; ')}. Son lugares donde se concentra la actividad y donde puede convenir reforzar la presencia preventiva.` });
+    }
+    if (ev.aprox) out.push({ t: 'p', x: `${ev.aprox} ${pl(ev.aprox, 'evento tiene', 'eventos tienen')} una ubicación aproximada en el mapa (marcada «a revisar» en la base de datos).`, o: { size: 9, color: C.gray } });
+    return out;
+  }
+
+  function bloquesMovilidad(d, esCruce) {
+    const out = [], lineas = d.lineasColectivo || [], tipos = Object.entries(d.aforoPorTipo || {}).sort((a, b) => b[1] - a[1]);
+    out.push({ t: 'h2', x: 'Las líneas de colectivo' });
+    if (lineas.length) out.push({ t: 'tabla', head: ['Línea', 'Recorrido que informa el sistema', 'Empresa'], rows: lineas.map((l) => [l.ref, l.nombre, l.operador && l.operador !== '—' ? l.operador : 'Sin dato']), w: [0.14, 0.56, 0.30] });
+    else out.push({ t: 'p', x: 'No se encontraron líneas de colectivo que pasen por esta zona.' });
+    out.push({ t: 'h2', x: '¿Qué vehículos circulan?' });
+    if (tipos.length && d.aforoTotal) {
+      const nom = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+      out.push({ t: 'barras', items: tipos.slice(0, 6).map((x) => ({ l: nom(x[0]), v: x[1] })), o: { color: C.green, labelW: 40 } });
+      const tp = tipos[0];
+      out.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `Se registraron ${n(d.aforoTotal)} vehículos en total. El tipo más frecuente es «${tp[0]}»: ${pct(tp[1], d.aforoTotal)}% del total.` });
+      const moto = (d.participantes || []).find((p) => /moto/i.test(p.nombre)), motoAf = (d.aforoPorTipo || {}).motos || (d.aforoPorTipo || {}).moto;
+      if (moto && motoAf && d.aforoTotal) out.push({ t: 'p', x: `Una observación: las motos son el ${pct(motoAf, d.aforoTotal)}% del tránsito contado, pero aparecen en ${moto.cant} participaciones dentro de los siniestros. Como el conteo sale de pocas cámaras, no se puede afirmar nada definitivo, pero es un dato que vale la pena mirar con más detalle.`, o: { size: 9.5 } });
+    } else out.push({ t: 'p', x: 'No hay conteos de vehículos (aforo) para esta zona.' });
+    if (esCruce && (d.aforoPorAnio || []).length > 1) {
+      out.push({ t: 'h2', x: 'Aforo por año' });
+      out.push({ t: 'columnas', items: d.aforoPorAnio.map((a) => ({ l: String(a.anio), v: a.total })), o: { altura: 30, color: C.green } });
+    }
+    out.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `El conteo de vehículos (aforo) viene de ${d.camarasConAforo || 0} ${pl(d.camarasConAforo, 'cámara', 'cámaras')} y es un total acumulado del período registrado. No es el tránsito diario ni representa a todas las calles.` +
+        ((d.aforoTopCamaras || [])[0] ? ` La de mayor circulación: ${d.aforoTopCamaras[0].direccion} (${n(d.aforoTopCamaras[0].total)}).` : '') });
+    return out;
+  }
+
+  // ======================================================================== BARRIO
+  function contBarrio(d, pol, per) {
+    per = per || {};
+    const tot = d.siniestros || 0, pc = d.puntosCriticos || [], causas = d.causas || [], part = d.participantes || [], ev = d.eventos || {}, pp = d.policial || {};
+    const nv = X.nivel(d.criticidad || 0), top1 = pc[0], top3 = pc.slice(0, 3).reduce((s, x) => s + x.cant, 0);
+    const nsdPct = pct(d.nsd, tot), causaTop = causas.find((c) => c.cod !== 'NSD');
+    const pe = pol && pol.ok && pol.ev ? pol.ev : null, ar = pe && pe.arribo && pe.arribo.med != null ? pe.arribo : null;
+    const dia = d.diaMaxSiniestros, hc = d.horarioCritico, recs = (d.recomendaciones || []).map(lim);
+    const hcTxt = hc && hc !== 'No determinado' ? String(hc).replace(/\s*[\u2013-]\s*/, ' a ') : null;
+    const robosAnio = (pp.robosPorAnio || []).map((a) => `${a.anio}: ${a.cant}`).join(' · ');
+
+    // ---- "en un minuto" ----
+    const puntos = [];
+    puntos.push({ c: nv.color, t: `El barrio tiene un nivel de criticidad ${nv.label.toUpperCase()}.`, x: `El sistema CIMU le dio ${d.criticidad} puntos sobre 100. Es una nota de conjunto: suma puntos por los siniestros, los robos de automotor, los siniestros lejos de una cámara, los colegios sin cámara y los eventos de seguridad, para saber a dónde mirar primero.` });
+    if (tot > 0 && top1) {
+      const conc = pc.length >= 3 && top3 * 2 >= tot;
+      puntos.push({ c: C.blue, t: conc ? 'Los accidentes de tránsito se repiten en pocos lugares.' : 'Los accidentes de tránsito están repartidos en varios lugares.', x: `Hubo ${n(tot)} siniestros registrados. El lugar con más casos es ${top1.dir} (${top1.cant}, el ${pct(top1.cant, tot)}% del total)` + (pc.length >= 3 ? `; los tres primeros suman ${top3} de ${tot}.` : '.') });
+    } else puntos.push({ c: C.blue, t: 'No hay siniestros registrados en el barrio.', x: 'No se encontraron accidentes de tránsito dentro del límite del barrio en los datos disponibles.' });
+    if (tot > 0) {
+      if (nsdPct >= 30) puntos.push({ c: C.blue, t: 'En muchos casos no se sabe por qué ocurrieron.', x: `En ${d.nsd} de ${tot} siniestros (${nsdPct}%) el registro dice «No se pudo Determinar». Sin conocer la causa es mucho más difícil prevenir.` });
+      else if (causaTop) puntos.push({ c: C.blue, t: `La causa más frecuente es: ${causaTop.nombre}.`, x: `Aparece en ${causaTop.cant} de ${tot} siniestros (${pct(causaTop.cant, tot)}%).` });
+    }
+    puntos.push({ c: d.cobertura < 70 ? C.amber : C.green, t: d.cobertura < 70 ? 'Hay pocas cámaras para el tamaño del barrio.' : 'La cobertura de cámaras es buena.',
+      x: `Las ${d.camarasPublicas} cámaras públicas cubren el ${d.cobertura}% del barrio (el mínimo recomendado por el sistema es 70%).` + (d.colegios > 0 ? ` ${d.colegiosSinCam} de ${d.colegios} ${pl(d.colegios, 'colegio', 'colegios')} no ${pl(d.colegiosSinCam, 'tiene', 'tienen')} cámara pública a menos de 100 metros.` : '') });
+    if (hcTxt && dia && dia !== 'No determinado') puntos.push({ c: C.amber, t: `El momento más delicado: los ${dia.toLowerCase()}, de ${hcTxt} hs.`, x: 'Es el día con más siniestros y, dentro del día, la franja horaria con más casos.' });
+    if (d.robos > 0) puntos.push({ c: C.purple, t: `Hay ${n(d.robos)} robos de automotor registrados.`, x: `Período ${per.robos || ''}.`.replace(' .', '.') + (robosAnio ? ` Por año: ${robosAnio}.` : '') });
+    if (ar) puntos.push({ c: C.green, t: `La policía llega, en general, en ${Math.round(ar.med)} minutos.`, x: `El tiempo típico (mediana) de llegada a un evento es de ${Math.round(ar.med)} min` + (ar.medCiudad != null ? `; en toda la ciudad es de ${Math.round(ar.medCiudad)} min.` : '.') });
+    else if (pp.eventos && pp.eventos.arribo != null) puntos.push({ c: C.green, t: `La policía llega, en general, en ${Math.round(pp.eventos.arribo)} minutos.`, x: `Tiempo típico (mediana) calculado con ${pp.eventos.nArribo} de ${pp.eventos.total} eventos que tienen ese dato.` });
+    puntos.push({ c: C.green, t: 'Qué se propone hacer.', x: `El sistema generó ${recs.length} ${pl(recs.length, 'recomendación', 'recomendaciones')} para este barrio (sección 8).` + (recs[0] ? ` La primera: ${recs[0]}` : '') });
+
+    // ---- pestañas ----
+    const tabs = {};
+    // 1 RESUMEN
+    const aporte = [
+      ['Siniestros', '2 puntos por cada 10 siniestros', tot / 10 * 2],
+      ['Robos de automotor', '1,5 puntos por cada 5 robos', (d.robos || 0) / 5 * 1.5],
+      ['Siniestros lejos de una cámara', 'Hasta 30 puntos, según el porcentaje de siniestros sin cámara pública a 100 m', (d.sinSinCamara || 0) / Math.max(tot, 1) * 30],
+      ['Colegios sin cámara cercana', '5 puntos por colegio', (d.colegiosSinCam || 0) * 5],
+      ['Eventos de robo/hurto, confrontación y violencia de género', '1,5 puntos por cada 5 eventos', (ev.criticos || 0) / 5 * 1.5]
+    ];
+    const suma = aporte.reduce((s, a) => s + a[2], 0);
+    tabs.resumen = { titulo: 'Resumen general del barrio', sub: 'La foto completa en una sola mirada',
+      see: 'La primera pantalla junta los números más importantes del barrio: cuántos accidentes hubo, cuántas cámaras hay, qué lugares concentran más casos y cómo respondió la policía. Funciona como el tablero de un auto: no lo explica todo, pero avisa dónde mirar primero.',
+      bloques: [
+        { t: 'h2', x: 'Las tarjetas de arriba, una por una' },
+        { t: 'tabla', head: ['Lo que ves en el panel', 'Qué significa'], w: [0.34, 0.66], rows: [
+          [`Siniestros: ${n(tot)}`, 'Cantidad de accidentes de tránsito registrados en el barrio (choques, caídas de moto o bici, atropellos).'],
+          [`Cámaras públicas: ${d.camarasPublicas}`, 'Cámaras del Estado instaladas en la vía pública.'],
+          [`Cámaras privadas: ${d.camarasPrivadas}`, 'Cámaras instaladas por privados (por ejemplo, comercios).'],
+          [`% Cobertura: ${d.cobertura}%`, `Qué parte de la superficie del barrio queda a menos de 100 metros de una cámara pública (cálculo estimado).${d.cobertura < 100 ? ` El ${100 - d.cobertura}% restante queda fuera.` : ''}`],
+          [`Sin cobertura: ${d.sinSinCamara}`, 'Cantidad de siniestros ocurridos a más de 100 metros de cualquier cámara pública.'],
+          [`Robos automotor${per.robos ? ' (' + per.robos + ')' : ''}: ${n(d.robos)}`, 'Robos de vehículos registrados en el período.'],
+          [`Eventos${per.eventos ? ' (' + per.eventos + ')' : ''}: ${n(ev.total)}`, 'Incidencias que el sistema operativo registró en el barrio: robos, alarmas, emergencias de salud, etc.']] },
+        { t: 'h2', x: `¿Qué significa «criticidad ${d.criticidad} sobre 100»?` },
+        { t: 'medidor', v: d.criticidad || 0 },
+        { t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `La criticidad es una nota de 0 a 100 que el sistema CIMU calcula sumando puntos por cada situación del barrio (ver la tabla de abajo). Sirve para comparar barrios y decidir dónde actuar primero. ${d.criticidad} puntos es un nivel «${nv.label}»: ${nv.frase}` },
+        { t: 'tabla', head: ['Componente', 'Cómo suma', 'Puntos'], w: [0.36, 0.50, 0.14], rows: aporte.map((a) => [a[0], a[1], dec(a[2], 1)]).concat([['Total (tope 100)', 'Suma de todos los componentes', String(Math.min(Math.round(suma), 100))]]) },
+        { t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'Una cámara «cerca» es una cámara a menos de 100 metros: no asegura que haya grabado el hecho, porque puede haber estado apuntando hacia otro lado o no funcionar en ese momento.' }
+      ] };
+
+    // 2 SINIESTROS
+    const an = d.siniestrosPorAnio || [], sb = [];
+    if (an.length > 1) {
+      const f = an[0], l = an[an.length - 1], anioAct = new Date().getFullYear();
+      sb.push({ t: 'h2', x: '¿Cómo fue cambiando año a año?' });
+      sb.push({ t: 'columnas', items: an.map((a) => ({ l: String(a.anio), v: a.cant })), o: { altura: 32, colores: an.map((a, i) => i === an.length - 1 ? C.red : C.blue) } });
+      sb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `Los accidentes pasaron de ${f.cant} en ${f.anio} a ${l.cant} en ${l.anio}${l.cant > f.cant ? ': la tendencia general es hacia arriba, aunque no fue pareja todos los años' : l.cant < f.cant ? ': la tendencia general es hacia abajo' : ': se mantuvieron estables'}.` });
+      if (l.anio >= anioAct) sb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `${l.anio} todavía no terminó, por lo que su cifra puede seguir aumentando.` });
+    }
+    if (pc.length) {
+      sb.push({ t: 'h2', x: '¿Dónde se repiten? Los puntos críticos' });
+      sb.push({ t: 'p', x: 'Un punto crítico es un lugar (esquina o cruce) donde los accidentes se repiten:' });
+      sb.push({ t: 'barras', items: pc.slice(0, 5).map((x) => ({ l: x.dir, v: x.cant })), o: { colores: pc.map((x, i) => [C.red, C.amber, C.blue][i] || C.gray), labelW: 62 } });
+      sb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: pc.length >= 3 ? `Los tres lugares principales suman ${top3} de los ${tot} siniestros (${pct(top3, tot)}%). Si se mejoran unos pocos lugares, se puede impactar en buena parte del problema.` : `El lugar con más casos concentra ${top1.cant} de los ${tot} siniestros (${pct(top1.cant, tot)}%).` });
+    }
+    if (causas.length) {
+      sb.push({ t: 'h2', x: '¿Por qué ocurren? Las causas' });
+      sb.push({ t: 'barras', items: causas.map((c) => ({ l: c.nombre, v: c.cant })), o: { colores: causas.map((c, i) => i === 0 && c.cod === 'NSD' ? C.red : C.blue), labelW: 50 } });
+      sb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: (d.nsd > 0 ? `En ${d.nsd} de ${tot} accidentes (${nsdPct}%) no quedó establecida la causa («No se pudo Determinar»). ` : '') + (causaTop ? `Entre los que sí tienen causa, la más frecuente es «${causaTop.nombre}» (${causaTop.cant}). ` : '') + 'Saber la causa es clave para prevenir; por eso suele recomendarse ampliar las cámaras.' });
+    }
+    if (part.length) {
+      const sp = part.reduce((s, x) => s + x.cant, 0);
+      sb.push({ t: 'h2', x: '¿Quiénes estuvieron involucrados?' });
+      sb.push({ t: 'barras', items: part.map((x) => ({ l: x.nombre, v: x.cant })), o: { labelW: 40 } });
+      if (sp > tot) sb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `Estos números cuentan participantes, no accidentes. Como en un mismo choque pueden intervenir dos o más vehículos, la suma (${sp}) es mayor que los ${tot} siniestros.` });
+    }
+    const dias = (d.siniestrosPorDia || []).filter((x) => x.cant > 0);
+    if (dias.length) {
+      sb.push({ t: 'h2', x: '¿Qué día de la semana?' });
+      sb.push({ t: 'barras', items: (d.siniestrosPorDia || []).map((x) => ({ l: x.dia, v: x.cant })), o: { colores: (d.siniestrosPorDia || []).map((x) => x.dia === dia ? C.red : C.blue), labelW: 30 } });
+      if (hcTxt) sb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `El día con más accidentes es ${dia} y el horario más crítico va de ${hcTxt} hs.` });
+    }
+    if (d.siniestrosConPeatones || d.siniestrosConCiclistas) {
+      sb.push({ t: 'h2', x: 'Peatones y ciclistas' });
+      sb.push({ t: 'p', x: `Son las personas más vulnerables en el tránsito, porque no tienen una carrocería que las proteja. Se registraron ${d.siniestrosConCiclistas || 0} siniestros con ciclistas y ${d.siniestrosConPeatones || 0} con peatones.` });
+    }
+    tabs.siniestros = { titulo: 'Siniestros viales', sub: 'Qué accidentes ocurren, dónde, cuándo y por qué',
+      see: 'Un siniestro vial es un accidente de tránsito. Esta sección responde: ¿cuántos hubo?, ¿dónde se repiten?, ¿por qué ocurren?, ¿quiénes estuvieron involucrados? y ¿cuándo ocurren más?', bloques: sb };
+
+    // 3 CÁMARAS
+    const contra = (100 - d.pctSiniConCam) < 10 && d.cobertura < 50;
+    tabs.camaras = { titulo: 'Cámaras y videovigilancia', sub: 'Cuántas hay y cuánto del barrio alcanzan',
+      see: 'Esta pantalla mide cuánto del barrio está «a la vista» de una cámara. Sirve para saber si hay zonas sin vigilancia y si las cámaras están donde ocurren los problemas.',
+      bloques: [
+        { t: 'h2', x: 'Las métricas, una por una' },
+        { t: 'tabla', head: ['Lo que ves en el panel', 'Qué significa'], w: [0.36, 0.64], rows: [
+          [`Cámaras públicas: ${d.camarasPublicas}`, 'Del Estado, en la vía pública.'],
+          [`Cámaras privadas: ${d.camarasPrivadas}`, 'De comercios u otros privados.'],
+          [`Total de cámaras: ${(d.camarasPublicas || 0) + (d.camarasPrivadas || 0)}`, 'Las públicas más las privadas.'],
+          [`Área del barrio: ${String(d.areaCamKm2).replace('.', ',')} km²`, 'El tamaño del barrio. Sirve de base para calcular la densidad de cámaras.'],
+          [`Densidad: ${String(d.densidadCamaras).replace('.', ',')} cám/km²`, 'Cantidad de cámaras públicas por cada kilómetro cuadrado.'],
+          [`Cobertura estimada: ${d.cobertura}%`, 'Si se dibuja un círculo de 100 metros alrededor de cada cámara pública, esa es la parte de la superficie del barrio que quedaría tapada.'],
+          [`Siniestros con cámara a 100 m: ${d.pctSiniConCam}%`, `De los ${tot} accidentes, ${tot - (d.sinSinCamara || 0)} ocurrieron a menos de 100 metros de una cámara pública.`],
+          [`Siniestros sin cobertura: ${d.sinSinCamara}`, 'Accidentes ocurridos a más de 100 metros de cualquier cámara pública.']] },
+        { t: 'h2', x: contra ? 'Dos números que parecen contradecirse (pero no)' : 'Cómo se leen los dos porcentajes' },
+        { t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: [`Cobertura de ${d.cobertura}%: es la parte de la superficie del barrio que queda cerca de una cámara.`, `${d.pctSiniConCam}% de los siniestros con cámara cerca: es la parte de los accidentes que ocurrió a menos de 100 metros de una cámara.`, contra ? 'Las dos cosas son verdad a la vez: las cámaras están instaladas justo donde ocurren los accidentes, pero son pocas y dejan gran parte del barrio sin cubrir.' : (d.cobertura < 70 ? 'Aun así, la cobertura general está por debajo del 70% que el sistema recomienda como mínimo.' : 'La cobertura general alcanza el mínimo recomendado de 70%.')] },
+        { t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'Que haya una cámara cerca no garantiza que haya grabado el hecho. Además, la cobertura es una estimación: suma los círculos de 100 metros de cada cámara sin considerar edificios u obstáculos.' }
+      ] };
+
+    // 4 ESCOLARES
+    const enHora = (a, b) => { const m = /(\d{1,2}):\d{2}\s*[\u2013-]\s*(\d{1,2}):\d{2}/.exec(hc || ''); return m && +m[1] < b && +m[2] > a; };
+    const solapa = enHora(16.5, 17.5) ? 'la salida de clases (16:30 a 17:30)' : enHora(7, 8.5) ? 'la entrada a clases (07:00 a 08:30)' : null;
+    tabs.escolares = { titulo: 'Corredores escolares', sub: 'La seguridad alrededor de los colegios',
+      see: 'Un corredor escolar es la zona alrededor de un colegio por donde circulan chicos y familias a la entrada y a la salida. Esta pantalla muestra si esas zonas tienen cámaras públicas cerca.',
+      bloques: [
+        { t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: d.colegios === 0 ? 'No hay colegios registrados dentro del barrio en los datos disponibles.' : d.colegiosSinCam > 0 ? `${d.colegiosSinCam} de ${d.colegios} ${pl(d.colegios, 'colegio', 'colegios')} no ${pl(d.colegiosSinCam, 'tiene', 'tienen')} ninguna cámara pública a menos de 100 metros. El riesgo es mayor en los horarios de entrada y salida.` : `Los ${d.colegios} ${pl(d.colegios, 'colegio tiene', 'colegios tienen')} al menos una cámara pública a menos de 100 metros.` },
+        { t: 'tabla', head: ['Dato', 'Qué significa'], w: [0.36, 0.64], rows: [
+          [`Colegios en el barrio: ${d.colegios}`, 'Los que se analizaron.'],
+          [`Con cámara a 100 m: ${d.colegios - d.colegiosSinCam}`, 'Colegios con al menos una cámara pública cerca.'],
+          [`Sin cámara cercana: ${d.colegiosSinCam}`, 'Colegios sin ninguna cámara pública a menos de 100 metros.'],
+          [`Cobertura de colegios: ${pct(d.colegios - d.colegiosSinCam, d.colegios)}%`, 'Porcentaje de colegios con cámara cerca.'],
+          ['Entrada: 07:00 a 08:30', 'Franja de la mañana en que los chicos llegan al colegio.'],
+          ['Salida: 16:30 a 17:30', 'Franja de la tarde en que los chicos se van.'],
+          ['Participantes en riesgo', 'Peatones y ciclistas: son quienes están más expuestos en esos momentos.']] },
+        solapa ? { t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `El horario con más siniestros en el barrio (${hcTxt} hs) coincide en parte con ${solapa}. Eso no quiere decir que los accidentes involucren a escolares, pero es una coincidencia que vale la pena tener presente.` } : null
+      ] };
+
+    // 5 EVENTOS
+    tabs.eventos = { titulo: 'Eventos operativos', sub: 'Lo que se registra día a día en el barrio',
+      see: 'Un evento operativo es cualquier incidencia que se anota cuando alguien llama o cuando salta una alarma: un robo, un incendio, una emergencia de salud, etc. A diferencia de los siniestros (accidentes de tránsito), acá aparecen todo tipo de situaciones.',
+      bloques: bloquesEventos(d, false, per) };
+
+    // 6 POLICIAL
+    const pb = [], pe2 = pp.eventos || {}, pr = pp.robos || {};
+    pb.push({ t: 'h2', x: 'Cómo leer cada bloque de la pantalla' });
+    pb.push({ t: 'tabla', head: ['Lo que ves en el panel', 'Qué significa'], w: [0.34, 0.66], rows: [
+      ['Franja horaria con más eventos', 'Divide el día en cuatro tramos (madrugada, mañana, tarde y noche) y cuenta cuántos eventos hubo en cada uno.'],
+      ['Día de la semana', 'Promedio de eventos por cada día de ese tipo. Permite comparar días aunque no haya la misma cantidad de fechas.'],
+      ['Tendencia (3 meses)', 'Compara el promedio mensual de los últimos 3 meses contra los 3 anteriores. Un valor negativo (en verde) significa que los eventos bajaron.'],
+      ['Tiempo de arribo', 'Minutos que tarda la policía en llegar. «Mediana» es el valor del medio; «9 de cada 10 llegan en» muestra el tiempo que cubre al 90% de los casos.'],
+      ['Esquinas con mayor demora', 'Esquinas con al menos 5 eventos con dato de llegada, ordenadas de mayor a menor demora.'],
+      ['Fugas de vehículos robados', 'Recorridos de fuga de vehículos robados que comenzaron en el barrio.']] });
+    if (pe) {
+      const fr = (pe.franjas || []).slice().sort((a, b) => b.cant - a.cant)[0];
+      if (fr && pe.conHora) pb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `La franja con más eventos es «${fr.nombre.replace(/\s*\(.*\)/, '')}» (${fr.cant} de ${pe.conHora} eventos con hora registrada).` + ((pe.horasPico || []).length ? ` Las horas pico son ${pe.horasPico.join(', ')}.` : '') });
+      if (pe.tend && pe.tend.barrio && pe.tend.barrio.d != null) pb.push({ t: 'p', x: `Tendencia: en los últimos 3 meses (${pe.tend.actual}) el promedio mensual de eventos ${pe.tend.barrio.d < 0 ? 'bajó' : 'subió'} un ${Math.abs(Math.round(pe.tend.barrio.d))}% respecto de los 3 meses anteriores (${pe.tend.previo}).` + (pe.tend.incompleto ? ' Ojo: faltan datos de algunos meses, por lo que la comparación es aproximada.' : '') });
+    }
+    if (ar) {
+      pb.push({ t: 'h2', x: '¿Cuánto tarda la policía en llegar?' });
+      pb.push({ t: 'tabla', head: ['', 'Casos con dato', 'Tiempo típico (mediana)', '9 de cada 10 llegan en'], w: [0.26, 0.2, 0.28, 0.26], rows: [[d.nombre, n(ar.n), Math.round(ar.med) + ' min', 'hasta ' + Math.round(ar.p90) + ' min']].concat(ar.medCiudad != null ? [['Toda la ciudad', n(ar.nCiudad), Math.round(ar.medCiudad) + ' min', 'hasta ' + Math.round(ar.p90Ciudad) + ' min']] : []) });
+      pb.push({ t: 'caja', tipo: 'ok', titulo: 'EN PALABRAS SIMPLES', x: `Mediana significa el valor del medio: si se ordenaran todas las llegadas de la más rápida a la más lenta, la del medio tardó ${Math.round(ar.med)} minutos. «9 de cada 10 llegan en hasta ${Math.round(ar.p90)} minutos» quiere decir que solo 1 de cada 10 tarda más.` + (ar.medCiudad != null ? (Math.round(ar.med) < Math.round(ar.medCiudad) ? ` En el barrio la policía llega ${Math.round(ar.medCiudad) - Math.round(ar.med)} min antes que en el promedio de la ciudad.` : Math.round(ar.med) > Math.round(ar.medCiudad) ? ` En el barrio la policía tarda ${Math.round(ar.med) - Math.round(ar.medCiudad)} min más que en el promedio de la ciudad.` : ' Es el mismo tiempo que en el promedio de la ciudad.') : '') });
+      if ((pe.esquinas || []).length) pb.push({ t: 'p', x: `Esquina con mayor demora: ${pe.esquinas[0].dir} (${pe.esquinas[0].n} eventos, mediana de ${Math.round(pe.esquinas[0].med)} min).` });
+    }
+    if (pr.total) {
+      pb.push({ t: 'h2', x: 'Robos de automotor' });
+      pb.push({ t: 'p', x: `Se registraron ${n(pr.total)} robos de automotor${per.robos ? ' (' + per.robos + ')' : ''}.` });
+      if ((pp.robosPorAnio || []).length > 1) pb.push({ t: 'columnas', items: pp.robosPorAnio.map((a) => ({ l: String(a.anio), v: a.cant })), o: { altura: 30, color: C.purple } });
+      const filas = [];
+      if (pr.franja) filas.push(['Franja más frecuente: ' + String(pr.franja).replace(/\s*[\u2013-]\s*/, ' a '), `El rango de dos horas con más robos (${pr.nFranja} casos, ${pct(pr.nFranja, pr.nHora)}% de los ${pr.nHora} que tienen hora registrada).`]);
+      if (pr.resultado) filas.push([`Resultado más frecuente: «${pr.resultado}»`, `En el registro, es la categoría más común (${pr.nResultado} casos, ${pr.pctResultado}%). Indica que la policía asistió y cerró su intervención en el lugar.`]);
+      if (pr.arribo != null) filas.push([`Arribo (mediana): ${Math.round(pr.arribo)} min`, 'Tiempo típico de llegada de la policía en un robo de automotor.']);
+      if (filas.length) pb.push({ t: 'tabla', head: ['Dato del panel', 'Qué significa'], w: [0.38, 0.62], rows: filas });
+      if (pr.arribo != null && pr.nArribo < pr.total * 0.5) pb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `El tiempo de llegada se calculó con solo ${pr.nArribo} de los ${pr.total} casos, porque el resto no tiene registrada la hora de arribo (este dato existe solo en parte de los registros). Es un número poco firme: conviene tomarlo como referencia y no como una medida precisa.` });
+    }
+    if (pe && pe.total && ev.total && pe.total !== ev.total) pb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `Esta pantalla cuenta ${n(pe.total)} eventos, mientras que la sección Eventos cuenta ${n(ev.total)}. Las dos usan filtros geográficos distintos para decidir qué eventos pertenecen al barrio, por eso los totales no coinciden. Cada pantalla es correcta dentro de su propio criterio.` });
+    tabs.policial = { titulo: 'Respuesta policial y robo automotor', sub: 'Cuándo pasan las cosas y qué tan rápido se responde',
+      see: 'Esta pantalla responde dos preguntas: ¿a qué hora y qué día se concentran los eventos? y ¿cuánto tarda la policía en llegar? También muestra el seguimiento de los robos de automotor.', bloques: pb };
+
+    // 7 MOVILIDAD
+    tabs.movilidad = { titulo: 'Colectivos y aforos', sub: 'Quiénes circulan por el barrio y cuántos',
+      see: 'Esta pantalla muestra qué líneas de colectivo atraviesan el barrio y cuántos vehículos circulan. El conteo de vehículos se llama aforo: es un registro de cuántos pasan por un punto, y de qué tipo.',
+      bloques: bloquesMovilidad(d, false) };
+
+    // 8 RECOMENDACIONES
+    tabs.recomendaciones = { titulo: 'Recomendaciones', sub: 'Las acciones propuestas por el sistema',
+      see: 'Con todos los datos del barrio, el sistema propone una lista de acciones. Esta pantalla las ordena según las reglas del sistema; abajo se explica qué significa cada una y por qué se propone.',
+      bloques: [
+        { t: 'h2', x: 'Las recomendaciones, explicadas' },
+        { t: 'tabla', head: ['Lo que dice el panel', 'Qué significa y por qué'], w: [0.5, 0.5], rows: recs.map((r, i) => { const e = EXPL_REC.find((x) => x[0].test(r)); return [`${i + 1}. ${r}`, e ? e[1] : 'Acción sugerida a partir de los datos del barrio.']; }), o: { negritaPrimera: false } }
+      ] };
+    return { puntos, tabs, cover: [
+      { v: nv.label, l: 'Nivel de criticidad', n: `Nota: ${d.criticidad} / 100`, color: nv.color },
+      { v: n(tot), l: 'Siniestros viales', n: 'Accidentes de tránsito registrados', color: C.navy },
+      { v: d.cobertura + '%', l: 'Cobertura de cámaras', n: 'El sistema recomienda al menos 70%', color: d.cobertura < 70 ? C.amber : C.green },
+      { v: n(d.robos), l: 'Robos de automotor', n: per.robos ? 'Registrados ' + per.robos : 'Registrados', color: C.purple }] };
+  }
+
+  // ======================================================================== CRUCE
+  function contCruce(d, per) {
+    per = per || {};
+    const tot = d.siniestros || 0, causas = d.causas || [], part = d.participantes || [], ev = d.eventos || {};
+    const nsdPct = pct(d.nsd, tot), causaTop = causas.find((c) => c.cod !== 'NSD'), hc = d.horarioCritico, dia = d.diaMaxSiniestros;
+    const hcTxt = hc && hc !== '-' && hc !== 'No determinado' ? String(hc).replace(/\s*[\u2013-]\s*/, ' a ') : null;
+    const puntos = [];
+    puntos.push({ c: C.blue, t: tot > 0 ? `En este cruce hubo ${n(tot)} ${pl(tot, 'siniestro', 'siniestros')}.` : 'No hay siniestros registrados en este cruce.', x: `El análisis considera todo lo que ocurre dentro de un círculo de ${d.radioMetros} metros alrededor del punto elegido.` + (tot > 0 && hcTxt && dia && dia !== 'No determinado' ? ` El día con más casos es ${dia} y el horario más crítico va de ${hcTxt} hs.` : '') });
+    if (tot > 0) {
+      if (nsdPct >= 30) puntos.push({ c: C.blue, t: 'En muchos casos no se sabe por qué ocurrieron.', x: `En ${d.nsd} de ${tot} siniestros (${nsdPct}%) el registro dice «No se pudo Determinar». Sin conocer la causa es más difícil prevenir.` });
+      else if (causaTop) puntos.push({ c: C.blue, t: `La causa más frecuente es: ${causaTop.nombre}.`, x: `Aparece en ${causaTop.cant} de ${tot} siniestros (${pct(causaTop.cant, tot)}%).` });
+    }
+    puntos.push({ c: C.amber, t: 'Cámaras en la zona.', x: `Hay ${d.camarasPublicas} ${pl(d.camarasPublicas, 'cámara pública', 'cámaras públicas')} y ${d.camarasPrivadas} ${pl(d.camarasPrivadas, 'privada', 'privadas')} dentro del radio. ${tot > 0 ? `El ${d.pctSiniConCam}% de los siniestros tiene cobertura de cámara cercana.` : ''}` });
+    if (d.siniestrosConPeatones || d.siniestrosConCiclistas) puntos.push({ c: C.red, t: 'Hay personas vulnerables involucradas.', x: `${d.siniestrosConCiclistas || 0} siniestros con ciclistas y ${d.siniestrosConPeatones || 0} con peatones.` });
+    puntos.push({ c: C.purple, t: 'Robos y eventos.', x: `${n(d.robos)} robos de automotor${per.robos ? ' (' + per.robos + ')' : ''} y ${n(ev.total)} ${pl(ev.total, 'evento registrado', 'eventos registrados')} en la zona${per.eventos ? ' (' + per.eventos + ')' : ''}.` });
+    puntos.push({ c: C.green, t: 'Colectivos y tránsito.', x: `${(d.lineasColectivo || []).length} ${pl((d.lineasColectivo || []).length, 'línea de colectivo pasa', 'líneas de colectivo pasan')} cerca. ${n(d.aforoTotal)} vehículos fueron contados por las cámaras de aforo de la zona.` });
+
+    const tabs = {}, rb = [];
+    rb.push({ t: 'h2', x: 'Las tarjetas de arriba, una por una' });
+    rb.push({ t: 'tabla', head: ['Lo que ves en el panel', 'Qué significa'], w: [0.34, 0.66], rows: [
+      [`Siniestros: ${n(tot)}`, `Accidentes de tránsito dentro de los ${d.radioMetros} metros.`],
+      [`Cámaras públicas: ${d.camarasPublicas}`, 'Cámaras del Estado dentro del radio.'],
+      [`Cámaras privadas: ${d.camarasPrivadas}`, 'Cámaras de privados (por ejemplo, comercios) dentro del radio.'],
+      [`Robos automotor${per.robos ? ' (' + per.robos + ')' : ''}: ${n(d.robos)}`, 'Robos de vehículos registrados dentro del radio.'],
+      [`Colegios: ${d.colegios}`, 'Colegios ubicados dentro del radio.'],
+      [`Con cobertura: ${d.pctSiniConCam}%`, 'Porcentaje de siniestros que ocurrió cerca de una cámara.'],
+      [`Horario crítico: ${hcTxt || '-'}`, 'Franja de dos horas que arranca en la hora con más siniestros.'],
+      [`Día más crítico: ${dia || '-'}`, 'Día de la semana con más siniestros.']] });
+    if (part.length) { rb.push({ t: 'h2', x: '¿Quiénes estuvieron involucrados?' }); rb.push({ t: 'barras', items: part.map((x) => ({ l: x.nombre, v: x.cant })), o: { labelW: 40 } });
+      const sp = part.reduce((s, x) => s + x.cant, 0); if (sp > tot) rb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: `Estos números cuentan participantes, no accidentes: en un mismo choque pueden intervenir dos o más vehículos, por eso la suma (${sp}) supera los ${tot} siniestros.` }); }
+    if (causas.length) { rb.push({ t: 'h2', x: '¿Por qué ocurren? Las causas' }); rb.push({ t: 'barras', items: causas.map((c) => ({ l: c.nombre, v: c.cant })), o: { colores: causas.map((c, i) => i === 0 && c.cod === 'NSD' ? C.red : C.blue), labelW: 50 } }); }
+    if ((d.siniestrosPorAnio || []).length > 1) { rb.push({ t: 'h2', x: 'Siniestros por año' }); rb.push({ t: 'columnas', items: d.siniestrosPorAnio.map((a) => ({ l: String(a.anio), v: a.cant })), o: { altura: 30 } });
+      if (d.siniestrosPorAnio[d.siniestrosPorAnio.length - 1].anio >= new Date().getFullYear()) rb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'El último año todavía no terminó, por lo que su cifra puede seguir aumentando.' }); }
+    const dd = (d.siniestrosPorDia || []).filter((x) => x.cant > 0);
+    if (dd.length) { rb.push({ t: 'h2', x: '¿Qué día de la semana?' }); rb.push({ t: 'barras', items: d.siniestrosPorDia.map((x) => ({ l: x.dia, v: x.cant })), o: { colores: d.siniestrosPorDia.map((x) => x.dia === dia ? C.red : C.blue), labelW: 30 } }); }
+    rb.push({ t: 'caja', tipo: 'warn', titulo: 'OJO CON ESTO', x: 'Una cámara «cerca» es una cámara a menos de 100 metros: no asegura que haya grabado el hecho. Además, con radios chicos hay pocos casos, y los porcentajes pueden cambiar mucho con uno o dos siniestros más.' });
+    tabs.resumen = { titulo: 'Resumen general del cruce', sub: `Todo lo que ocurre en ${d.radioMetros} metros a la redonda`, see: `Esta pantalla muestra, para el cruce elegido, qué pasó dentro de un círculo de ${d.radioMetros} metros: accidentes, cámaras, robos y quiénes estuvieron involucrados.`, bloques: rb };
+    tabs.movilidad = { titulo: 'Colectivos y aforos', sub: 'Quiénes circulan por la zona y cuántos', see: 'Esta pantalla muestra qué líneas de colectivo pasan cerca del cruce y cuántos vehículos contaron las cámaras de aforo. El aforo es un registro de cuántos vehículos pasan por un punto, y de qué tipo.', bloques: bloquesMovilidad(d, true) };
+    tabs.eventos = { titulo: 'Eventos operativos', sub: 'Lo que se registra en la zona', see: 'Un evento operativo es cualquier incidencia que se anota cuando alguien llama o cuando salta una alarma: un robo, un incendio, una emergencia de salud, etc.', bloques: bloquesEventos(d, true, per) };
+    return { puntos, tabs, cover: [
+      { v: n(tot), l: 'Siniestros', n: `En ${d.radioMetros} m a la redonda`, color: C.navy },
+      { v: d.pctSiniConCam + '%', l: 'Con cámara cercana', n: 'De los siniestros', color: d.pctSiniConCam >= 70 ? C.green : C.amber },
+      { v: (d.lineasColectivo || []).length, l: 'Líneas de colectivo', n: 'Que pasan cerca', color: C.blue },
+      { v: n(d.aforoTotal), l: 'Vehículos aforados', n: 'Conteo de cámaras de aforo', color: C.purple }] };
+  }
+
+  // ======================================================================== texto IA
+  function ia(ctx, texto) {
+    const L = String(texto).split('\n');
+    let i = 0;
+    while (i < L.length) {
+      const t = L[i].trim();
+      if (!t) { i++; continue; }
+      if (t.startsWith('TABLA:')) {
+        const titulo = t.replace('TABLA:', '').trim(); i++;
+        const filas = [];
+        while (i < L.length && L[i].trim() !== 'FIN_TABLA' && L[i].trim() !== '' && !L[i].trim().startsWith('#') && !L[i].trim().startsWith('TABLA:') && !L[i].trim().startsWith('> ') && L[i].includes('|') && filas.length < 20) {
+          filas.push(L[i].split('|').map((c) => c.trim()).filter((c) => c !== '')); i++;
+        }
+        if (L[i] && L[i].trim() === 'FIN_TABLA') i++;
+        if (filas.length) {
+          const nc = Math.max(1, filas[0].length), fix = (f) => { const r = f.slice(0, nc); while (r.length < nc) r.push(''); return r; };
+          ctx.titulo2(titulo);
+          ctx.tabla(fix(filas[0]), filas.slice(1).map(fix), filas[0].map(() => 1 / nc), { negritaPrimera: false });
+        }
+        continue;
+      }
+      if (t.startsWith('## ')) { ctx.titulo2(t.replace(/^##\s*/, '')); i++; continue; }
+      if (t.startsWith('# ')) { ctx.titulo1(t.replace(/^#\s*/, '')); i++; continue; }
+      if (t.startsWith('> ')) { ctx.caja('info', '', t.replace(/^>\s*/, '')); i++; continue; }
+      if (t.startsWith('- ')) {
+        const b = []; while (i < L.length && L[i].trim().startsWith('- ')) { b.push(L[i].trim().replace(/^-\s*/, '')); i++; }
+        ctx.lista(b); continue;
+      }
+      const par = [];
+      while (i < L.length && L[i].trim() !== '' && !L[i].trim().startsWith('#') && !L[i].trim().startsWith('- ') && !L[i].trim().startsWith('> ') && !L[i].trim().startsWith('TABLA:')) { par.push(L[i].trim()); i++; }
+      ctx.parrafo(par.join(' '), { despues: 3 });
+    }
+  }
+
+  // ======================================================================== ARMADO
+  async function armar(o) {
+    const pdf = o.pdf, d = o.datos, esB = o.tipo === 'barrio', per = o.per || {};
+    const cont = esB ? contBarrio(d, o.pol, per) : contCruce(d, per);
+    const ctx = X.crear(pdf, { titulo: (esB ? d.nombre : 'Cruce ' + d.nombre) + ' · Informe de Seguridad Urbana' });
+    const { M, W, pageW, pageH } = ctx;
+
+    // --- portada (página 1) ---
+    ctx.setF(C.navy); pdf.rect(0, 0, pageW, 118, 'F'); ctx.setF(C.blue); pdf.rect(0, 0, 7, 118, 'F');
+    ctx.fuente(9, 'bold', [143, 176, 240]); pdf.text('CIMU · CENTRO DE INTELIGENCIA Y MONITOREO URBANO', 24, 30);
+    ctx.fuente(32, 'bold', C.white); pdf.text('Informe de', 24, 56); pdf.text('Seguridad Urbana', 24, 70);
+    ctx.fuente(19, 'bold', [143, 176, 240]); pdf.text(limpiar((esB ? 'Barrio ' : 'Cruce: ') + d.nombre), 24, 88, { maxWidth: pageW - 36 });
+    ctx.fuente(11.5, 'normal', C.white); pdf.text('Versión explicada, en lenguaje simple', 24, 100);
+    ctx.fuente(10, 'normal', C.pale); pdf.text('Fecha del informe: ' + o.fecha + (esB ? '' : '   |   Radio de análisis: ' + d.radioMetros + ' m'), 24, 107);
+    ctx.st.y = 126; ctx.st.seccion = '';
+    ctx.parrafo('Lo más importante, de un vistazo', { size: 13, estilo: 'bold', color: C.navy, despues: 2 });
+    if (esB) { ctx.parrafo(`El sistema CIMU le asignó al barrio una nota de criticidad de ${d.criticidad} sobre 100. Cuanto más hacia la derecha del medidor, más atención necesita el barrio.`, { size: 9, color: C.gray, despues: 1 }); ctx.medidor(d.criticidad || 0); }
+    ctx.tarjetas(cont.cover);
+    ctx.parrafo(esB ? 'Este documento explica, paso a paso y con palabras de todos los días, qué muestra cada pantalla del informe, qué significa cada número y qué se propone hacer. No hace falta conocer del tema para entenderlo.' : 'Este documento explica, paso a paso y con palabras de todos los días, qué pasó dentro del radio de análisis del cruce elegido, qué significa cada número y qué conviene mirar. No hace falta conocer del tema para entenderlo.', { size: 10.5, color: C.gray });
+
+    // --- página 2: el informe en un minuto ---
+    ctx.nuevaPagina();
+    ctx.fuente(22, 'bold', C.navy); pdf.text('El informe en un minuto', M, ctx.st.y + 8); ctx.st.y += 12;
+    ctx.parrafo('Si solo tenés un minuto, leé esta página. El resto del documento explica cada punto en detalle.', { size: 10.5, color: C.gray, despues: 4 });
+    cont.puntos.forEach((p, k) => ctx.puntoClave(k + 1, p.t, p.x, p.c));
+    // --- página 3: índice (se completa al final) ---
+    ctx.nuevaPagina(); ctx.st.y = ctx.BOT;
+
+    // --- secciones ---
+    let num = 0;
+    for (const tab of o.tabs) {
+      const T = cont.tabs[tab]; if (!T) continue;
+      num++;
+      ctx.banner(String(num), T.titulo, T.sub);
+      ctx.caja('info', 'QUÉ ESTAMOS VIENDO', T.see);
+      if (o.captura) {
+        try { const cap = await o.captura(tab); if (cap && cap.canvas) { ctx.imagen(cap.canvas, cap.cortes); ctx.leyenda('Captura del panel CIMU: ' + T.titulo + '.'); } }
+        catch (e) { console.warn('PDF: no se pudo capturar la pestaña ' + tab, e); }
+      }
+      ctx.bloques(T.bloques);
+    }
+    if (o.textoIA) {
+      num++;
+      ctx.banner(String(num), 'Análisis detallado', 'Redactado con inteligencia artificial a partir de los mismos datos');
+      ctx.caja('warn', 'SOBRE ESTE TEXTO', 'Esta parte la redacta una inteligencia artificial (Gemini) con los mismos datos del sistema y las observaciones de campo. Es más técnica que el resto del informe.');
+      ia(ctx, o.textoIA);
+    }
+    ctx.banner('', 'Glosario', 'Las palabras del informe, explicadas');
+    ctx.tabla(['Palabra', 'Qué significa'], GLOSARIO, [0.28, 0.72]);
+    ctx.parrafo('Sobre este documento: es una versión explicada del informe del CIMU. Los textos explicativos se arman automáticamente con los datos del sistema y no agregan información nueva: traducen lo que muestran los números. El análisis detallado, cuando existe, lo redacta una inteligencia artificial.', { size: 8.5, color: C.gray });
+
+    ctx.indice(3);
+    ctx.pies('Documento generado automáticamente por el sistema CIMU · Informe de Seguridad Urbana · ' + o.fecha);
+    return ctx;
+  }
+
+  X.contBarrio = contBarrio; X.contCruce = contCruce; X.armar = armar; X.ia = ia;
+})(PdfX);
+/* === PDFX_END === */
+
+
   // --- EXPORTAR INFORME COMPLETO A PDF ---
   async function exportarInformePDF() {
     if (!_informeBarrioActual) return;
@@ -2172,6 +3253,7 @@
     btn.disabled = true;
 
     try {
+      try { if (!(window._cachePolicialInforme || {})[_informeBarrioActual]) await _prepararPolicialRobo(_informeBarrioActual); } catch (errPol) { console.warn('PDF: pestaña policial', errPol); }
       const datos = _calcularDatosBarrio(_informeBarrioActual);
 
       // --- Pedir el análisis redactado por IA (Gemini) al backend ---
@@ -2199,332 +3281,35 @@
       }
       btn.innerHTML = '⏳ Generando PDF...';
 
-      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'eventos', 'movilidad', 'recomendaciones'];
-      const titulos = {
-        resumen: 'Resumen General',
-        siniestros: 'Siniestros',
-        camaras: 'Cámaras y Cobertura',
-        escolares: 'Corredores Escolares',
-        eventos: 'Eventos',
-        movilidad: 'Colectivos y Aforos',
-        recomendaciones: 'Recomendaciones'
-      };
-
+      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'eventos', 'policial', 'movilidad', 'recomendaciones'];
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
       const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const criticidadInfo = _getCriticidadInfo(datos.criticidad);
-
-      // --- PORTADA ---
-      pdf.setFillColor(26, 35, 50);
-      pdf.rect(0, 0, pageW, 55, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(20);
-      pdf.text('Informe de Seguridad Urbana', margin, 22);
-      pdf.setFontSize(12);
-      pdf.text('CIMU · Centro de Inteligencia y Monitoreo Urbano', margin, 32);
-      pdf.setFontSize(15);
-      pdf.text(`Barrio: ${datos.nombre}`, margin, 46);
-
-      pdf.setTextColor(30, 30, 30);
-      pdf.setFontSize(11);
-      pdf.text(`Fecha del informe: ${fecha}`, margin, 68);
-      pdf.text(`Nivel de criticidad: ${criticidadInfo.label} (${datos.criticidad}/100)`, margin, 76);
-      pdf.text(`Siniestros totales: ${datos.siniestros}   |   Cobertura de cámaras: ${datos.cobertura}%`, margin, 84);
-      pdf.text(`Líneas de colectivo en el barrio: ${(datos.lineasColectivo||[]).length}   |   Vehículos aforados: ${(datos.aforoTotal||0).toLocaleString('es-AR')}`, margin, 92);
-
-      pdf.setFontSize(9);
-      pdf.setTextColor(148, 163, 184);
-      pdf.text('Documento generado automáticamente por el sistema CIMU · Análisis por barrio', margin, pageH - 10);
-
-      // --- PÁGINAS DE ANÁLISIS EJECUTIVO GENERADO POR IA (informe extenso: títulos, subtítulos, listas, tablas y citas) ---
-      if (textoIA) {
-        const maxWidth = pageW - margin * 2;
-        const lineHeight = 5;
-        let y = margin;
-
-        const dibujarHeaderIA = () => {
-          pdf.setFillColor(26, 35, 50);
-          pdf.rect(0, 0, pageW, 14, 'F');
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFontSize(12);
-          pdf.setFont(undefined, 'normal');
-          pdf.text(`${datos.nombre} · Análisis Ejecutivo (IA)`, margin, 9);
-          pdf.setTextColor(30, 30, 30);
-        };
-
-        const nuevaPaginaIA = () => {
-          pdf.addPage();
-          dibujarHeaderIA();
-          y = 24;
-        };
-
-        nuevaPaginaIA();
-
-        const asegurarEspacio = (necesario) => {
-          if (y + necesario > pageH - margin) nuevaPaginaIA();
-        };
-
-        const escribirParrafo = (texto, opts = {}) => {
-          const { fontSize = 10, font = 'normal', color = [30, 30, 30], indent = 0 } = opts;
-          pdf.setFontSize(fontSize);
-          pdf.setFont(undefined, font);
-          pdf.setTextColor(color[0], color[1], color[2]);
-          const wrapped = pdf.splitTextToSize(texto, maxWidth - indent);
-          wrapped.forEach(linea => {
-            asegurarEspacio(lineHeight);
-            // Reaplicar fuente/color en cada linea: si asegurarEspacio disparo un
-            // salto de pagina, dibujarHeaderIA() ya cambio el tamano de fuente a 12
-            // para el titulo del header, y sin esto la linea se dibujaria mas grande
-            // de lo que el ancho calculado por splitTextToSize permite, desbordando
-            // el margen derecho.
-            pdf.setFontSize(fontSize);
-            pdf.setFont(undefined, font);
-            pdf.setTextColor(color[0], color[1], color[2]);
-            pdf.text(linea, margin + indent, y);
-            y += lineHeight;
-          });
-        };
-
-        const dibujarTabla = (titulo, filas) => {
-          if (!filas.length) return;
-          asegurarEspacio(10);
-          pdf.setFontSize(9.5);
-          pdf.setFont(undefined, 'bold');
-          pdf.setTextColor(26, 35, 50);
-          pdf.text(titulo, margin, y);
-          y += 5;
-
-          const numCols = Math.max(1, filas[0].length);
-          const colWidth = maxWidth / numCols;
-
-          filas.forEach((fila, rowIdx) => {
-            pdf.setFontSize(8.5);
-            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
-            let alturaFila = 6;
-            const celdasWrapped = fila.map(celda => {
-              const w = pdf.splitTextToSize(String(celda || ''), colWidth - 4);
-              alturaFila = Math.max(alturaFila, w.length * 4 + 3);
-              return w;
-            });
-
-            if (y + alturaFila > pageH - margin) {
-              nuevaPaginaIA();
-              if (rowIdx !== 0) {
-                pdf.setFontSize(9.5);
-                pdf.setFont(undefined, 'bold');
-                pdf.setTextColor(26, 35, 50);
-                pdf.text(titulo + ' (cont.)', margin, y);
-                y += 5;
-              }
-            }
-
-            if (rowIdx === 0) {
-              pdf.setFillColor(240, 244, 248);
-              pdf.rect(margin, y - 4, maxWidth, alturaFila, 'F');
-            }
-            pdf.setDrawColor(210, 216, 224);
-            pdf.rect(margin, y - 4, maxWidth, alturaFila, 'S');
-
-            // Reaplicar fuente antes de dibujar el texto de las celdas: si esta fila
-            // disparo un salto de pagina arriba, el titulo "(cont.)" o el header dejaron
-            // la fuente en otro tamano/estilo distinto al 8.5 usado para calcular el
-            // ancho de las celdas, y el texto se desbordaria de su columna.
-            pdf.setFontSize(8.5);
-            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
-            celdasWrapped.forEach((lineasCelda, colIdx) => {
-              const xCol = margin + colIdx * colWidth + 2;
-              if (colIdx > 0) pdf.line(margin + colIdx * colWidth, y - 4, margin + colIdx * colWidth, y - 4 + alturaFila);
-              if (rowIdx === 0) pdf.setTextColor(26, 35, 50); else pdf.setTextColor(50, 50, 50);
-              lineasCelda.forEach((linea, li) => pdf.text(linea, xCol, y + li * 4));
-            });
-
-            y += alturaFila;
-          });
-          y += 5;
-        };
-
-        const dibujarCita = (texto) => {
-          pdf.setFontSize(10);
-          pdf.setFont(undefined, 'italic');
-          const wrapped = pdf.splitTextToSize(texto, maxWidth - 10);
-          const alturaBloque = wrapped.length * lineHeight + 6;
-          asegurarEspacio(alturaBloque);
-          pdf.setFillColor(255, 251, 235);
-          pdf.rect(margin, y - 4, maxWidth, alturaBloque, 'F');
-          pdf.setDrawColor(251, 191, 36);
-          pdf.setLineWidth(1);
-          pdf.line(margin, y - 4, margin, y - 4 + alturaBloque);
-          pdf.setLineWidth(0.2);
-          pdf.setTextColor(120, 90, 10);
-          wrapped.forEach((linea, i) => {
-            // Reaplicar fuente/color por linea: dibujarHeaderIA() (si hubo salto
-            // de pagina en asegurarEspacio, arriba) deja la fuente en tamano 12
-            // normal, y sin esto el texto de la cita se dibujaria mas grande y
-            // se desbordaria del margen.
-            pdf.setFontSize(10);
-            pdf.setFont(undefined, 'italic');
-            pdf.setTextColor(120, 90, 10);
-            pdf.text(linea, margin + 6, y + i * lineHeight);
-          });
-          y += alturaBloque + 3;
-          pdf.setFont(undefined, 'normal');
-        };
-
-        // --- Parser línea por línea del protocolo devuelto por la IA ---
-        const lineasIA = textoIA.split('\n');
-        let li = 0;
-        while (li < lineasIA.length) {
-          const trim = lineasIA[li].trim();
-
-          if (!trim) { li++; continue; }
-
-          if (trim.startsWith('TABLA:')) {
-            const titulo = trim.replace('TABLA:', '').trim();
-            li++;
-            const filas = [];
-            const MAX_FILAS_TABLA = 20; // freno de seguridad extra
-            while (
-              li < lineasIA.length &&
-              lineasIA[li].trim() !== 'FIN_TABLA' &&
-              lineasIA[li].trim() !== '' &&
-              !lineasIA[li].trim().startsWith('#') &&
-              !lineasIA[li].trim().startsWith('TABLA:') &&
-              !lineasIA[li].trim().startsWith('> ') &&
-              lineasIA[li].includes('|') && // si la línea no tiene "|", no es una fila real: cortamos la tabla acá
-              filas.length < MAX_FILAS_TABLA
-            ) {
-              filas.push(lineasIA[li].split('|').map(c => c.trim()).filter(c => c !== ''));
-              li++;
-            }
-            if (lineasIA[li] && lineasIA[li].trim() === 'FIN_TABLA') li++;
-            dibujarTabla(titulo, filas);
-            continue;
-          }
-
-          if (trim.startsWith('## ')) {
-            asegurarEspacio(10);
-            escribirParrafo(trim.replace(/^##\s*/, ''), { fontSize: 10.5, font: 'bold', color: [26, 35, 50] });
-            y += 2;
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('# ')) {
-            asegurarEspacio(14);
-            y += 2;
-            escribirParrafo(trim.replace(/^#\s*/, ''), { fontSize: 13, font: 'bold', color: [26, 35, 50] });
-            y += 3;
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('> ')) {
-            dibujarCita(trim.replace(/^>\s*/, ''));
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('- ')) {
-            const bullets = [];
-            while (li < lineasIA.length && lineasIA[li].trim().startsWith('- ')) {
-              bullets.push(lineasIA[li].trim().replace(/^-\s*/, ''));
-              li++;
-            }
-            bullets.forEach(b => {
-              pdf.setFontSize(10);
-              pdf.setFont(undefined, 'normal');
-              pdf.setTextColor(30, 30, 30);
-              const wrapped = pdf.splitTextToSize(b, maxWidth - 6);
-              wrapped.forEach((ln, idx) => {
-                asegurarEspacio(lineHeight);
-                // Reaplicar fuente/color por linea (ver nota en escribirParrafo):
-                // protege contra el salto de pagina disparado por asegurarEspacio.
-                pdf.setFontSize(10);
-                pdf.setFont(undefined, 'normal');
-                pdf.setTextColor(30, 30, 30);
-                pdf.text((idx === 0 ? '•  ' : '   ') + ln, margin, y);
-                y += lineHeight;
-              });
-            });
-            y += 1;
-            continue;
-          }
-
-          // párrafo normal: agrupar líneas consecutivas de texto plano
-          const parrafoLineas = [];
-          while (
-            li < lineasIA.length &&
-            lineasIA[li].trim() !== '' &&
-            !lineasIA[li].trim().startsWith('#') &&
-            !lineasIA[li].trim().startsWith('- ') &&
-            !lineasIA[li].trim().startsWith('> ') &&
-            !lineasIA[li].trim().startsWith('TABLA:')
-          ) {
-            parrafoLineas.push(lineasIA[li].trim());
-            li++;
-          }
-          escribirParrafo(parrafoLineas.join(' '));
-          y += 3;
-        }
-
-        pdf.setFontSize(8);
-        pdf.setTextColor(148, 163, 184);
-        pdf.text('Análisis generado con inteligencia artificial (Gemini) en base a datos reales del sistema.', margin, pageH - 6);
-      }
-
-      // --- UNA PÁGINA POR CADA TAB, CAPTURADA CON html2canvas ---
       const cont = document.getElementById('informe-barrio-content');
       const tabButtons = document.querySelectorAll('.informe-tab');
 
-      for (const tab of tabs) {
-        _informeTabActual = tab;
-        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-        cont.innerHTML = '';
-        _renderTab(datos, tab);
-        await new Promise(r => setTimeout(r, 200)); // dar tiempo a reflow/render
-
-        const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-        const imgW = pageW - margin * 2;
-        const imgH = canvas.height * imgW / canvas.width;
-
-        pdf.addPage();
-        pdf.setFillColor(26, 35, 50);
-        pdf.rect(0, 0, pageW, 14, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(12);
-        pdf.text(`${datos.nombre} · ${titulos[tab]}`, margin, 9);
-
-        let y = 18;
-        if (imgH <= pageH - y - margin) {
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
-        } else {
-          // La sección no entra en una sola página: la partimos en franjas
-          const pxPerMm = canvas.height / imgH;
-          let sY = 0, remaining = imgH, first = true;
-          while (remaining > 0.5) {
-            if (!first) { pdf.addPage(); y = margin; }
-            const sliceHmm = Math.min(pageH - y - margin, remaining);
-            const sliceHpx = Math.round(sliceHmm * pxPerMm);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = canvas.width;
-            sliceCanvas.height = sliceHpx;
-            sliceCanvas.getContext('2d').drawImage(canvas, 0, sY, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
-            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, y, imgW, sliceHmm);
-            sY += sliceHpx;
-            remaining -= sliceHmm;
-            first = false;
+      // PdfX arma el documento: portada, "en un minuto", índice, una sección explicada por cada pestaña
+      // (con captura completa y comprimida), análisis de IA, glosario y numeración de páginas.
+      try {
+        await PdfX.armar({
+          pdf, tipo: 'barrio', datos, per: _periodosFuentes(), fecha, textoIA, tabs,
+          pol: (window._cachePolicialInforme || {})[_informeBarrioActual],
+          captura: async (tab) => {
+            _informeTabActual = tab;
+            tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+            cont.innerHTML = '';
+            _renderTab(datos, tab);
+            await new Promise(r => setTimeout(r, 250)); // dar tiempo a reflow/render
+            cont.scrollTop = 0;
+            return PdfX.capturar(cont, 2);
           }
-        }
+        });
+      } finally {
+        // --- restaurar la vista original del modal (aunque falle algo) ---
+        _informeTabActual = 'resumen';
+        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === 'resumen'));
+        _renderTab(datos, 'resumen');
       }
-
-      // --- restaurar la vista original del modal ---
-      _informeTabActual = 'resumen';
-      tabButtons.forEach(t => t.classList.toggle('active', t.dataset.tab === 'resumen'));
-      _renderTab(datos, 'resumen');
 
       pdf.save(`Informe_${datos.nombre.replace(/\s+/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
     } catch (err) {
@@ -3027,310 +3812,34 @@
       }
       btn.innerHTML = '⏳ Generando PDF...';
 
-      // Solo Resumen y Movilidad se capturan como páginas de imagen: Campo no,
-      // porque sus notas y fotos ya quedaron incorporadas al texto de la IA
-      // (sección 5 del prompt) — mismo criterio que usa barrio, que tampoco
-      // captura su tab de observaciones de campo como página aparte.
+      // Se capturan Resumen, Colectivos y Eventos. "Campo" no: sus notas y fotos ya quedan
+      // incorporadas al texto de la IA (mismo criterio que usa barrio).
       const tabs = ['resumen', 'movilidad', 'eventos'];
-      const titulos = { resumen: 'Resumen General', movilidad: 'Colectivos y Aforos', eventos: 'Eventos' };
-
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
       const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-      // --- PORTADA ---
-      pdf.setFillColor(26, 35, 50);
-      pdf.rect(0, 0, pageW, 55, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(20);
-      pdf.text('Informe de Seguridad Urbana', margin, 22);
-      pdf.setFontSize(12);
-      pdf.text('CIMU · Centro de Inteligencia y Monitoreo Urbano', margin, 32);
-      pdf.setFontSize(15);
-      pdf.text(`Cruce: ${datos.nombre}`, margin, 46);
-
-      pdf.setTextColor(30, 30, 30);
-      pdf.setFontSize(11);
-      pdf.text(`Fecha del informe: ${fecha}`, margin, 68);
-      pdf.text(`Radio de análisis: ${datos.radioMetros} m`, margin, 76);
-      pdf.text(`Siniestros totales: ${datos.siniestros}   |   % con cámara cercana: ${datos.pctSiniConCam}%`, margin, 84);
-      pdf.text(`Líneas de colectivo cercanas: ${(datos.lineasColectivo||[]).length}   |   Vehículos aforados: ${(datos.aforoTotal||0).toLocaleString('es-AR')}`, margin, 92);
-
-      pdf.setFontSize(9);
-      pdf.setTextColor(148, 163, 184);
-      pdf.text('Documento generado automáticamente por el sistema CIMU · Análisis puntual por cruce', margin, pageH - 10);
-
-      // --- PÁGINAS DE ANÁLISIS EJECUTIVO GENERADO POR IA ---
-      if (textoIA) {
-        const maxWidth = pageW - margin * 2;
-        const lineHeight = 5;
-        let y = margin;
-
-        const dibujarHeaderIA = () => {
-          pdf.setFillColor(26, 35, 50);
-          pdf.rect(0, 0, pageW, 14, 'F');
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFontSize(12);
-          pdf.setFont(undefined, 'normal');
-          pdf.text(`${datos.nombre} · Análisis Ejecutivo (IA)`, margin, 9);
-          pdf.setTextColor(30, 30, 30);
-        };
-
-        const nuevaPaginaIA = () => {
-          pdf.addPage();
-          dibujarHeaderIA();
-          y = 24;
-        };
-
-        nuevaPaginaIA();
-
-        const asegurarEspacio = (necesario) => {
-          if (y + necesario > pageH - margin) nuevaPaginaIA();
-        };
-
-        const escribirParrafo = (texto, opts = {}) => {
-          const { fontSize = 10, font = 'normal', color = [30, 30, 30], indent = 0 } = opts;
-          pdf.setFontSize(fontSize);
-          pdf.setFont(undefined, font);
-          pdf.setTextColor(color[0], color[1], color[2]);
-          const wrapped = pdf.splitTextToSize(texto, maxWidth - indent);
-          wrapped.forEach(linea => {
-            asegurarEspacio(lineHeight);
-            pdf.setFontSize(fontSize);
-            pdf.setFont(undefined, font);
-            pdf.setTextColor(color[0], color[1], color[2]);
-            pdf.text(linea, margin + indent, y);
-            y += lineHeight;
-          });
-        };
-
-        const dibujarTabla = (titulo, filas) => {
-          if (!filas.length) return;
-          asegurarEspacio(10);
-          pdf.setFontSize(9.5);
-          pdf.setFont(undefined, 'bold');
-          pdf.setTextColor(26, 35, 50);
-          pdf.text(titulo, margin, y);
-          y += 5;
-
-          const numCols = Math.max(1, filas[0].length);
-          const colWidth = maxWidth / numCols;
-
-          filas.forEach((fila, rowIdx) => {
-            pdf.setFontSize(8.5);
-            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
-            let alturaFila = 6;
-            const celdasWrapped = fila.map(celda => {
-              const w = pdf.splitTextToSize(String(celda || ''), colWidth - 4);
-              alturaFila = Math.max(alturaFila, w.length * 4 + 3);
-              return w;
-            });
-
-            if (y + alturaFila > pageH - margin) {
-              nuevaPaginaIA();
-              if (rowIdx !== 0) {
-                pdf.setFontSize(9.5);
-                pdf.setFont(undefined, 'bold');
-                pdf.setTextColor(26, 35, 50);
-                pdf.text(titulo + ' (cont.)', margin, y);
-                y += 5;
-              }
-            }
-
-            if (rowIdx === 0) {
-              pdf.setFillColor(240, 244, 248);
-              pdf.rect(margin, y - 4, maxWidth, alturaFila, 'F');
-            }
-            pdf.setDrawColor(210, 216, 224);
-            pdf.rect(margin, y - 4, maxWidth, alturaFila, 'S');
-
-            pdf.setFontSize(8.5);
-            pdf.setFont(undefined, rowIdx === 0 ? 'bold' : 'normal');
-            celdasWrapped.forEach((lineasCelda, colIdx) => {
-              const xCol = margin + colIdx * colWidth + 2;
-              if (colIdx > 0) pdf.line(margin + colIdx * colWidth, y - 4, margin + colIdx * colWidth, y - 4 + alturaFila);
-              if (rowIdx === 0) pdf.setTextColor(26, 35, 50); else pdf.setTextColor(50, 50, 50);
-              lineasCelda.forEach((linea, li) => pdf.text(linea, xCol, y + li * 4));
-            });
-
-            y += alturaFila;
-          });
-          y += 5;
-        };
-
-        const dibujarCita = (texto) => {
-          pdf.setFontSize(10);
-          pdf.setFont(undefined, 'italic');
-          const wrapped = pdf.splitTextToSize(texto, maxWidth - 10);
-          const alturaBloque = wrapped.length * lineHeight + 6;
-          asegurarEspacio(alturaBloque);
-          pdf.setFillColor(255, 251, 235);
-          pdf.rect(margin, y - 4, maxWidth, alturaBloque, 'F');
-          pdf.setDrawColor(251, 191, 36);
-          pdf.setLineWidth(1);
-          pdf.line(margin, y - 4, margin, y - 4 + alturaBloque);
-          pdf.setLineWidth(0.2);
-          pdf.setTextColor(120, 90, 10);
-          wrapped.forEach((linea, i) => {
-            pdf.setFontSize(10);
-            pdf.setFont(undefined, 'italic');
-            pdf.setTextColor(120, 90, 10);
-            pdf.text(linea, margin + 6, y + i * lineHeight);
-          });
-          y += alturaBloque + 3;
-          pdf.setFont(undefined, 'normal');
-        };
-
-        // --- Parser línea por línea del protocolo devuelto por la IA ---
-        const lineasIA = textoIA.split('\n');
-        let li = 0;
-        while (li < lineasIA.length) {
-          const trim = lineasIA[li].trim();
-
-          if (!trim) { li++; continue; }
-
-          if (trim.startsWith('TABLA:')) {
-            const titulo = trim.replace('TABLA:', '').trim();
-            li++;
-            const filas = [];
-            const MAX_FILAS_TABLA = 20;
-            while (
-              li < lineasIA.length &&
-              lineasIA[li].trim() !== 'FIN_TABLA' &&
-              lineasIA[li].trim() !== '' &&
-              !lineasIA[li].trim().startsWith('#') &&
-              !lineasIA[li].trim().startsWith('TABLA:') &&
-              !lineasIA[li].trim().startsWith('> ') &&
-              lineasIA[li].includes('|') &&
-              filas.length < MAX_FILAS_TABLA
-            ) {
-              filas.push(lineasIA[li].split('|').map(c => c.trim()).filter(c => c !== ''));
-              li++;
-            }
-            if (lineasIA[li] && lineasIA[li].trim() === 'FIN_TABLA') li++;
-            dibujarTabla(titulo, filas);
-            continue;
-          }
-
-          if (trim.startsWith('## ')) {
-            asegurarEspacio(10);
-            escribirParrafo(trim.replace(/^##\s*/, ''), { fontSize: 10.5, font: 'bold', color: [26, 35, 50] });
-            y += 2;
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('# ')) {
-            asegurarEspacio(14);
-            y += 2;
-            escribirParrafo(trim.replace(/^#\s*/, ''), { fontSize: 13, font: 'bold', color: [26, 35, 50] });
-            y += 3;
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('> ')) {
-            dibujarCita(trim.replace(/^>\s*/, ''));
-            li++;
-            continue;
-          }
-
-          if (trim.startsWith('- ')) {
-            const bullets = [];
-            while (li < lineasIA.length && lineasIA[li].trim().startsWith('- ')) {
-              bullets.push(lineasIA[li].trim().replace(/^-\s*/, ''));
-              li++;
-            }
-            bullets.forEach(b => {
-              pdf.setFontSize(10);
-              pdf.setFont(undefined, 'normal');
-              pdf.setTextColor(30, 30, 30);
-              const wrapped = pdf.splitTextToSize(b, maxWidth - 6);
-              wrapped.forEach((ln, idx) => {
-                asegurarEspacio(lineHeight);
-                pdf.setFontSize(10);
-                pdf.setFont(undefined, 'normal');
-                pdf.setTextColor(30, 30, 30);
-                pdf.text((idx === 0 ? '•  ' : '   ') + ln, margin, y);
-                y += lineHeight;
-              });
-            });
-            y += 1;
-            continue;
-          }
-
-          const parrafoLineas = [];
-          while (
-            li < lineasIA.length &&
-            lineasIA[li].trim() !== '' &&
-            !lineasIA[li].trim().startsWith('#') &&
-            !lineasIA[li].trim().startsWith('- ') &&
-            !lineasIA[li].trim().startsWith('> ') &&
-            !lineasIA[li].trim().startsWith('TABLA:')
-          ) {
-            parrafoLineas.push(lineasIA[li].trim());
-            li++;
-          }
-          escribirParrafo(parrafoLineas.join(' '));
-          y += 3;
-        }
-
-        pdf.setFontSize(8);
-        pdf.setTextColor(148, 163, 184);
-        pdf.text('Análisis generado con inteligencia artificial (Gemini) en base a datos reales del sistema.', margin, pageH - 6);
-      }
-
-      // --- UNA PÁGINA POR CADA TAB (Resumen y Movilidad), CAPTURADA CON html2canvas ---
       const cont = document.getElementById('informe-cruce-content');
       const tabButtons = document.querySelectorAll('#informe-cruce-modal .informe-tab');
 
-      for (const tab of tabs) {
-        _informeCruceTabActual = tab;
-        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === tab));
-        cont.innerHTML = '';
-        _renderCruceTab(datos, tab);
-        await new Promise(r => setTimeout(r, 200));
-
-        const canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-        const imgW = pageW - margin * 2;
-        const imgH = canvas.height * imgW / canvas.width;
-
-        pdf.addPage();
-        pdf.setFillColor(26, 35, 50);
-        pdf.rect(0, 0, pageW, 14, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(12);
-        pdf.text(`${datos.nombre} · ${titulos[tab]}`, margin, 9);
-
-        let y = 18;
-        if (imgH <= pageH - y - margin) {
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
-        } else {
-          const pxPerMm = canvas.height / imgH;
-          let sY = 0, remaining = imgH, first = true;
-          while (remaining > 0.5) {
-            if (!first) { pdf.addPage(); y = margin; }
-            const sliceHmm = Math.min(pageH - y - margin, remaining);
-            const sliceHpx = Math.round(sliceHmm * pxPerMm);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = canvas.width;
-            sliceCanvas.height = sliceHpx;
-            sliceCanvas.getContext('2d').drawImage(canvas, 0, sY, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
-            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, y, imgW, sliceHmm);
-            sY += sliceHpx;
-            remaining -= sliceHmm;
-            first = false;
+      try {
+        await PdfX.armar({
+          pdf, tipo: 'cruce', datos, per: _periodosFuentes(), fecha, textoIA, tabs,
+          captura: async (tab) => {
+            _informeCruceTabActual = tab;
+            tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === tab));
+            cont.innerHTML = '';
+            _renderCruceTab(datos, tab);
+            await new Promise(r => setTimeout(r, 250));
+            cont.scrollTop = 0;
+            return PdfX.capturar(cont, 2);
           }
-        }
+        });
+      } finally {
+        // --- restaurar la vista original del modal (aunque falle algo) ---
+        _informeCruceTabActual = 'resumen';
+        tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === 'resumen'));
+        _renderCruceTab(datos, 'resumen');
       }
-
-      // --- restaurar la vista original del modal ---
-      _informeCruceTabActual = 'resumen';
-      tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === 'resumen'));
-      _renderCruceTab(datos, 'resumen');
 
       pdf.save(`Informe_Cruce_${datos.nombre.replace(/\s+/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
     } catch (err) {
