@@ -912,7 +912,7 @@
 
   <script src="js/eventos-operadores.js?v=202602201400"></script>
   <script src="script.js?v=20261017007"></script>
-  <script src="js/eventos-layer.js?v=5"></script>
+  <script src="js/eventos-layer.js?v=6"></script>
   <script src="js/sidebar-cimu.js?v=1"></script>
   <script src="js/panel-derecho-acordeon.js?v=1"></script>
   <script src="js/tour-fix-cimu.js?v=1"></script>
@@ -3183,6 +3183,67 @@ const PdfX = (function () {
     }
   }
 
+  // ======================================================================== OBSERVACIONES DE CAMPO
+  // Carga una foto guardada en Firebase Storage y la devuelve como canvas reducido (o null si el navegador
+  // no deja leerla: en ese caso hace falta habilitar CORS en el bucket de Storage).
+  function cargarFotoCampo(url) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        try {
+          const maxW = 1200, k = Math.min(1, maxW / im.naturalWidth);
+          const cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(im.naturalWidth * k)); cv.height = Math.max(1, Math.round(im.naturalHeight * k));
+          const c2 = cv.getContext('2d'); c2.fillStyle = '#ffffff'; c2.fillRect(0, 0, cv.width, cv.height); c2.drawImage(im, 0, 0, cv.width, cv.height);
+          cv.toDataURL('image/jpeg', 0.8); // si el canvas quedo "contaminado" (sin CORS) esto tira error
+          resolve(cv);
+        } catch (e) { console.warn('PDF: foto de campo no legible (CORS)', e); resolve(null); }
+      };
+      im.onerror = () => { console.warn('PDF: no se pudo cargar una foto de campo', url); resolve(null); };
+      im.src = url;
+    });
+  }
+
+  // Sección del PDF con lo que se cargó en la pestaña "Observaciones de campo": notas escritas + fotos.
+  async function seccionCampo(ctx, num, campo, esB) {
+    const lugar = esB ? 'barrio' : 'cruce';
+    const texto = String((campo && campo.texto) || '').trim();
+    const urls = ((campo && campo.imagenesUrls) || []).filter(Boolean);
+    ctx.banner(String(num), 'Observaciones de campo', 'Relevamiento manual hecho en el lugar');
+    ctx.caja('info', 'QUÉ ESTAMOS VIENDO', `Esta parte reproduce las notas y las fotos que una persona del equipo cargó después de recorrer el ${lugar}. No salen de los datos del sistema: son observaciones hechas en el lugar.`);
+    if (!texto && !urls.length) {
+      ctx.caja('warn', 'SIN RELEVAMIENTO CARGADO', `Todavía no se cargaron notas ni fotos de campo para este ${lugar}.`);
+      return;
+    }
+    if (texto) {
+      ctx.h2('Notas del relevamiento');
+      texto.split(/\n+/).map((l) => l.trim()).filter(Boolean).forEach((l) => ctx.parrafo(l, { despues: 3 }));
+    }
+    if (urls.length) {
+      ctx.h2('Fotos del lugar');
+      const fotos = [];
+      for (let i = 0; i < urls.length; i++) { const cv = await cargarFotoCampo(urls[i]); if (cv) fotos.push({ cv, n: i + 1 }); }
+      const gap = 4, cw = (ctx.W - gap) / 2, maxH = 78;
+      for (let i = 0; i < fotos.length; i += 2) {
+        const fila = fotos.slice(i, i + 2);
+        const dims = fila.map((f) => { let w = cw, h = cw * f.cv.height / f.cv.width; if (h > maxH) { h = maxH; w = maxH * f.cv.width / f.cv.height; } return { w, h }; });
+        const hFila = Math.max.apply(null, dims.map((d) => d.h));
+        ctx.espacio(hFila + 9);
+        const y = ctx.st.y;
+        fila.forEach((f, k) => {
+          const x0 = ctx.M + k * (cw + gap);
+          ctx.pdf.addImage(f.cv.toDataURL('image/jpeg', 0.8), 'JPEG', x0 + (cw - dims[k].w) / 2, y, dims[k].w, dims[k].h);
+          ctx.fuente(8, 'italic', C.gray); ctx.pdf.text('Foto ' + f.n, x0, y + hFila + 4);
+        });
+        ctx.st.y = y + hFila + 9;
+      }
+      if (fotos.length < urls.length) {
+        ctx.caja('warn', 'OJO CON ESTO', `${urls.length - fotos.length} de ${urls.length} foto(s) no se pudieron incluir en el PDF porque el navegador no pudo leerlas desde el almacenamiento. Las notas escritas sí están completas.`);
+      }
+    }
+  }
+
   // ======================================================================== ARMADO
   async function armar(o) {
     const pdf = o.pdf, d = o.datos, esB = o.tipo === 'barrio', per = o.per || {};
@@ -3214,6 +3275,7 @@ const PdfX = (function () {
     // --- secciones ---
     let num = 0;
     for (const tab of o.tabs) {
+      if (tab === 'campo') { num++; await seccionCampo(ctx, num, o.campo, esB); continue; }
       const T = cont.tabs[tab]; if (!T) continue;
       num++;
       ctx.banner(String(num), T.titulo, T.sub);
@@ -3258,9 +3320,11 @@ const PdfX = (function () {
 
       // --- Pedir el análisis redactado por IA (Gemini) al backend ---
       let textoIA = null;
+      let campoPdf = { texto: '', imagenesUrls: [] };
       btn.innerHTML = '⏳ Generando análisis con IA...';
       try {
         const observacionesCampo = await _obtenerObservacionesCampo(_informeBarrioActual);
+        campoPdf = observacionesCampo;
         const respIA = await fetch('https://us-central1-seguridad-mdp-v2.cloudfunctions.net/generarInformeIA', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3281,7 +3345,7 @@ const PdfX = (function () {
       }
       btn.innerHTML = '⏳ Generando PDF...';
 
-      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'eventos', 'policial', 'movilidad', 'recomendaciones'];
+      const tabs = ['resumen', 'siniestros', 'camaras', 'escolares', 'eventos', 'policial', 'movilidad', 'recomendaciones', 'campo'];
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -3292,7 +3356,7 @@ const PdfX = (function () {
       // (con captura completa y comprimida), análisis de IA, glosario y numeración de páginas.
       try {
         await PdfX.armar({
-          pdf, tipo: 'barrio', datos, per: _periodosFuentes(), fecha, textoIA, tabs,
+          pdf, tipo: 'barrio', datos, per: _periodosFuentes(), fecha, textoIA, tabs, campo: campoPdf,
           pol: (window._cachePolicialInforme || {})[_informeBarrioActual],
           captura: async (tab) => {
             _informeTabActual = tab;
@@ -3789,9 +3853,11 @@ const PdfX = (function () {
 
       // --- Pedir el análisis redactado por IA (Gemini) al backend ---
       let textoIA = null;
+      let campoPdf = { texto: '', imagenesUrls: [] };
       btn.innerHTML = '⏳ Generando análisis con IA...';
       try {
         const observacionesCampo = await _obtenerObservacionesCampoCruce(datos.nombre, datos.lat, datos.lng);
+        campoPdf = observacionesCampo;
         const respIA = await fetch('https://us-central1-seguridad-mdp-v2.cloudfunctions.net/generarInformeCruceIA', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3812,9 +3878,8 @@ const PdfX = (function () {
       }
       btn.innerHTML = '⏳ Generando PDF...';
 
-      // Se capturan Resumen, Colectivos y Eventos. "Campo" no: sus notas y fotos ya quedan
-      // incorporadas al texto de la IA (mismo criterio que usa barrio).
-      const tabs = ['resumen', 'movilidad', 'eventos'];
+      // Resumen, Colectivos y Eventos se capturan del panel; "campo" se arma aparte con las notas y fotos guardadas.
+      const tabs = ['resumen', 'movilidad', 'eventos', 'campo'];
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -3823,7 +3888,7 @@ const PdfX = (function () {
 
       try {
         await PdfX.armar({
-          pdf, tipo: 'cruce', datos, per: _periodosFuentes(), fecha, textoIA, tabs,
+          pdf, tipo: 'cruce', datos, per: _periodosFuentes(), fecha, textoIA, tabs, campo: campoPdf,
           captura: async (tab) => {
             _informeCruceTabActual = tab;
             tabButtons.forEach(t => t.classList.toggle('active', t.dataset.cruceTab === tab));

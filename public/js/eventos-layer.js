@@ -28,6 +28,7 @@
   var calor = null;            // heatLayer
   var cargando = false;
   var etiquetas = {};          // tipo -> <span> con el texto y la cantidad
+  var firmaAplicada = null;    // seleccion de barrios con la que se calculo _enBarrio
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -36,6 +37,45 @@
     });
   }
   function colorDe(tipo) { return COLORES[tipo] || COLOR_OTRO; }
+
+  /* ---------- filtro por barrio ----------
+     Usa el mismo selector ("Filtrar por Barrio") y las mismas funciones de script.js
+     que usa Robo Automotor: getSelectedBarrioFeatureCombinada() e isLatLngInMultiPolygon(). */
+  function barriosSeleccionados() {
+    var sel = $('barrio-filter');
+    if (!sel) return [];
+    return Array.prototype.slice.call(sel.selectedOptions || [])
+      .map(function (o) { return o.value; })
+      .filter(function (v) { return v && v !== 'all'; });
+  }
+  function firmaBarrio() { return barriosSeleccionados().slice().sort().join('|'); }
+
+  /* Marca cada evento con _enBarrio (true/false) segun la seleccion actual.
+     Solo se recalcula cuando cambia la seleccion de barrios (no con cada filtro de año/mes/tipo). */
+  function aplicarBarrio() {
+    if (!datos) return;
+    var firma = firmaBarrio();
+    if (firma === firmaAplicada) return;
+    var f = null;
+    if (firma && typeof getSelectedBarrioFeatureCombinada === 'function' && typeof isLatLngInMultiPolygon === 'function') {
+      f = getSelectedBarrioFeatureCombinada();
+    }
+    if (!f || !f.geometry) {                // sin barrio elegido (o aun sin cargar los limites): se muestran todos
+      datos.forEach(function (d) { d._enBarrio = true; });
+      firmaAplicada = firma ? null : firma; // si habia seleccion pero no hay limites, se reintenta luego
+      return;
+    }
+    var coords = f.geometry.coordinates;
+    datos.forEach(function (d) { d._enBarrio = isLatLngInMultiPolygon(L.latLng(d._lat, d._lon), coords); });
+    firmaAplicada = firma;
+  }
+
+  /* Vuelve a dibujar solo si la seleccion de barrios cambio y la capa esta visible */
+  function sincronizarBarrio() {
+    var mapa = window.mymap;
+    if (!datos || !capa || !mapa || !mapa.hasLayer(capa)) return;
+    if (firmaBarrio() !== firmaAplicada) refrescar();
+  }
 
   /* ---------- CSV (separador ;, soporta comillas) ---------- */
   function parseCSV(texto) {
@@ -76,9 +116,10 @@
         var p = (o['Longitud y Latitud'] || '').split(',');
         var lon = parseFloat(p[0]), lat = parseFloat(p[1]);
         if (p.length !== 2 || isNaN(lat) || isNaN(lon)) return;
-        o._lat = lat; o._lon = lon;
+        o._lat = lat; o._lon = lon; o._enBarrio = true;
         datos.push(o);
       });
+      firmaAplicada = null;
       armarFiltros();
     }).catch(function (e) {
       cargando = false;
@@ -152,7 +193,7 @@
   function actualizarConteos() {
     var anio = $('evtlayer-anio').value, mes = $('evtlayer-mes').value, c = {};
     datos.forEach(function (d) {
-      if ((anio === 'all' || d['año'] === anio) && (mes === 'all' || d['mes'] === mes)) {
+      if (d._enBarrio !== false && (anio === 'all' || d['año'] === anio) && (mes === 'all' || d['mes'] === mes)) {
         var t = d['Tipo de Evento']; c[t] = (c[t] || 0) + 1;
       }
     });
@@ -166,7 +207,8 @@
   function filtrados() {
     var anio = $('evtlayer-anio').value, mes = $('evtlayer-mes').value;
     return datos.filter(function (d) {
-      return tiposActivos.has(d['Tipo de Evento']) &&
+      return d._enBarrio !== false &&
+             tiposActivos.has(d['Tipo de Evento']) &&
              (anio === 'all' || d['año'] === anio) &&
              (mes === 'all' || d['mes'] === mes);
     });
@@ -190,6 +232,7 @@
 
   function refrescar() {
     if (!datos || !capa) return;
+    aplicarBarrio();
     actualizarConteos();
     var lista = filtrados();
     capa.clearLayers();
@@ -203,7 +246,9 @@
     });
     capa.addLayers(marcadores);
     if (calor) calor.setLatLngs(lista.map(function (d) { return [d._lat, d._lon]; }));
-    $('evtlayer-info').textContent = lista.length + ' eventos en el mapa';
+    var nb = barriosSeleccionados();
+    $('evtlayer-info').textContent = lista.length + (lista.length === 1 ? ' evento' : ' eventos') + ' en el mapa' +
+      (nb.length ? ' (' + (nb.length <= 2 ? nb.join(' y ') : nb.length + ' barrios') + ')' : '');
   }
 
   /* ---------- activar / desactivar ---------- */
@@ -239,6 +284,20 @@
       if (!mapa || !calor) return;
       if (e.target.checked) mapa.addLayer(calor); else mapa.removeLayer(calor);
     });
+    // Filtro por barrio: se escucha el mismo selector que usa Robo Automotor.
+    var selBarrio = $('barrio-filter');
+    if (selBarrio) selBarrio.addEventListener('change', sincronizarBarrio);
+    // Los botones de "limpiar filtros" de script.js cambian el barrio sin disparar 'change';
+    // como despues siempre vuelven a aplicar el filtro de Robo Automotor, nos enganchamos ahi.
+    if (typeof window.applyRoboAutomotorFilters === 'function' && !window.applyRoboAutomotorFilters._evtEnganchado) {
+      var original = window.applyRoboAutomotorFilters;
+      window.applyRoboAutomotorFilters = function () {
+        var r = original.apply(this, arguments);
+        try { sincronizarBarrio(); } catch (e) { console.warn('Eventos: no se pudo sincronizar el barrio', e); }
+        return r;
+      };
+      window.applyRoboAutomotorFilters._evtEnganchado = true;
+    }
     $('evtlayer-todos').addEventListener('click', function () { marcarTipos(true); });
     $('evtlayer-ninguno').addEventListener('click', function () { marcarTipos(false); });
   }
@@ -255,6 +314,7 @@
   /* API para otras partes del mapa (rutas de patrullaje, consultas) */
   window.EventosLayer = {
     cargar: function () { return cargarDatos(); },
+    sincronizarBarrio: sincronizarBarrio,
     datos: function () { return datos; }
   };
 
