@@ -13167,34 +13167,29 @@ if (!patrullasMarkers[movil]) {
     `); // Remover .on("click") directo del marcador
 
 
-  // 🔐 Bind seguro del botón SOLO al abrir el popup
+  // 🔐 Bind seguro de los botones: UN solo clic delegado sobre el contenedor del popup.
+  // El contenido del popup se vuelve a dibujar con cada actualización de la patrulla (setContent),
+  // y los botones nuevos perdían el clic si se enganchaba cada botón por separado.
   patrullasMarkers[movil].on("popupopen", e => {
     const popupEl = e.popup.getElement();
-    if (!popupEl) return;
+    if (!popupEl || popupEl.dataset.accionesBound) return; // 🔒 evitar duplicar eventos
+    popupEl.dataset.accionesBound = "true";
 
-    // Usar la clase general para ambos botones
-    const btns = popupEl.querySelectorAll(".btn-popup-accion");
-    if (!btns.length) return;
+    L.DomEvent.on(popupEl, "click", ev => {
+      const btn = ev.target.closest ? ev.target.closest(".btn-popup-accion") : null;
+      if (!btn) return;
+      L.DomEvent.stop(ev); // 🔥 corta eventos Leaflet
+      const action = btn.dataset.action;
+      const targetMovil = btn.dataset.movil;
 
-    btns.forEach(btn => {
-      // 🔒 evitar duplicar eventos
-      if (btn.dataset.bound) return;
-      btn.dataset.bound = "true";
-
-      L.DomEvent.on(btn, "click", ev => {
-        L.DomEvent.stop(ev); // 🔥 corta eventos Leaflet
-        const action = ev.target.dataset.action;
-        const targetMovil = ev.target.dataset.movil;
-    
-        if (action === "ver-video") {
-          visorCerradoManual = false; // ✅ el usuario QUIERE ver la cámara
-          // (chat y video pueden estar abiertos a la vez: ya no se cierra el chat)
-          verCamaraPatrulla(targetMovil);
-        } else if (action === "ir-al-chat") {
-          // (chat y video pueden estar abiertos a la vez: ya no se cierra el visor)
-          abrirChatBase(targetMovil);
-        }
-      });
+      if (action === "ver-video") {
+        visorCerradoManual = false; // ✅ el usuario QUIERE ver la cámara
+        // (chat y video pueden estar abiertos a la vez: ya no se cierra el chat)
+        verCamaraPatrulla(targetMovil);
+      } else if (action === "ir-al-chat") {
+        // (chat y video pueden estar abiertos a la vez: ya no se cierra el visor)
+        abrirChatBase(targetMovil);
+      }
     });
   });
 

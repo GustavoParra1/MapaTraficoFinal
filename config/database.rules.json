@@ -13,8 +13,8 @@
     },
 
     "webrtc": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null",
+      ".write": "auth != null"
     },
 
     "usuarios": {
@@ -41,9 +41,8 @@
     },
 
     "operador-tarjetas": {
-      ".read": true,
+      ".read": "auth != null",
       "$eventId": {
-        ".read": true,
         ".write": "auth != null"
       }
     },
