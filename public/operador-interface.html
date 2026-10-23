@@ -904,7 +904,7 @@ auth.onAuthStateChanged((user) => {
         console.log('✅ Evento guardado en Realtime DB (operador-tarjetas)');
         
         // También enviar al chat para que admin lo vea (usar layer en lugar de uid)
-        const chatDocPath = `chats-com/${operatorLayer}`;
+        const chatDocPath = `chats-com/capa-${operatorLayer}`;
         await db.doc(chatDocPath).collection('messages').add({
           ...eventData,
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
