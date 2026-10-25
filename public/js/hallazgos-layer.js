@@ -369,7 +369,7 @@
     return '' +
       '<h3>Qué mostraron los datos (abril 2025 a agosto 2026)</h3>' +
       '<ul>' +
-        '<li><b>Hallazgos:</b> repartidos en unas 370 zonas distintas, sin una concentración clara. Calles con más casos: Juan B. Justo (19), Alvarado (15) y Pedro Luro (13), con números chicos.</li>' +
+        '<li><b>Hallazgos:</b> los 470 hallazgos están repartidos en unas 370 zonas (cuadrados de 250 m de lado, unas 2 o 3 cuadras): en 297 de esas zonas hubo un solo caso y el máximo en una zona es 8. No hay una concentración clara. Calles con más casos: Juan B. Justo (19), Alvarado (15) y Pedro Luro (13), con números chicos.</li>' +
         '<li><b>LPR:</b> 107 recuperos en solo 34 puntos, que son donde hay cámaras. Esquinas más repetidas: Juan B. Justo y Güemes (9), Alió y Beruti (8), Mario Bravo y José Hernández (6) y Polonia y De la Plaza (6). El 53% de las lecturas ocurre de 12 a 18 h.</li>' +
         '<li><b>Robos:</b> el pico de avisos es de 19 a 22 h. El 40% se avisa entre las 18 y las 24 h (3.513 registros).</li>' +
         '<li><b>Zonas distintas:</b> donde se roba no es donde aparecen los autos. De las 30 zonas más cargadas de cada lado, solo 3 coinciden.</li>' +
