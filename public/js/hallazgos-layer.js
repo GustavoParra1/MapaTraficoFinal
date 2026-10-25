@@ -264,6 +264,7 @@
       try { calor.setLatLngs(lista.map(function (d) { return [d._lat, d._lon]; })); }
       catch (e) { console.error('Hallazgos: mapa de calor', e); }
     }
+    actualizarCalientes();
   }
 
   /* ---------- activar / desactivar ---------- */
@@ -287,6 +288,9 @@
     if (mapa && calor && mapa.hasLayer(calor)) mapa.removeLayer(calor);
     var h = $('hallayer-calor'); if (h) h.checked = false;
     var cz = $('hallayer-zona'); if (cz && cz.checked) { cz.checked = false; activarZona(false); }
+    limpiarCalientes(); var cc = $('hallayer-calientes'); if (cc) cc.checked = false;
+    var oc = $('hallayer-cal-opc'); if (oc) oc.style.display = 'none';
+    if (window.mymap && zonaCirculo) { window.mymap.removeLayer(zonaCirculo); zonaCirculo = null; }
     $('hallayer-filtros').style.display = 'none';
     cerrarFlotante();
   }
@@ -304,6 +308,10 @@
         '<select id="hallayer-mes" style="width:100%;"><option value="all">Todos los Meses</option></select>' +
       '</div>' +
       '<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="hallayer-calor"> Mapa de calor</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-calientes"> Zonas con más hallazgos</label>' +
+      '<div id="hallayer-cal-opc" style="display:none;margin:4px 0 0 24px;">Tamaño de zona: ' +
+        '<select id="hallayer-cal-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select>' +
+        '<div id="hallayer-cal-lista" style="font-size:12px;max-height:230px;overflow-y:auto;"></div></div>' +
       '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-zona"> Analizar una zona (clic en el mapa)</label>' +
       '<div id="hallayer-zona-opc" style="display:none;margin:4px 0 0 24px;">Radio: ' +
         '<select id="hallayer-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select></div>' +
@@ -364,11 +372,11 @@
     return r;
   }
 
-  function mostrarZona(ll) {
+  function mostrarZona(ll, radioForzado) {
     var mapa = window.mymap;
     if (!mapa || !datos) return;
     zonaPunto = ll;
-    var radio = parseInt($('hallayer-radio').value, 10) || 500;
+    var radio = radioForzado || parseInt($('hallayer-radio').value, 10) || 500;
     var r = contarZona(ll, radio);
     var totalH = r.H + r.L + r.S;
     if (zonaCirculo) mapa.removeLayer(zonaCirculo);
@@ -408,6 +416,124 @@
   }
 
   /* ---------- ventana "Cómo interpretar este mapa" ---------- */
+  /* ---------- zonas con mas hallazgos: calor fuerte + ranking (sin hacer clic punto por punto) ---------- */
+  var calCapa = null, calCalor = null, calZonas = [];
+  var CAL_MIN = 3, CAL_MAX_ZONAS = 10;
+
+  function metrosEntre(lat1, lon1, lat2, lon2) {
+    var k = 111320;
+    var dx = (lon2 - lon1) * k * Math.cos(((lat1 + lat2) / 2) * Math.PI / 180);
+    var dy = (lat2 - lat1) * k;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function direccionTipica(pts) {
+    var m = {}, mejor = '', n = 0;
+    pts.forEach(function (d) {
+      var k = String(d['Direccion 0'] || '').trim();
+      if (!k) return;
+      m[k] = (m[k] || 0) + 1;
+      if (m[k] > n) { n = m[k]; mejor = k; }
+    });
+    return mejor;
+  }
+
+  /* Busca las zonas (circulos de "radio" metros) con mas hallazgos, sin que se superpongan entre si */
+  function calcularZonasCalientes(lista, radio) {
+    var cands = lista.map(function (c) {
+      var dentro = lista.filter(function (d) { return metrosEntre(c._lat, c._lon, d._lat, d._lon) <= radio; });
+      var la = 0, lo = 0;
+      dentro.forEach(function (d) { la += d._lat; lo += d._lon; });
+      var lat = la / dentro.length, lon = lo / dentro.length;       // se centra la zona en el medio de sus casos
+      var n = lista.filter(function (d) { return metrosEntre(lat, lon, d._lat, d._lon) <= radio; }).length;
+      return { lat: lat, lon: lon, n: n };
+    });
+    cands.sort(function (a, b) { return b.n - a.n; });
+    var elegidas = [];
+    for (var i = 0; i < cands.length && elegidas.length < CAL_MAX_ZONAS; i++) {
+      var c = cands[i];
+      if (c.n < CAL_MIN) break;
+      var libre = elegidas.every(function (z) { return metrosEntre(z.lat, z.lon, c.lat, c.lon) >= radio * 2; });
+      if (libre) elegidas.push(c);
+    }
+    elegidas.forEach(function (z) {
+      var pts = lista.filter(function (d) { return metrosEntre(z.lat, z.lon, d._lat, d._lon) <= radio; });
+      z.tipos = { H: 0, L: 0, S: 0 };
+      pts.forEach(function (d) { z.tipos[d._tipo]++; });
+      z.dir = direccionTipica(pts) || ('Zona ' + z.lat.toFixed(4) + ', ' + z.lon.toFixed(4));
+    });
+    return elegidas;
+  }
+
+  function colorZona(n, nMax) {
+    var f = nMax ? n / nMax : 0;
+    return f >= 0.75 ? '#c1121f' : (f >= 0.5 ? '#e85d04' : '#d4a017');
+  }
+
+  function limpiarCalientes() {
+    var mapa = window.mymap;
+    if (mapa && calCapa) mapa.removeLayer(calCapa);
+    if (mapa && calCalor) mapa.removeLayer(calCalor);
+    calCapa = null; calCalor = null; calZonas = [];
+    var l = $('hallayer-cal-lista'); if (l) l.innerHTML = '';
+  }
+
+  function actualizarCalientes() {
+    var mapa = window.mymap, cb = $('hallayer-calientes');
+    if (!cb) return;
+    limpiarCalientes();
+    var opc = $('hallayer-cal-opc'); if (opc) opc.style.display = cb.checked ? 'block' : 'none';
+    if (!cb.checked || !mapa || !datos) return;
+    var radio = parseInt($('hallayer-cal-radio').value, 10) || 500;
+    var lista = filtrados();
+    var zonas = calcularZonasCalientes(lista, radio);
+    calZonas = zonas;
+    var nMax = zonas.length ? zonas[0].n : 0;
+    calCapa = L.layerGroup();
+    if (L.heatLayer && lista.length) {
+      try {
+        calCalor = L.heatLayer(lista.map(function (d) { return [d._lat, d._lon]; }), {
+          radius: 30, blur: 22, minOpacity: 0.3, max: Math.max(3, Math.round(nMax * 0.6)),
+          gradient: { 0.25: '#ffe066', 0.5: '#fcbf49', 0.75: '#f77f00', 1.0: '#d00000' }
+        });
+        calCalor.addTo(mapa);
+      } catch (e) { console.error('Hallazgos: calor de zonas', e); calCalor = null; }
+    }
+    zonas.forEach(function (z, i) {
+      var col = colorZona(z.n, nMax);
+      var c = L.circle([z.lat, z.lon], { radius: radio, color: col, weight: 2.5, fillColor: col, fillOpacity: 0.16, bubblingMouseEvents: false });
+      c.bindTooltip('<b>' + (i + 1) + '. ' + esc(z.dir) + '</b><br>' + z.n + ' hallazgos en ' + radio + ' m', { sticky: true });
+      c.on('click', function () { mostrarZona(L.latLng(z.lat, z.lon), radio); });
+      c.addTo(calCapa);
+      L.marker([z.lat, z.lon], { interactive: false, keyboard: false, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13],
+        html: '<div style="width:26px;height:26px;border-radius:50%;background:' + col + ';color:#fff;border:2px solid #fff;font:bold 13px/22px Arial,sans-serif;text-align:center;box-shadow:0 0 4px rgba(0,0,0,.55);">' + (i + 1) + '</div>' }) }).addTo(calCapa);
+    });
+    calCapa.addTo(mapa);
+
+    var l = $('hallayer-cal-lista');
+    if (!l) return;
+    if (!zonas.length) {
+      l.innerHTML = '<div style="margin-top:6px;font-size:12px;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos con estos filtros. Probá con una zona más grande o con más tipos tildados.</div>';
+      return;
+    }
+    l.innerHTML = '<div style="margin-top:6px;font-weight:600;">Las ' + zonas.length + ' zonas con más hallazgos</div>' +
+      zonas.map(function (z, i) {
+        return '<div class="hallayer-zona-item" data-i="' + i + '" style="cursor:pointer;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.18);line-height:1.25;">' +
+               (i + 1) + '. <b>' + esc(z.dir) + '</b> <span style="opacity:.85;">(' + z.n + ')</span></div>';
+      }).join('') +
+      '<div style="font-size:11px;opacity:.75;margin-top:4px;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</div>';
+    Array.prototype.forEach.call(l.querySelectorAll('.hallayer-zona-item'), function (el) {
+      el.addEventListener('click', function () {
+        var z = calZonas[parseInt(el.getAttribute('data-i'), 10)];
+        if (!z) return;
+        var ll = L.latLng(z.lat, z.lon);
+        mapa.fitBounds(ll.toBounds(radio * 2.6));
+        mostrarZona(ll, radio);
+      });
+    });
+  }
+
+
   var botonAyuda = null;
 
   function inyectarEstilosAyuda() {
@@ -475,6 +601,7 @@
     return '' +
       '<h3>Qué se está mirando</h3>' + cuenta +
       '<p>Este mapa muestra <b>dónde se detectan autos</b>, no necesariamente dónde los dejan los ladrones. Cada tipo depende de quién lo detecta: los recuperos LPR aparecen donde hay cámaras y los secuestros donde hay operativos.</p>' +
+      '<p>Con <b>Zonas con más hallazgos</b> el mapa se colorea en amarillo, naranja y rojo según dónde se juntan más hallazgos, y se numeran las 10 zonas con más casos. Respeta los tipos, el año y el mes elegidos. Los colores son relativos: marcan las zonas donde hay más hallazgos que en el resto, aunque en números absolutos sean pocos casos.</p>' +
       '<p>Para ver cuántos robos y hallazgos hay alrededor de un punto, tildá <b>Analizar una zona</b> y hacé clic en el mapa: se dibuja un círculo y se cuentan los dos tipos de casos adentro.</p>' +
       '<h3>Cómo leer la hora</h3>' +
       '<p>La hora de la planilla es la hora en que se abre el evento. No siempre es la hora del hecho:</p>' +
@@ -619,6 +746,10 @@
     if ($('hallayer-datos')) $('hallayer-datos').addEventListener('click', abrirFlotante);
     $('hallayer-anio').addEventListener('change', function () { if (datos) actualizarMeses(); refrescar(); });
     $('hallayer-mes').addEventListener('change', refrescar);
+    if ($('hallayer-calientes')) {
+      $('hallayer-calientes').addEventListener('change', actualizarCalientes);
+      $('hallayer-cal-radio').addEventListener('change', actualizarCalientes);
+    }
     $('hallayer-calor').addEventListener('change', function (e) {
       var mapa = window.mymap;
       if (!mapa || !calor) return;
