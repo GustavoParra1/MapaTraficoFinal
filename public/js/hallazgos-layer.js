@@ -265,6 +265,7 @@
     if (!calor && L.heatLayer) calor = L.heatLayer([], { radius: 25 });
     $('hallayer-info').textContent = 'Cargando...';
     $('hallayer-filtros').style.display = 'block';
+    abrirFlotante();
     cargarDatos().then(function () {
       mapa.addLayer(capa);
       refrescar();
@@ -277,12 +278,14 @@
     if (mapa && calor && mapa.hasLayer(calor)) mapa.removeLayer(calor);
     var h = $('hallayer-calor'); if (h) h.checked = false;
     $('hallayer-filtros').style.display = 'none';
+    cerrarFlotante();
   }
 
   /* ---------- bloque HTML (se crea solo) ---------- */
   var HTML_BLOQUE =
     '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;">' +
       '<input type="checkbox" id="hallayer-checkbox"> Hallazgos de vehículos</label>' +
+    '<button type="button" id="hallayer-datos" style="margin:4px 0 0;width:100%;padding:6px 8px;cursor:pointer;background:#1f5fbf;color:#fff;border:0;border-radius:4px;font:inherit;font-size:13px;">Ver datos y medidas</button>' +
     '<button type="button" id="hallayer-ayuda" style="margin:4px 0 0;width:100%;padding:6px 8px;cursor:pointer;background:#1f5fbf;color:#fff;border:0;border-radius:4px;font:inherit;font-size:13px;">Cómo interpretar este mapa</button>' +
     '<div id="hallayer-filtros" style="display:none;margin-top:6px;font-size:13px;">' +
       '<div id="hallayer-tipos"></div>' +
@@ -337,18 +340,48 @@
     st.textContent =
       '#hallayer-modal{position:fixed;inset:0;z-index:20000;display:none;align-items:center;justify-content:center;background:rgba(8,20,40,.62);padding:16px;}' +
       '#hallayer-modal .hal-caja{background:#fff;color:#14233a;width:min(740px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.45);font-family:inherit;}' +
-      '#hallayer-modal .hal-cab{background:#0f2a4a;color:#fff;display:flex;align-items:center;gap:12px;padding:14px 18px;}' +
-      '#hallayer-modal .hal-cab h2{margin:0;font-size:17px;line-height:1.3;flex:1;color:#fff;}' +
-      '#hallayer-modal .hal-x{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:6px;font-size:20px;line-height:1;width:34px;height:34px;cursor:pointer;}' +
-      '#hallayer-modal .hal-x:hover,#hallayer-modal .hal-x:focus{background:rgba(255,255,255,.18);outline:2px solid #fff;}' +
-      '#hallayer-modal .hal-cuerpo{padding:16px 20px 20px;overflow-y:auto;font-size:14px;line-height:1.55;}' +
-      '#hallayer-modal .hal-cuerpo h3{margin:18px 0 6px;font-size:15px;color:#0f2a4a;}' +
-      '#hallayer-modal .hal-cuerpo h3:first-child{margin-top:0;}' +
-      '#hallayer-modal .hal-cuerpo p{margin:6px 0;}' +
-      '#hallayer-modal .hal-cuerpo ul,#hallayer-modal .hal-cuerpo ol{margin:6px 0;padding-left:22px;}' +
-      '#hallayer-modal .hal-cuerpo li{margin:3px 0;}' +
-      '#hallayer-modal .hal-nota{margin-top:16px;padding:10px 12px;background:#f1f5fb;border-left:3px solid #1f5fbf;font-size:13px;}';
+      '.hal-cab{background:#0f2a4a;color:#fff;display:flex;align-items:center;gap:12px;padding:14px 18px;}' +
+      '.hal-cab h2{margin:0;font-size:17px;line-height:1.3;flex:1;color:#fff;}' +
+      '.hal-x{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:6px;font-size:20px;line-height:1;width:34px;height:34px;cursor:pointer;flex:none;}' +
+      '.hal-x:hover,.hal-x:focus{background:rgba(255,255,255,.18);outline:2px solid #fff;}' +
+      '.hal-cuerpo{padding:16px 20px 20px;overflow-y:auto;font-size:14px;line-height:1.55;color:#14233a;}' +
+      '.hal-cuerpo h3{margin:18px 0 6px;font-size:15px;color:#0f2a4a;}' +
+      '.hal-cuerpo h3:first-child{margin-top:0;}' +
+      '.hal-cuerpo p{margin:6px 0;}' +
+      '.hal-cuerpo ul,.hal-cuerpo ol{margin:6px 0;padding-left:22px;}' +
+      '.hal-cuerpo li{margin:3px 0;}' +
+      '.hal-nota{margin-top:16px;padding:10px 12px;background:#f1f5fb;border-left:3px solid #1f5fbf;font-size:13px;}' +
+      '.hal-enlace{background:none;border:0;padding:0;color:#1f5fbf;text-decoration:underline;cursor:pointer;font:inherit;}' +
+      /* ventana flotante: se arrastra y deja el mapa usable */
+      '#hallayer-flotante{position:fixed;z-index:19000;display:none;flex-direction:column;width:min(440px,calc(100vw - 16px));max-height:64vh;background:#fff;color:#14233a;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);border:1px solid rgba(15,42,74,.4);font-family:inherit;}' +
+      '#hallayer-flotante .hal-cab{cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;padding:9px 12px;gap:10px;}' +
+      '#hallayer-flotante .hal-cab:focus{outline:2px solid #fff;outline-offset:-4px;}' +
+      '#hallayer-flotante .hal-cab h2{font-size:14px;}' +
+      '#hallayer-flotante .hal-agarre{font-size:18px;line-height:1;opacity:.75;flex:none;}' +
+      '#hallayer-flotante .hal-x{width:30px;height:30px;font-size:18px;}' +
+      '#hallayer-flotante .hal-cuerpo{font-size:13px;padding:12px 16px 14px;}' +
+      '@media (max-width:760px){#hallayer-flotante{left:8px !important;right:8px;top:auto !important;bottom:8px;width:auto;max-height:50vh;}#hallayer-flotante .hal-cab{cursor:default;}}';
     document.head.appendChild(st);
+  }
+
+  /* Texto compartido por la ventana grande y la ventana flotante */
+  function htmlDatosYMedidas() {
+    return '' +
+      '<h3>Qué mostraron los datos (abril 2025 a agosto 2026)</h3>' +
+      '<ul>' +
+        '<li><b>Hallazgos:</b> repartidos en unas 370 zonas distintas, sin una concentración clara. Calles con más casos: Juan B. Justo (19), Alvarado (15) y Pedro Luro (13), con números chicos.</li>' +
+        '<li><b>LPR:</b> 107 recuperos en solo 34 puntos, que son donde hay cámaras. Esquinas más repetidas: Juan B. Justo y Güemes (9), Alió y Beruti (8), Mario Bravo y José Hernández (6) y Polonia y De la Plaza (6). El 53% de las lecturas ocurre de 12 a 18 h.</li>' +
+        '<li><b>Robos:</b> el pico de avisos es de 19 a 22 h. El 40% se avisa entre las 18 y las 24 h (3.513 registros).</li>' +
+        '<li><b>Zonas distintas:</b> donde se roba no es donde aparecen los autos. De las 30 zonas más cargadas de cada lado, solo 3 coinciden.</li>' +
+      '</ul>' +
+      '<h3>Medidas que se podrían tomar</h3>' +
+      '<ol>' +
+        '<li><b>Patrullaje preventivo</b> en las zonas de robo entre las 19 y las 22 h, que es el pico de avisos.</li>' +
+        '<li><b>Monitoreo LPR reforzado de 12 a 18 h</b>, con un operador dedicado a las alertas de vehículos robados y un protocolo para despachar un móvil en el momento.</li>' +
+        '<li><b>Más cámaras LPR</b> en los corredores donde ya detectan: Mario Bravo, Alió, De la Plaza, Alvarado y Juan B. Justo.</li>' +
+        '<li><b>Protocolo con Tránsito para autos abandonados:</b> aviso al dueño y acarreo, para que no queden días en la calle.</li>' +
+        '<li><b>Verificar en el terreno</b> las esquinas con más casos antes de invertir.</li>' +
+      '</ol>';
   }
 
   function cuerpoAyuda() {
@@ -373,21 +406,7 @@
         '<li><b>Hallazgo automotor:</b> hora de la llamada o de la verificación. No dice cuándo se dejó el auto.</li>' +
         '<li><b>Secuestro:</b> hora en que se registra el procedimiento. No dice cuándo se robó ni cuándo se hizo el control.</li>' +
       '</ul>' +
-      '<h3>Qué mostraron los datos (abril 2025 a agosto 2026)</h3>' +
-      '<ul>' +
-        '<li><b>Hallazgos:</b> repartidos en unas 370 zonas distintas, sin una concentración clara. Calles con más casos: Juan B. Justo (19), Alvarado (15) y Pedro Luro (13), con números chicos.</li>' +
-        '<li><b>LPR:</b> 107 recuperos en solo 34 puntos, que son donde hay cámaras. Esquinas más repetidas: Juan B. Justo y Güemes (9), Alió y Beruti (8), Mario Bravo y José Hernández (6) y Polonia y De la Plaza (6). El 53% de las lecturas ocurre de 12 a 18 h.</li>' +
-        '<li><b>Robos:</b> el pico de avisos es de 19 a 22 h. El 40% se avisa entre las 18 y las 24 h (3.513 registros).</li>' +
-        '<li><b>Zonas distintas:</b> donde se roba no es donde aparecen los autos. De las 30 zonas más cargadas de cada lado, solo 3 coinciden.</li>' +
-      '</ul>' +
-      '<h3>Medidas que se podrían tomar</h3>' +
-      '<ol>' +
-        '<li><b>Patrullaje preventivo</b> en las zonas de robo entre las 19 y las 22 h, que es el pico de avisos.</li>' +
-        '<li><b>Monitoreo LPR reforzado de 12 a 18 h</b>, con un operador dedicado a las alertas de vehículos robados y un protocolo para despachar un móvil en el momento.</li>' +
-        '<li><b>Más cámaras LPR</b> en los corredores donde ya detectan: Mario Bravo, Alió, De la Plaza, Alvarado y Juan B. Justo.</li>' +
-        '<li><b>Protocolo con Tránsito para autos abandonados:</b> aviso al dueño y acarreo, para que no queden días en la calle.</li>' +
-        '<li><b>Verificar en el terreno</b> las esquinas con más casos antes de invertir.</li>' +
-      '</ol>' +
+      htmlDatosYMedidas() +
       '<h3>Qué datos faltan para afinar</h3>' +
       '<p>En el evento de hallazgo conviene registrar la <b>patente</b>, para unirlo con el robo; <b>hace cuántos días estaba el auto</b>, según el vecino; la <b>fecha de la denuncia del robo</b>; y el <b>estado del auto</b> (quemado o desarmado).</p>' +
       '<div class="hal-nota"><b>Límites.</b> El mapa muestra lo que se detecta: donde hay más cámaras o patrullaje, se ve más. Los números por zona son chicos (de 11 a 19 casos por calle). Las medidas son hipótesis de trabajo para que las evalúe quien conoce la operación en la calle. Las lecturas de este texto se hicieron con datos hasta agosto de 2026 y pueden cambiar al sumar meses nuevos.</div>';
@@ -423,9 +442,91 @@
     if (botonAyuda) botonAyuda.focus();
   }
 
+
+  /* ---------- ventana flotante con datos y medidas (se abre sola al tildar la capa) ---------- */
+  var posFlotante = null;
+
+  function moverFlotante(caja, x, y) {
+    var r = caja.getBoundingClientRect();
+    x = Math.max(0, Math.min(x, window.innerWidth - r.width));
+    y = Math.max(0, Math.min(y, window.innerHeight - Math.min(r.height, 220)));   // siempre queda a la vista la barra y buena parte del texto
+    caja.style.left = x + 'px';
+    caja.style.top = y + 'px';
+    posFlotante = { x: x, y: y };
+  }
+
+  function activarArrastre(caja, asa) {
+    var dx = 0, dy = 0, arrastrando = false;
+    asa.addEventListener('pointerdown', function (e) {
+      if (window.innerWidth <= 760) return;
+      if (e.target.closest && e.target.closest('.hal-x')) return;
+      var r = caja.getBoundingClientRect();
+      dx = e.clientX - r.left; dy = e.clientY - r.top;
+      arrastrando = true;
+      try { asa.setPointerCapture(e.pointerId); } catch (x) {}
+      e.preventDefault();
+    });
+    asa.addEventListener('pointermove', function (e) {
+      if (arrastrando) moverFlotante(caja, e.clientX - dx, e.clientY - dy);
+    });
+    function fin(e) {
+      arrastrando = false;
+      try { asa.releasePointerCapture(e.pointerId); } catch (x) {}
+    }
+    asa.addEventListener('pointerup', fin);
+    asa.addEventListener('pointercancel', fin);
+    // Con teclado: foco en la barra y flechas para mover
+    asa.addEventListener('keydown', function (e) {
+      var r = caja.getBoundingClientRect(), paso = 24;
+      if (e.key === 'ArrowLeft') moverFlotante(caja, r.left - paso, r.top);
+      else if (e.key === 'ArrowRight') moverFlotante(caja, r.left + paso, r.top);
+      else if (e.key === 'ArrowUp') moverFlotante(caja, r.left, r.top - paso);
+      else if (e.key === 'ArrowDown') moverFlotante(caja, r.left, r.top + paso);
+      else return;
+      e.preventDefault();
+    });
+  }
+
+  function crearFlotante() {
+    inyectarEstilosAyuda();
+    var caja = document.createElement('div');
+    caja.id = 'hallayer-flotante';
+    caja.setAttribute('role', 'dialog');
+    caja.setAttribute('aria-label', 'Datos y medidas de hallazgos de vehículos');
+    caja.innerHTML =
+      '<div class="hal-cab" id="hallayer-flot-asa" tabindex="0" title="Arrastrá para mover" aria-label="Datos y medidas. Con las flechas del teclado se mueve la ventana">' +
+        '<span class="hal-agarre" aria-hidden="true">&#8942;&#8942;</span>' +
+        '<h2>Datos y medidas</h2>' +
+        '<button type="button" class="hal-x" id="hallayer-flot-cerrar" aria-label="Cerrar">&times;</button>' +
+      '</div>' +
+      '<div class="hal-cuerpo">' + htmlDatosYMedidas() +
+        '<p style="margin-top:12px;"><button type="button" class="hal-enlace" id="hallayer-flot-ayuda">Cómo interpretar este mapa</button></p>' +
+      '</div>';
+    document.body.appendChild(caja);
+    activarArrastre(caja, $('hallayer-flot-asa'));
+    $('hallayer-flot-cerrar').addEventListener('click', cerrarFlotante);
+    $('hallayer-flot-ayuda').addEventListener('click', abrirAyuda);
+    return caja;
+  }
+
+  function abrirFlotante() {
+    var caja = $('hallayer-flotante') || crearFlotante();
+    caja.style.display = 'flex';
+    var p = posFlotante || { x: Math.min(250, Math.max(8, window.innerWidth - 460)), y: 100 };
+    moverFlotante(caja, p.x, p.y);
+  }
+
+  function cerrarFlotante() {
+    var caja = $('hallayer-flotante');
+    if (caja) caja.style.display = 'none';
+  }
+
   document.addEventListener('keydown', function (e) {
     var fondo = $('hallayer-modal');
-    if (e.key === 'Escape' && fondo && fondo.style.display === 'flex') cerrarAyuda();
+    if (e.key !== 'Escape') return;
+    if (fondo && fondo.style.display === 'flex') { cerrarAyuda(); return; }
+    var fl = $('hallayer-flotante');
+    if (fl && fl.style.display === 'flex' && fl.contains(document.activeElement)) cerrarFlotante();
   });
 
   function iniciar() {
@@ -433,6 +534,7 @@
     $('hallayer-checkbox').addEventListener('change', function (e) { e.target.checked ? activar() : desactivar(); });
     botonAyuda = $('hallayer-ayuda');
     if (botonAyuda) botonAyuda.addEventListener('click', abrirAyuda);
+    if ($('hallayer-datos')) $('hallayer-datos').addEventListener('click', abrirFlotante);
     $('hallayer-anio').addEventListener('change', function () { if (datos) actualizarMeses(); refrescar(); });
     $('hallayer-mes').addEventListener('change', refrescar);
     $('hallayer-calor').addEventListener('change', function (e) {
