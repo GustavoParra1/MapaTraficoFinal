@@ -19,6 +19,7 @@
   };
 
   var datos = null;            // hallazgos con coordenadas confiables
+  var robos = [];              // robos de automotor (solo ubicacion, año y mes) para analizar una zona
   var excluidos = 0;           // hallazgos con coordenada "revisar" (no se dibujan)
   var tiposActivos = null;     // Set con las claves tildadas (H, L, S)
   var capa = null;             // markerClusterGroup
@@ -104,10 +105,18 @@
     }).then(function (texto) {
       var filas = parseCSV(texto);
       var cab = filas[0].map(function (h) { return h.trim(); });
-      var salida = [], sinUbicar = 0;
+      var salida = [], sinUbicar = 0, robosArchivo = [];
+      var esRobo = /robo_automotor/i.test(url);
       filas.slice(1).forEach(function (f) {
         var o = {};
         cab.forEach(function (h, i) { o[h] = (f[i] || '').trim(); });
+        if (esRobo) {
+          var q = (o['Longitud y Latitud'] || '').split(',');
+          var rlon = parseFloat(q[0]), rlat = parseFloat(q[1]);
+          if (q.length === 2 && !isNaN(rlat) && !isNaN(rlon) && o['estado_coordenada'] !== 'revisar') {
+            robosArchivo.push({ _lat: rlat, _lon: rlon, 'año': o['año'], 'mes': o['mes'] });
+          }
+        }
         var clave = CLAVE_POR_RESULTADO[norm(o['Resultado'])];
         if (!clave) return;
         var p = (o['Longitud y Latitud'] || '').split(',');
@@ -117,7 +126,7 @@
         o._lat = lat; o._lon = lon; o._enBarrio = true; o._tipo = clave;
         salida.push(o);
       });
-      return { filas: salida, sinUbicar: sinUbicar };
+      return { filas: salida, sinUbicar: sinUbicar, robos: robosArchivo };
     });
   }
 
@@ -125,8 +134,8 @@
     if (datos) return Promise.resolve();
     if (cargando) return cargando;
     cargando = Promise.all(FUENTES.map(leerFuente)).then(function (res) {
-      datos = []; excluidos = 0;
-      res.forEach(function (r) { datos = datos.concat(r.filas); excluidos += r.sinUbicar; });
+      datos = []; robos = []; excluidos = 0;
+      res.forEach(function (r) { datos = datos.concat(r.filas); robos = robos.concat(r.robos); excluidos += r.sinUbicar; });
       firmaAplicada = null;
       armarFiltros();
     }).catch(function (e) {
@@ -245,7 +254,7 @@
     capa.clearLayers();
     var marcadores = lista.map(function (d) {
       var m = L.circleMarker([d._lat, d._lon], {
-        radius: 7, color: '#ffffff', weight: 1.5, fillColor: TIPOS[d._tipo].color, fillOpacity: 0.9
+        radius: 7, color: '#ffffff', weight: 1.5, fillColor: TIPOS[d._tipo].color, fillOpacity: 0.9, bubblingMouseEvents: false
       });
       m.bindPopup(popup(d));
       return m;
@@ -277,6 +286,7 @@
     if (mapa && capa && mapa.hasLayer(capa)) mapa.removeLayer(capa);
     if (mapa && calor && mapa.hasLayer(calor)) mapa.removeLayer(calor);
     var h = $('hallayer-calor'); if (h) h.checked = false;
+    var cz = $('hallayer-zona'); if (cz && cz.checked) { cz.checked = false; activarZona(false); }
     $('hallayer-filtros').style.display = 'none';
     cerrarFlotante();
   }
@@ -294,6 +304,9 @@
         '<select id="hallayer-mes" style="width:100%;"><option value="all">Todos los Meses</option></select>' +
       '</div>' +
       '<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="hallayer-calor"> Mapa de calor</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-zona"> Analizar una zona (clic en el mapa)</label>' +
+      '<div id="hallayer-zona-opc" style="display:none;margin:4px 0 0 24px;">Radio: ' +
+        '<select id="hallayer-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select></div>' +
       '<div id="hallayer-info" style="margin-top:4px;opacity:.8;"></div>' +
     '</div>';
 
@@ -329,6 +342,70 @@
     return false;
   }
 
+
+
+  /* ---------- analizar una zona: clic en el mapa y se cuentan robos y hallazgos alrededor ---------- */
+  var zonaActiva = false, zonaCirculo = null, zonaPunto = null;
+
+  function etiquetaPeriodo() {
+    var a = $('hallayer-anio').value, m = $('hallayer-mes').value;
+    if (a === 'all' && m === 'all') return 'todo el período cargado';
+    if (m === 'all') return 'año ' + a;
+    return (MESES[+m] || m) + (a === 'all' ? ' (todos los años)' : ' de ' + a);
+  }
+
+  function contarZona(ll, radio) {
+    var mapa = window.mymap;
+    var a = $('hallayer-anio').value, m = $('hallayer-mes').value;
+    function pasa(d) { return (a === 'all' || d['año'] === a) && (m === 'all' || d['mes'] === m); }
+    var r = { robos: 0, H: 0, L: 0, S: 0 };
+    robos.forEach(function (d) { if (pasa(d) && mapa.distance(ll, [d._lat, d._lon]) <= radio) r.robos++; });
+    datos.forEach(function (d) { if (pasa(d) && mapa.distance(ll, [d._lat, d._lon]) <= radio) r[d._tipo]++; });
+    return r;
+  }
+
+  function mostrarZona(ll) {
+    var mapa = window.mymap;
+    if (!mapa || !datos) return;
+    zonaPunto = ll;
+    var radio = parseInt($('hallayer-radio').value, 10) || 500;
+    var r = contarZona(ll, radio);
+    var totalH = r.H + r.L + r.S;
+    if (zonaCirculo) mapa.removeLayer(zonaCirculo);
+    zonaCirculo = L.circle(ll, { radius: radio, color: '#1f5fbf', weight: 2, dashArray: '6 6',
+                                 fillColor: '#1f5fbf', fillOpacity: 0.08, interactive: false }).addTo(mapa);
+    var punto = function (c) { return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + c + ';margin-right:6px;"></span>'; };
+    var html =
+      '<div style="min-width:230px;">' +
+      '<b>Zona analizada</b> (radio ' + radio + ' m)<hr style="margin:6px 0;border:0;border-top:1px solid #d9e1ec;">' +
+      punto('#2f6fdd') + 'Robos de automotor: <b>' + r.robos + '</b><br>' +
+      punto(TIPOS.H.color) + 'Hallazgos de vehículos: <b>' + totalH + '</b><br>' +
+      '<div style="margin:2px 0 0 16px;font-size:12px;color:#5b6b82;">' +
+        'Hallazgo automotor: ' + r.H + '<br>Recuperado por LPR: ' + r.L + '<br>Secuestro de vehículo: ' + r.S + '</div>' +
+      '<div style="margin-top:6px;font-size:12px;color:#5b6b82;">Período: ' + esc(etiquetaPeriodo()) + '</div>' +
+      '<div style="margin-top:6px;font-size:12px;color:#5b6b82;">No se sabe si los autos hallados son los mismos que se robaron ahí: los datos no traen patente.</div>' +
+      '<div style="margin-top:6px;font-size:11px;color:#8a97ab;">' + ll.lat.toFixed(5) + ', ' + ll.lng.toFixed(5) + '</div>' +
+      '</div>';
+    L.popup({ maxWidth: 320 }).setLatLng(ll).setContent(html).openOn(mapa);
+  }
+
+  function alHacerClicEnMapa(e) {
+    if (zonaActiva && datos) mostrarZona(e.latlng);
+  }
+
+  function activarZona(valor) {
+    var mapa = window.mymap;
+    zonaActiva = !!valor;
+    $('hallayer-zona-opc').style.display = zonaActiva ? 'block' : 'none';
+    if (!mapa) return;
+    mapa.getContainer().style.cursor = zonaActiva ? 'crosshair' : '';
+    if (zonaActiva) mapa.on('click', alHacerClicEnMapa);
+    else {
+      mapa.off('click', alHacerClicEnMapa);
+      if (zonaCirculo) { mapa.removeLayer(zonaCirculo); zonaCirculo = null; }
+      zonaPunto = null;
+    }
+  }
 
   /* ---------- ventana "Cómo interpretar este mapa" ---------- */
   var botonAyuda = null;
@@ -398,6 +475,7 @@
     return '' +
       '<h3>Qué se está mirando</h3>' + cuenta +
       '<p>Este mapa muestra <b>dónde se detectan autos</b>, no necesariamente dónde los dejan los ladrones. Cada tipo depende de quién lo detecta: los recuperos LPR aparecen donde hay cámaras y los secuestros donde hay operativos.</p>' +
+      '<p>Para ver cuántos robos y hallazgos hay alrededor de un punto, tildá <b>Analizar una zona</b> y hacé clic en el mapa: se dibuja un círculo y se cuentan los dos tipos de casos adentro.</p>' +
       '<h3>Cómo leer la hora</h3>' +
       '<p>La hora de la planilla es la hora en que se abre el evento. No siempre es la hora del hecho:</p>' +
       '<ul>' +
@@ -532,6 +610,10 @@
   function iniciar() {
     if (!construirUI()) return;
     $('hallayer-checkbox').addEventListener('change', function (e) { e.target.checked ? activar() : desactivar(); });
+    $('hallayer-zona').addEventListener('change', function (e) { activarZona(e.target.checked); });
+    $('hallayer-radio').addEventListener('change', function () { if (zonaActiva && zonaPunto) mostrarZona(zonaPunto); });
+    $('hallayer-anio').addEventListener('change', function () { if (zonaActiva && zonaPunto) mostrarZona(zonaPunto); });
+    $('hallayer-mes').addEventListener('change', function () { if (zonaActiva && zonaPunto) mostrarZona(zonaPunto); });
     botonAyuda = $('hallayer-ayuda');
     if (botonAyuda) botonAyuda.addEventListener('click', abrirAyuda);
     if ($('hallayer-datos')) $('hallayer-datos').addEventListener('click', abrirFlotante);
