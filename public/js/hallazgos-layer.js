@@ -288,7 +288,7 @@
     if (mapa && calor && mapa.hasLayer(calor)) mapa.removeLayer(calor);
     var h = $('hallayer-calor'); if (h) h.checked = false;
     var cz = $('hallayer-zona'); if (cz && cz.checked) { cz.checked = false; activarZona(false); }
-    limpiarCalientes(); var cc = $('hallayer-calientes'); if (cc) cc.checked = false;
+    limpiarCalientes(); var cc = $('hallayer-calientes'); if (cc) cc.checked = false; cerrarZonasFlotante();
     var oc = $('hallayer-cal-opc'); if (oc) oc.style.display = 'none';
     if (window.mymap && zonaCirculo) { window.mymap.removeLayer(zonaCirculo); zonaCirculo = null; }
     $('hallayer-filtros').style.display = 'none';
@@ -311,7 +311,7 @@
       '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-calientes"> Zonas con más hallazgos</label>' +
       '<div id="hallayer-cal-opc" style="display:none;margin:4px 0 0 24px;">Tamaño de zona: ' +
         '<select id="hallayer-cal-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select>' +
-        '<div id="hallayer-cal-lista" style="font-size:12px;max-height:230px;overflow-y:auto;"></div></div>' +
+        '<div id="hallayer-cal-lista" style="font-size:12px;"></div></div>' +
       '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-zona"> Analizar una zona (clic en el mapa)</label>' +
       '<div id="hallayer-zona-opc" style="display:none;margin:4px 0 0 24px;">Radio: ' +
         '<select id="hallayer-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select></div>' +
@@ -470,6 +470,8 @@
     return f >= 0.75 ? '#c1121f' : (f >= 0.5 ? '#e85d04' : '#d4a017');
   }
 
+  var calCerrada = false;   // true si la persona cerro la ventana de la lista (no se vuelve a abrir sola)
+
   function limpiarCalientes() {
     var mapa = window.mymap;
     if (mapa && calCapa) mapa.removeLayer(calCapa);
@@ -478,12 +480,63 @@
     var l = $('hallayer-cal-lista'); if (l) l.innerHTML = '';
   }
 
+  /* ---------- ventana flotante con la lista de zonas (se arrastra; deja libre la barra lateral) ---------- */
+  function inyectarEstilosZonas() {
+    if ($('hallayer-estilos-zonas')) return;
+    inyectarEstilosAyuda();
+    var st = document.createElement('style');
+    st.id = 'hallayer-estilos-zonas';
+    st.textContent =
+      '#hallayer-zonas-flot{position:fixed;z-index:19000;display:none;flex-direction:column;width:min(360px,calc(100vw - 16px));max-height:64vh;background:#fff;color:#14233a;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4);font-family:inherit;}' +
+      '#hallayer-zonas-flot .hal-cab{cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;padding:9px 12px;gap:10px;}' +
+      '#hallayer-zonas-flot .hal-cab:focus{outline:2px solid #fff;outline-offset:-4px;}' +
+      '#hallayer-zonas-flot .hal-cab h2{font-size:14px;}' +
+      '#hallayer-zonas-flot .hal-agarre{font-size:18px;line-height:1;opacity:.75;flex:none;}' +
+      '#hallayer-zonas-flot .hal-x{width:30px;height:30px;font-size:18px;}' +
+      '#hallayer-zonas-flot .hal-cuerpo{font-size:13px;padding:10px 14px 12px;}' +
+      '.hal-zona-item{cursor:pointer;padding:7px 4px;border-bottom:1px solid #e3e9f2;line-height:1.3;}' +
+      '.hal-zona-item:hover,.hal-zona-item:focus{background:#eef3fb;outline:none;}' +
+      '@media (max-width:760px){#hallayer-zonas-flot{left:8px !important;right:8px;top:auto !important;bottom:8px;width:auto;max-height:50vh;}#hallayer-zonas-flot .hal-cab{cursor:default;}}';
+    document.head.appendChild(st);
+  }
+
+  function crearZonasFlotante() {
+    inyectarEstilosZonas();
+    var caja = document.createElement('div');
+    caja.id = 'hallayer-zonas-flot';
+    caja.setAttribute('role', 'dialog');
+    caja.setAttribute('aria-label', 'Zonas con más hallazgos de vehículos');
+    caja.innerHTML =
+      '<div class="hal-cab" id="hallayer-zonas-asa" tabindex="0" title="Arrastrá para mover" aria-label="Zonas con más hallazgos. Con las flechas del teclado se mueve la ventana">' +
+        '<span class="hal-agarre" aria-hidden="true">&#8942;&#8942;</span>' +
+        '<h2>Zonas con más hallazgos</h2>' +
+        '<button type="button" class="hal-x" id="hallayer-zonas-cerrar" aria-label="Cerrar">&times;</button>' +
+      '</div>' +
+      '<div class="hal-cuerpo" id="hallayer-zonas-cuerpo"></div>';
+    document.body.appendChild(caja);
+    activarArrastre(caja, $('hallayer-zonas-asa'));
+    $('hallayer-zonas-cerrar').addEventListener('click', function () { calCerrada = true; cerrarZonasFlotante(); });
+    return caja;
+  }
+
+  function abrirZonasFlotante() {
+    var caja = $('hallayer-zonas-flot') || crearZonasFlotante();
+    caja.style.display = 'flex';
+    var p = caja._pos || { x: Math.max(8, window.innerWidth - 590), y: 90 };
+    moverFlotante(caja, p.x, p.y);
+  }
+
+  function cerrarZonasFlotante() {
+    var caja = $('hallayer-zonas-flot');
+    if (caja) caja.style.display = 'none';
+  }
+
   function actualizarCalientes() {
     var mapa = window.mymap, cb = $('hallayer-calientes');
     if (!cb) return;
     limpiarCalientes();
     var opc = $('hallayer-cal-opc'); if (opc) opc.style.display = cb.checked ? 'block' : 'none';
-    if (!cb.checked || !mapa || !datos) return;
+    if (!cb.checked || !mapa || !datos) { cerrarZonasFlotante(); return; }
     var radio = parseInt($('hallayer-cal-radio').value, 10) || 500;
     var lista = filtrados();
     var zonas = calcularZonasCalientes(lista, radio);
@@ -510,27 +563,40 @@
     });
     calCapa.addTo(mapa);
 
+    // barra lateral: solo un boton (la lista va en la ventana flotante)
     var l = $('hallayer-cal-lista');
-    if (!l) return;
-    if (!zonas.length) {
-      l.innerHTML = '<div style="margin-top:6px;font-size:12px;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos con estos filtros. Probá con una zona más grande o con más tipos tildados.</div>';
-      return;
+    if (l) {
+      l.innerHTML = '<div style="margin-top:4px;font-size:12px;">' + (zonas.length ? zonas.length + (zonas.length === 1 ? ' zona encontrada' : ' zonas encontradas') : 'Sin zonas con ' + CAL_MIN + ' o más hallazgos') + '</div>' +
+        '<button type="button" id="hallayer-cal-abrir" style="margin:4px 0 0;width:100%;padding:5px 8px;cursor:pointer;background:#1f5fbf;color:#fff;border:0;border-radius:4px;font:inherit;font-size:12px;">Ver lista de zonas</button>';
+      $('hallayer-cal-abrir').addEventListener('click', function () { calCerrada = false; abrirZonasFlotante(); });
     }
-    l.innerHTML = '<div style="margin-top:6px;font-weight:600;">Las ' + zonas.length + ' zonas con más hallazgos</div>' +
-      zonas.map(function (z, i) {
-        return '<div class="hallayer-zona-item" data-i="' + i + '" style="cursor:pointer;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.18);line-height:1.25;">' +
-               (i + 1) + '. <b>' + esc(z.dir) + '</b> <span style="opacity:.85;">(' + z.n + ')</span></div>';
-      }).join('') +
-      '<div style="font-size:11px;opacity:.75;margin-top:4px;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</div>';
-    Array.prototype.forEach.call(l.querySelectorAll('.hallayer-zona-item'), function (el) {
-      el.addEventListener('click', function () {
-        var z = calZonas[parseInt(el.getAttribute('data-i'), 10)];
-        if (!z) return;
-        var ll = L.latLng(z.lat, z.lon);
-        mapa.fitBounds(ll.toBounds(radio * 2.6));
-        mostrarZona(ll, radio);
+
+    // ventana flotante
+    inyectarEstilosZonas();
+    var cuerpo = ($('hallayer-zonas-flot') || crearZonasFlotante()) && $('hallayer-zonas-cuerpo');
+    if (!zonas.length) {
+      cuerpo.innerHTML = '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos con estos filtros. Probá con una zona más grande o con más tipos tildados.</p>';
+    } else {
+      cuerpo.innerHTML = '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</p>' +
+        zonas.map(function (z, i) {
+          var tipos = [z.tipos.H && ('hallazgo automotor ' + z.tipos.H), z.tipos.L && ('LPR ' + z.tipos.L), z.tipos.S && ('secuestro ' + z.tipos.S)].filter(Boolean).join(', ');
+          return '<div class="hal-zona-item" role="button" tabindex="0" data-i="' + i + '">' +
+                 '<span style="display:inline-block;min-width:22px;height:22px;border-radius:50%;background:' + colorZona(z.n, nMax) + ';color:#fff;font:bold 12px/22px Arial,sans-serif;text-align:center;margin-right:8px;">' + (i + 1) + '</span>' +
+                 '<b>' + esc(z.dir) + '</b><br><span style="color:#5b6b82;margin-left:30px;">' + z.n + ' hallazgos (' + esc(tipos) + ')</span></div>';
+        }).join('');
+      Array.prototype.forEach.call(cuerpo.querySelectorAll('.hal-zona-item'), function (el) {
+        var ir = function () {
+          var z = calZonas[parseInt(el.getAttribute('data-i'), 10)];
+          if (!z) return;
+          var ll = L.latLng(z.lat, z.lon);
+          mapa.fitBounds(ll.toBounds(radio * 2.6));
+          mostrarZona(ll, radio);
+        };
+        el.addEventListener('click', ir);
+        el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ir(); } });
       });
-    });
+    }
+    if (!calCerrada) abrirZonasFlotante();
   }
 
 
@@ -657,7 +723,7 @@
     y = Math.max(0, Math.min(y, window.innerHeight - Math.min(r.height, 220)));   // siempre queda a la vista la barra y buena parte del texto
     caja.style.left = x + 'px';
     caja.style.top = y + 'px';
-    posFlotante = { x: x, y: y };
+    if (caja.id === 'hallayer-flotante') posFlotante = { x: x, y: y }; else caja._pos = { x: x, y: y };
   }
 
   function activarArrastre(caja, asa) {
@@ -747,7 +813,7 @@
     $('hallayer-anio').addEventListener('change', function () { if (datos) actualizarMeses(); refrescar(); });
     $('hallayer-mes').addEventListener('change', refrescar);
     if ($('hallayer-calientes')) {
-      $('hallayer-calientes').addEventListener('change', actualizarCalientes);
+      $('hallayer-calientes').addEventListener('change', function () { calCerrada = false; actualizarCalientes(); });
       $('hallayer-cal-radio').addEventListener('change', actualizarCalientes);
     }
     $('hallayer-calor').addEventListener('change', function (e) {
