@@ -311,12 +311,10 @@
       '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-calientes"> Zonas con más hallazgos</label>' +
       '<div id="hallayer-cal-opc" style="display:none;margin:4px 0 0 24px;">Tamaño de zona: ' +
         '<select id="hallayer-cal-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select>' +
-        '<div id="hallayer-cal-lista" style="font-size:12px;"></div></div>' +
-      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px;">' +
-        '<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="hallayer-zona"> Analizar una zona (clic en el mapa)</label>' +
-        '<div id="hallayer-zona-opc" style="display:none;margin-left:24px;white-space:nowrap;">Radio: ' +
-          '<select id="hallayer-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select></div>' +
-      '</div>' +
+        '<div id="hallayer-cal-lista" style="font-size:12px;max-height:230px;overflow-y:auto;"></div></div>' +
+      '<label style="display:flex;align-items:center;gap:6px;margin-top:4px;"><input type="checkbox" id="hallayer-zona"> Analizar una zona (clic en el mapa)</label>' +
+      '<div id="hallayer-zona-opc" style="display:none;margin:4px 0 0 24px;">Radio: ' +
+        '<select id="hallayer-radio"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="1000">1000 m</option></select></div>' +
       '<div id="hallayer-info" style="margin-top:4px;opacity:.8;"></div>' +
     '</div>';
 
@@ -421,7 +419,6 @@
   /* ---------- zonas con mas hallazgos: calor fuerte + ranking (sin hacer clic punto por punto) ---------- */
   var calCapa = null, calCalor = null, calZonas = [];
   var CAL_MIN = 3, CAL_MAX_ZONAS = 10;
-  var calListaAbierta = false;   // el desplegable de la lista arranca cerrado y recuerda si lo abriste
 
   function metrosEntre(lat1, lon1, lat2, lon2) {
     var k = 111320;
@@ -519,18 +516,12 @@
       l.innerHTML = '<div style="margin-top:6px;font-size:12px;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos con estos filtros. Probá con una zona más grande o con más tipos tildados.</div>';
       return;
     }
-    l.innerHTML = '<details id="hallayer-cal-det"' + (calListaAbierta ? ' open' : '') + ' style="margin-top:6px;">' +
-      '<summary style="cursor:pointer;font-weight:600;">Las ' + zonas.length + ' zonas con más hallazgos</summary>' +
-      '<div style="max-height:180px;overflow-y:auto;">' +
+    l.innerHTML = '<div style="margin-top:6px;font-weight:600;">Las ' + zonas.length + ' zonas con más hallazgos</div>' +
       zonas.map(function (z, i) {
         return '<div class="hallayer-zona-item" data-i="' + i + '" style="cursor:pointer;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.18);line-height:1.25;">' +
                (i + 1) + '. <b>' + esc(z.dir) + '</b> <span style="opacity:.85;">(' + z.n + ')</span></div>';
       }).join('') +
-      '</div>' +
-      '<div style="font-size:11px;opacity:.75;margin-top:4px;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</div>' +
-      '</details>';
-    var det = $('hallayer-cal-det');
-    if (det) det.addEventListener('toggle', function () { calListaAbierta = det.open; });
+      '<div style="font-size:11px;opacity:.75;margin-top:4px;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</div>';
     Array.prototype.forEach.call(l.querySelectorAll('.hallayer-zona-item'), function (el) {
       el.addEventListener('click', function () {
         var z = calZonas[parseInt(el.getAttribute('data-i'), 10)];
