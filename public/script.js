@@ -4648,6 +4648,7 @@ colegiosCoberturaCheckbox.addEventListener('change', function() {
 // --- Lógica de Robo Automotor ---
 const roboAutomotorLayer = L.markerClusterGroup();
 let allRoboAutomotorData;
+let allRoboLPRData = [];   // alertas LPR: no son robos (el punto es donde una camara leyo la patente)
 const roboAutomotorCheckbox = document.getElementById('robo-automotor-checkbox');
 const roboAutomotorFiltersDiv = document.getElementById('robo-automotor-filters');
 const roboAutomotorYearFilter = document.getElementById('robo-automotor-year-filter');
@@ -4968,7 +4969,10 @@ function loadRoboAutomotorData() {
                     });
                     return obj;
                 }).filter(Boolean);
-                allRoboAutomotorData = data;
+                // Las alertas LPR (resultado que empieza con "LPR") se separan: no cuentan como robos en ningun lado.
+                // Se ven aparte con el filtro "Alertas LPR".
+                allRoboLPRData = data.filter(item => /^LPR\b/i.test(item.Resultado || ''));
+                allRoboAutomotorData = data.filter(item => !/^LPR\b/i.test(item.Resultado || ''));
             }
             populateRoboAutomotorFilters(allRoboAutomotorData);
             console.log("✅ Datos de Robo Automotor cargados bajo demanda.");
@@ -5073,14 +5077,12 @@ function applyRoboAutomotorFilters() {
         'Policia Asiste y Libera': ['Asiste Policia y Libera', 'Asiste Prefectura'],
         'Hallasgo de Automotor': ['Hallazgo Automotor'],
         'Sin recurso Policial': ['No Asiste'],
-        'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-        'LPR Detencion': ['LPR - Vehiculo Interceptado'],
         'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
     };
 
     const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
 
-    let filteredData = allRoboAutomotorData;
+    let filteredData = (selectedResultadoCategory === 'Alertas LPR') ? allRoboLPRData : allRoboAutomotorData;
 
     // Filtrar por año
     if (selectedYear !== 'all') {
@@ -5122,7 +5124,7 @@ function applyRoboAutomotorFilters() {
             const p = (item['Longitud y Latitud'] || '').split(',').map(s => s.trim());
             return p.length === 2 && !isNaN(parseFloat(p[0])) && !isNaN(parseFloat(p[1]));
         }).length;
-        roboInfo.textContent = conCoords + ' robos automotor en el mapa';
+        roboInfo.textContent = conCoords + (selectedResultadoCategory === 'Alertas LPR' ? ' alertas LPR en el mapa (lugar donde se leyo la patente)' : ' robos automotor en el mapa');
     }
 
     processAndDisplayRobos(filteredData);
@@ -5265,10 +5267,9 @@ function populateRoboAutomotorFilters(data) {
         'Policia Asiste y Libera': ['Asiste policia y libera', 'asiste prefectura'],
         'Hallasgo de Automotor': ['Hallasgo de Automotor'],
         'Sin recurso Policial': ['No Asiste'],
-        'Seguimiento LPR': ['LPR Seguimiento'],
-        'LPR Detencion': ['LPR Seguimiento Detencion'],
         'Seguimiento del evento': ['Seguimiento del evento'],
-        'Otros resultados': []
+        'Otros resultados': [],
+        'Alertas LPR': []
     };
 
     for (const category in categories) {

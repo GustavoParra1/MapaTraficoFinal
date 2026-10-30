@@ -14,8 +14,6 @@
     'Policia Asiste y Libera': ['Asiste Policia y Libera', 'Asiste Prefectura'],
     'Hallasgo de Automotor': ['Hallazgo Automotor'],
     'Sin recurso Policial': ['No Asiste'],
-    'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-    'LPR Detencion': ['LPR - Vehiculo Interceptado'],
     'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
   };
   var datosActuales = [];       // robos que quedaron con los filtros actuales
@@ -100,7 +98,11 @@
 
   /* ---------- evolucion mensual: comparativa con el mes anterior y ultimos 12 meses ---------- */
   function todosLosRobos() {
-    try { return (typeof allRoboAutomotorData !== 'undefined' && Array.isArray(allRoboAutomotorData)) ? allRoboAutomotorData : null; } catch (e) { return null; }
+    try {
+      var rf = $('robo-resultado-filter');
+      if (rf && rf.value === 'Alertas LPR') return (typeof allRoboLPRData !== 'undefined' && Array.isArray(allRoboLPRData)) ? allRoboLPRData : null;
+      return (typeof allRoboAutomotorData !== 'undefined' && Array.isArray(allRoboAutomotorData)) ? allRoboAutomotorData : null;
+    } catch (e) { return null; }
   }
 
   /* anio*12 + (mes-1) de un robo, o -1 si no se puede saber (acepta mes 3, "03", "Marzo" o la fecha) */
@@ -332,10 +334,11 @@
 
     var cuerpo = ($('zonas-robos-flot') || crearVentana()) && $('zonas-robos-cuerpo');
     var encabezado = general ? resumenGeneral(general, ref) : '';
+    var avisoLPR = ($('robo-resultado-filter') && $('robo-resultado-filter').value === 'Alertas LPR') ? '<p style="margin:0 0 8px;font-size:12px;color:#8a4b00;"><b>Alertas LPR:</b> el punto es donde una cámara leyó la patente de un auto con pedido, no el lugar de un robo.</p>' : '';
     if (!zonas.length) {
-      cuerpo.innerHTML = encabezado + '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más robos con estos filtros. Probá con una zona más grande o con otro año o mes.</p>';
+      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más robos con estos filtros. Probá con una zona más grande o con otro año o mes.</p>';
     } else {
-      cuerpo.innerHTML = encabezado + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">Las ' + zonas.length + ' zonas de ' + radio + ' m con más robos. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma todos los robos cercanos. ' +
+      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">' + (zonas.length === 1 ? 'La zona' : 'Las ' + zonas.length + ' zonas') + ' de ' + radio + ' m con más robos. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma todos los robos cercanos. ' +
         (ref ? 'Debajo de cada zona: los últimos 12 meses (la barra roja es ' + (ref.elegido ? 'el mes elegido' : 'el último mes con datos') + ') y la comparación. ' : '') + 'Tocá una zona para acercarte.</p>' +
         zonas.map(function (z, i) {
           var col = color(z.n, nMax);
