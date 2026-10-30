@@ -75,9 +75,12 @@
     }
     elegidas.forEach(function (z) {
       var d = dentro(z.lat, z.lon), dirs = {}, ress = {}, mejor = '', nm = 0;
+      var cerca = Infinity;
       d.forEach(function (q) {
         ress[q.res] = (ress[q.res] || 0) + 1;
-        if (q.dir) { dirs[q.dir] = (dirs[q.dir] || 0) + 1; if (dirs[q.dir] > nm) { nm = dirs[q.dir]; mejor = q.dir; } }
+        /* El nombre es la esquina MAS CERCANA AL CENTRO del circulo (antes era la mas repetida de toda la zona,
+           que en zonas con muchos robos repartidos podia quedar lejos del centro). */
+        if (q.dir) { var m = metros(z.lat, z.lon, q.lat, q.lon); if (m < cerca) { cerca = m; mejor = q.dir; } }
       });
       z.dir = mejor || ('Zona ' + z.lat.toFixed(4) + ', ' + z.lon.toFixed(4));
       z.res = Object.keys(ress).map(function (k) { return { r: k, n: ress[k] }; }).sort(function (a, b) { return b.n - a.n; });
