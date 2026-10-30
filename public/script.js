@@ -5074,7 +5074,8 @@ function applyRoboAutomotorFilters() {
         'Hallasgo de Automotor': ['Hallazgo Automotor'],
         'Sin recurso Policial': ['No Asiste'],
         'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-        'LPR Detencion': ['LPR - Vehiculo Interceptado']
+        'LPR Detencion': ['LPR - Vehiculo Interceptado'],
+        'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
     };
 
     const selectedBarrioFeature = getSelectedBarrioFeatureCombinada();
@@ -5089,7 +5090,11 @@ function applyRoboAutomotorFilters() {
     // Filtrar por categoría de resultado
     if (selectedResultadoCategory !== 'Todos los Resultados') {
         const outcomesToFilter = resultadoCategories[selectedResultadoCategory];
-        if (outcomesToFilter) {
+        if (selectedResultadoCategory === 'Otros resultados') {
+            // todo lo que no entra en ninguna de las categorias anteriores (para que ningun evento quede inalcanzable)
+            const conocidos = [].concat(...Object.values(resultadoCategories));
+            filteredData = filteredData.filter(item => !item.Resultado || !conocidos.includes(item.Resultado.trim()));
+        } else if (outcomesToFilter) {
             filteredData = filteredData.filter(item => item.Resultado && outcomesToFilter.includes(item.Resultado.trim()));
         }
     }
@@ -5261,7 +5266,9 @@ function populateRoboAutomotorFilters(data) {
         'Hallasgo de Automotor': ['Hallasgo de Automotor'],
         'Sin recurso Policial': ['No Asiste'],
         'Seguimiento LPR': ['LPR Seguimiento'],
-        'LPR Detencion': ['LPR Seguimiento Detencion']
+        'LPR Detencion': ['LPR Seguimiento Detencion'],
+        'Seguimiento del evento': ['Seguimiento del evento'],
+        'Otros resultados': []
     };
 
     for (const category in categories) {

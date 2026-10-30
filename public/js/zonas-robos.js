@@ -15,7 +15,8 @@
     'Hallasgo de Automotor': ['Hallazgo Automotor'],
     'Sin recurso Policial': ['No Asiste'],
     'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-    'LPR Detencion': ['LPR - Vehiculo Interceptado']
+    'LPR Detencion': ['LPR - Vehiculo Interceptado'],
+    'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
   };
   var datosActuales = [];       // robos que quedaron con los filtros actuales
   var capa = null, zonas = [], cerrada = false;
@@ -123,11 +124,13 @@
   function baseEvolucion() {
     var todos = todosLosRobos();
     if (!todos || !todos.length) return null;
-    var r = $('robo-resultado-filter'), sel = r ? r.value : 'Todos los Resultados', cat = CATEGORIAS[sel], barrio = null;
+    var r = $('robo-resultado-filter'), sel = r ? r.value : 'Todos los Resultados', cat = CATEGORIAS[sel], otros = (sel === 'Otros resultados'), conocidos = [], barrio = null;
+    Object.keys(CATEGORIAS).forEach(function (k) { conocidos = conocidos.concat(CATEGORIAS[k]); });
     try { if (typeof getSelectedBarrioFeatureCombinada === 'function') barrio = getSelectedBarrioFeatureCombinada(); } catch (e) { barrio = null; }
     var out = [];
     todos.forEach(function (it) {
-      if (cat && !(it.Resultado && cat.indexOf(String(it.Resultado).trim()) >= 0)) return;
+      if (otros) { if (it.Resultado && conocidos.indexOf(String(it.Resultado).trim()) >= 0) return; }
+      else if (cat && !(it.Resultado && cat.indexOf(String(it.Resultado).trim()) >= 0)) return;
       var k = claveMes(it); if (k < 0) return;
       var p = String(it['Longitud y Latitud'] || '').split(',').map(function (s) { return s.trim(); });
       if (p.length !== 2) return;
