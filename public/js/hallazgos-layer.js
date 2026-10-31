@@ -113,7 +113,7 @@
         if (esRobo) {
           var q = (o['Longitud y Latitud'] || '').split(',');
           var rlon = parseFloat(q[0]), rlat = parseFloat(q[1]);
-          if (q.length === 2 && !isNaN(rlat) && !isNaN(rlon) && o['estado_coordenada'] !== 'revisar') {
+          if (q.length === 2 && !isNaN(rlat) && !isNaN(rlon) && o['estado_coordenada'] !== 'revisar' && !/^LPR\b/i.test(o['Resultado'] || '')) {   // las alertas LPR no son robos
             robosArchivo.push({ _lat: rlat, _lon: rlon, 'año': o['año'], 'mes': o['mes'] });
           }
         }
