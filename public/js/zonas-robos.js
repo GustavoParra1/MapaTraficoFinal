@@ -12,10 +12,10 @@
   var CATEGORIAS = {
     'Intervención Policial': ['Detencion', 'Persecucion Y Detencion', 'Secuestro De Vehiculo'],
     'Policia Asiste y Libera': ['Asiste Policia y Libera', 'Asiste Prefectura'],
-    'Hallasgo de Automotor': ['Hallazgo Automotor'],
+    'Hallazgo de Automotor': ['Hallazgo Automotor'],
     'Sin recurso Policial': ['No Asiste'],
-    'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-    'LPR Detencion': ['LPR - Vehiculo Interceptado'],
+    'Robo cargado al LPR': ['LPR - Se realiza seguimiento del vehiculo'],
+    'LPR con intervención': ['LPR - Vehiculo Interceptado', 'LPR - Policia Secuestra Vehiculo', 'LPR - Policia Deriva para averiguacion', 'LPR - Vehiculo Recuperado'],
     'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
   };
   var datosActuales = [];       // robos que quedaron con los filtros actuales
@@ -335,7 +335,7 @@
     if (!zonas.length) {
       cuerpo.innerHTML = encabezado + '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más robos con estos filtros. Probá con una zona más grande o con otro año o mes.</p>';
     } else {
-      cuerpo.innerHTML = encabezado + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">Las ' + zonas.length + ' zonas de ' + radio + ' m con más robos. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma todos los robos cercanos. ' +
+      cuerpo.innerHTML = encabezado + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">' + (zonas.length === 1 ? 'La zona' : 'Las ' + zonas.length + ' zonas') + ' de ' + radio + ' m con más robos. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma todos los robos cercanos. ' +
         (ref ? 'Debajo de cada zona: los últimos 12 meses (la barra roja es ' + (ref.elegido ? 'el mes elegido' : 'el último mes con datos') + ') y la comparación. ' : '') + 'Tocá una zona para acercarte.</p>' +
         zonas.map(function (z, i) {
           var col = color(z.n, nMax);

@@ -5071,10 +5071,10 @@ function applyRoboAutomotorFilters() {
     const resultadoCategories = {
         'Intervención Policial': ['Detencion', 'Persecucion Y Detencion', 'Secuestro De Vehiculo'],
         'Policia Asiste y Libera': ['Asiste Policia y Libera', 'Asiste Prefectura'],
-        'Hallasgo de Automotor': ['Hallazgo Automotor'],
+        'Hallazgo de Automotor': ['Hallazgo Automotor'],
         'Sin recurso Policial': ['No Asiste'],
-        'Seguimiento LPR': ['LPR - Se realiza seguimiento del vehiculo'],
-        'LPR Detencion': ['LPR - Vehiculo Interceptado'],
+        'Robo cargado al LPR': ['LPR - Se realiza seguimiento del vehiculo'],
+        'LPR con intervención': ['LPR - Vehiculo Interceptado', 'LPR - Policia Secuestra Vehiculo', 'LPR - Policia Deriva para averiguacion', 'LPR - Vehiculo Recuperado'],
         'Seguimiento del evento': ['Se Realiza Seguimiento del Evento']
     };
 
@@ -5263,10 +5263,10 @@ function populateRoboAutomotorFilters(data) {
         'Todos los Resultados': [],
         'Intervención Policial': ['Detencion', 'Persecucion y Detencion', 'Secuestro de Vehiculo'],
         'Policia Asiste y Libera': ['Asiste policia y libera', 'asiste prefectura'],
-        'Hallasgo de Automotor': ['Hallasgo de Automotor'],
+        'Hallazgo de Automotor': ['Hallazgo de Automotor'],
         'Sin recurso Policial': ['No Asiste'],
-        'Seguimiento LPR': ['LPR Seguimiento'],
-        'LPR Detencion': ['LPR Seguimiento Detencion'],
+        'Robo cargado al LPR': ['LPR Seguimiento'],
+        'LPR con intervención': ['LPR Seguimiento Detencion'],
         'Seguimiento del evento': ['Seguimiento del evento'],
         'Otros resultados': []
     };
