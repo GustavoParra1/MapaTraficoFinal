@@ -97,6 +97,19 @@
   }
 
   /* ---------- evolucion mensual: comparativa con el mes anterior y ultimos 12 meses ---------- */
+  /* Cuando se miran las "Alertas LPR" los textos dicen "alertas" y no "robos" (no son robos: el punto es donde una camara leyo la patente) */
+  function modoLPR() { var r = $('robo-resultado-filter'); return !!(r && r.value === 'Alertas LPR'); }
+  function P() { return modoLPR() ? 'alertas' : 'robos'; }
+  function S() { return modoLPR() ? 'alerta' : 'robo'; }
+  function ajustarTitulos() {
+    try {
+      var h2 = document.querySelector('#zonas-robos-asa h2'); if (h2) h2.textContent = 'Zonas con más ' + P();
+      var cb0 = $('zonas-robos-checkbox'), lab = cb0 && cb0.parentNode;
+      if (lab && lab.lastChild && lab.lastChild.nodeType === 3) lab.lastChild.nodeValue = ' Zonas con más ' + P();
+      var h4 = document.querySelector('#top-robo-panel .panel-header h4'); if (h4) h4.textContent = modoLPR() ? 'Top 10 Alertas LPR' : 'Top 10 Robos Automotor';
+    } catch (e) { /* solo cambia textos */ }
+  }
+
   function todosLosRobos() {
     try {
       var rf = $('robo-resultado-filter');
@@ -176,7 +189,7 @@
   function comparativa(s, ref) {
     if (ref.elegido) {
       var cur = s[11], prev = s[10];
-      if (!prev && cur) return 'Sin robos en ' + MESES[(ref.k - 1) % 12] + ' → zona nueva este mes';
+      if (!prev && cur) return 'Sin ' + P() + ' en ' + MESES[(ref.k - 1) % 12] + ' → zona nueva este mes';
       return 'vs ' + MESES[(ref.k - 1) % 12] + ': ' + prev + ' → ' + cur + ' (' + variacion(cur, prev) + ')';
     }
     var u3 = s[9] + s[10] + s[11], a3 = s[6] + s[7] + s[8];
@@ -187,7 +200,7 @@
 
   function minigrafico(s, col, ref) {
     var max = Math.max.apply(null, s.concat([1])), bw = 7, gap = 2, h = 22, W = 12 * (bw + gap);
-    var out = '<svg width="' + W + '" height="' + (h + 2) + '" viewBox="0 0 ' + W + ' ' + (h + 2) + '" role="img" aria-label="Robos por mes en esta zona, últimos 12 meses">';
+    var out = '<svg width="' + W + '" height="' + (h + 2) + '" viewBox="0 0 ' + W + ' ' + (h + 2) + '" role="img" aria-label="' + (modoLPR() ? 'Alertas' : 'Robos') + ' por mes en esta zona, últimos 12 meses">';
     s.forEach(function (v, i) {
       var bh = v ? Math.max(2, Math.round(v / max * h)) : 1;
       out += '<rect x="' + (i * (bw + gap)) + '" y="' + (h + 1 - bh) + '" width="' + bw + '" height="' + bh + '" rx="1" fill="' + (i === 11 ? col : '#b8c4d6') + '"><title>' + nombreMes(ref.k - 11 + i) + ': ' + v + '</title></rect>';
@@ -197,7 +210,7 @@
 
   function graficoGeneral(s, ref) {
     var max = Math.max.apply(null, s.concat([1])), bw = 22, gap = 6, top = 12, h = 44, W = 12 * (bw + gap);
-    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + (top + h + 14) + '" role="img" aria-label="Robos por mes, últimos 12 meses" style="max-width:' + W + 'px;">';
+    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + (top + h + 14) + '" role="img" aria-label="' + (modoLPR() ? 'Alertas' : 'Robos') + ' por mes, últimos 12 meses" style="max-width:' + W + 'px;">';
     s.forEach(function (v, i) {
       var bh = v ? Math.max(2, Math.round(v / max * h)) : 1, x = i * (bw + gap), k = ref.k - 11 + i;
       out += '<rect x="' + x + '" y="' + (top + h - bh) + '" width="' + bw + '" height="' + bh + '" rx="2" fill="' + (i === 11 ? '#a3151f' : '#b8c4d6') + '"/>' +
@@ -209,14 +222,14 @@
 
   function resumenGeneral(s, ref) {
     var cur = s[11], prev = s[10], hoy = new Date(), enCurso = (hoy.getFullYear() * 12 + hoy.getMonth()) === ref.k;
-    var t = '<b>' + nombreMes(ref.k) + ':</b> ' + cur + ' ' + plural(cur, 'robo', 'robos');
+    var t = '<b>' + nombreMes(ref.k) + ':</b> ' + cur + ' ' + plural(cur, S(), P());
     if (prev) t += ' (' + (cur >= prev ? '+' : '') + Math.round((cur - prev) * 100 / prev) + '% vs ' + MESES[(ref.k - 1) % 12] + ': ' + prev + ')';
-    else if (cur) t += ' (' + MESES[(ref.k - 1) % 12] + ' sin robos registrados)';
+    else if (cur) t += ' (' + MESES[(ref.k - 1) % 12] + ' sin ' + (modoLPR() ? 'alertas registradas' : 'robos registrados') + ')';
     return '<div style="margin:0 0 10px;padding:8px 10px;background:#f4f7fb;border-radius:8px;">' +
-      '<div style="font-weight:600;margin-bottom:4px;">Evolución de robos por mes</div>' + graficoGeneral(s, ref) +
+      '<div style="font-weight:600;margin-bottom:4px;">Evolución de ' + P() + ' por mes</div>' + graficoGeneral(s, ref) +
       '<div style="font-size:12px;margin-top:4px;">' + t + '</div>' +
       '<div style="font-size:11px;color:#5b6b82;margin-top:2px;">' + (ref.elegido ? 'Mes elegido en el filtro. ' : 'Último mes con datos. ') + (enCurso ? 'Es el mes en curso: puede estar incompleto. ' : '') +
-        'Se cuentan los robos con ubicación, con el filtro de resultado' + ($('robo-resultado-filter') && $('robo-resultado-filter').value !== 'Todos los Resultados' ? ' (' + esc($('robo-resultado-filter').value) + ')' : '') + ', sin importar el año elegido.</div></div>';
+        (modoLPR() ? 'Se cuentan las alertas' : 'Se cuentan los robos') + ' con ubicación, con el filtro de resultado' + ($('robo-resultado-filter') && $('robo-resultado-filter').value !== 'Todos los Resultados' ? ' (' + esc($('robo-resultado-filter').value) + ')' : '') + ', sin importar el año elegido.</div></div>';
   }
 
   /* ---------- ventana flotante (se arrastra con mouse, dedo o flechas del teclado) ---------- */
@@ -292,6 +305,7 @@
   function actualizar() {
     var cb = $('zonas-robos-checkbox'), m = mapa();
     if (!cb) return;
+    ajustarTitulos();
     limpiar();
     var opc = $('zonas-robos-opc'); if (opc) opc.style.display = cb.checked ? 'block' : 'none';
     var robo = $('robo-automotor-checkbox');
@@ -314,8 +328,8 @@
       var col = color(z.n, nMax);
       var c = L.circle([z.lat, z.lon], { radius: radio, color: col, weight: 2.5, fillColor: col, fillOpacity: 0.16, bubblingMouseEvents: false });
       z.circulo = c;
-      c.bindTooltip('<b>' + (i + 1) + '. ' + esc(z.dir) + '</b><br>' + z.n + ' ' + plural(z.n, 'robo', 'robos') + ' en ' + radio + ' m', { sticky: true });
-      c.bindPopup('<b>#' + (i + 1) + ' ' + esc(z.dir) + '</b><br><b>' + z.n + '</b> ' + plural(z.n, 'robo', 'robos') + ' de automotor en ' + radio + ' m' +
+      c.bindTooltip('<b>' + (i + 1) + '. ' + esc(z.dir) + '</b><br>' + z.n + ' ' + plural(z.n, S(), P()) + ' en ' + radio + ' m', { sticky: true });
+      c.bindPopup('<b>#' + (i + 1) + ' ' + esc(z.dir) + '</b><br><b>' + z.n + '</b> ' + plural(z.n, S(), P()) + (modoLPR() ? '' : ' de automotor') + ' en ' + radio + ' m' +
         '<br><span style="font-size:12px;">' + z.res.slice(0, 4).map(function (x) { return esc(x.r) + ': ' + x.n; }).join('<br>') + '</span>' +
         (z.serie ? '<br><span style="font-size:12px;">' + comparativa(z.serie, ref) + '</span><br>' + minigrafico(z.serie, col, ref) + '<br><span style="font-size:10px;color:#666;">' + corto(ref.k - 11) + ' a ' + corto(ref.k) + '</span>' : '') +
         '<br><span style="font-size:11px;color:#666;">Período: ' + esc(periodo) + '</span>');
@@ -327,7 +341,7 @@
 
     var r = $('zonas-robos-resumen');
     if (r) {
-      r.innerHTML = '<div style="margin-top:4px;">' + (zonas.length ? zonas.length + (zonas.length === 1 ? ' zona encontrada' : ' zonas encontradas') : 'Sin zonas con ' + CAL_MIN + ' o más robos') + '</div>' +
+      r.innerHTML = '<div style="margin-top:4px;">' + (zonas.length ? zonas.length + (zonas.length === 1 ? ' zona encontrada' : ' zonas encontradas') : 'Sin zonas con ' + CAL_MIN + ' o más ' + P()) + '</div>' +
         '<button type="button" id="zonas-robos-abrir" style="margin:4px 0 0;width:100%;padding:5px 8px;cursor:pointer;background:#1f5fbf;color:#fff;border:0;border-radius:4px;font:inherit;font-size:12px;">Ver lista de zonas</button>';
       $('zonas-robos-abrir').addEventListener('click', function () { cerrada = false; abrirVentana(); });
     }
@@ -336,15 +350,15 @@
     var encabezado = general ? resumenGeneral(general, ref) : '';
     var avisoLPR = ($('robo-resultado-filter') && $('robo-resultado-filter').value === 'Alertas LPR') ? '<p style="margin:0 0 8px;font-size:12px;color:#8a4b00;"><b>Alertas LPR:</b> el punto es donde una cámara leyó la patente de un auto con pedido, no el lugar de un robo.</p>' : '';
     if (!zonas.length) {
-      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más robos con estos filtros. Probá con una zona más grande o con otro año o mes.</p>';
+      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más ' + P() + ' con estos filtros. Probá con una zona más grande o con otro año o mes.</p>';
     } else {
-      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">' + (zonas.length === 1 ? 'La zona' : 'Las ' + zonas.length + ' zonas') + ' de ' + radio + ' m con más robos. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma todos los robos cercanos. ' +
+      cuerpo.innerHTML = encabezado + avisoLPR + '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">' + (zonas.length === 1 ? 'La zona' : 'Las ' + zonas.length + ' zonas') + ' de ' + radio + ' m con más ' + P() + '. Período: ' + esc(periodo) + '. A diferencia del Top 10 por esquina, cada zona suma ' + (modoLPR() ? 'todas las alertas cercanas' : 'todos los robos cercanos') + '. ' +
         (ref ? 'Debajo de cada zona: los últimos 12 meses (la barra roja es ' + (ref.elegido ? 'el mes elegido' : 'el último mes con datos') + ') y la comparación. ' : '') + 'Tocá una zona para acercarte.</p>' +
         zonas.map(function (z, i) {
           var col = color(z.n, nMax);
           return '<div class="zr-item" role="button" tabindex="0" data-i="' + i + '">' +
             '<span style="display:inline-block;min-width:22px;height:22px;border-radius:50%;background:' + col + ';color:#fff;font:bold 12px/22px Arial,sans-serif;text-align:center;margin-right:8px;">' + (i + 1) + '</span>' +
-            '<b>' + esc(z.dir) + '</b><br><span style="color:#5b6b82;margin-left:30px;">' + z.n + ' ' + plural(z.n, 'robo', 'robos') + ' (' + esc(z.res.slice(0, 2).map(function (x) { return x.r + ' ' + x.n; }).join(', ')) + ')</span>' +
+            '<b>' + esc(z.dir) + '</b><br><span style="color:#5b6b82;margin-left:30px;">' + z.n + ' ' + plural(z.n, S(), P()) + ' (' + esc(z.res.slice(0, 2).map(function (x) { return x.r + ' ' + x.n; }).join(', ')) + ')</span>' +
             (z.serie ? '<div style="margin:3px 0 0 30px;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">' + minigrafico(z.serie, col, ref) + '<span style="font-size:12px;">' + comparativa(z.serie, ref) + '</span></div>' : '') + '</div>';
         }).join('');
       Array.prototype.forEach.call(cuerpo.querySelectorAll('.zr-item'), function (el) {

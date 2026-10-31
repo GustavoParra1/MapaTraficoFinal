@@ -36,7 +36,8 @@
   function actualizarInfo(data, mes, sinMes) {
     var info = $('robo-info');
     if (!info) return;
-    var t = conCoordenadas(data) + ' robos automotor en el mapa';
+    var rf = $('robo-resultado-filter'), lpr = !!(rf && rf.value === 'Alertas LPR');
+    var t = conCoordenadas(data) + (lpr ? ' alertas LPR en el mapa (lugar donde se leyó la patente)' : ' robos automotor en el mapa');
     if (mes) t += ' (' + MESES[mes - 1] + ')';
     if (mes && sinMes) t += '. ' + sinMes + ' sin mes registrado, no se muestran';
     info.textContent = t;
