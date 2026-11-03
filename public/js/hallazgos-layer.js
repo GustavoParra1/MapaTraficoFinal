@@ -114,7 +114,8 @@
           var q = (o['Longitud y Latitud'] || '').split(',');
           var rlon = parseFloat(q[0]), rlat = parseFloat(q[1]);
           if (q.length === 2 && !isNaN(rlat) && !isNaN(rlon) && o['estado_coordenada'] !== 'revisar') {
-            robosArchivo.push({ _lat: rlat, _lon: rlon, 'año': o['año'], 'mes': o['mes'] });
+            var rh = /^(\d{1,2}):/.exec(o['hora'] || o['Hora'] || '');
+            robosArchivo.push({ _lat: rlat, _lon: rlon, 'año': o['año'], 'mes': o['mes'], _h: rh ? +rh[1] : -1 });
           }
         }
         var clave = CLAVE_POR_RESULTADO[norm(o['Resultado'])];
@@ -265,6 +266,7 @@
       catch (e) { console.error('Hallazgos: mapa de calor', e); }
     }
     actualizarCalientes();
+    actualizarFlotante();
   }
 
   /* ---------- activar / desactivar ---------- */
@@ -634,44 +636,117 @@
     document.head.appendChild(st);
   }
 
-  /* Texto compartido por la ventana grande y la ventana flotante */
+  /* Texto compartido por la ventana grande y la ventana flotante.
+     Todo se calcula en el momento con lo que esta elegido (tipos, año, mes, barrio): no hay cifras escritas a mano. */
+  function horaDe(d) {
+    var m = /^(\d{1,2}):/.exec(d['hora'] || '');
+    return m ? +m[1] : -1;
+  }
+
+  /* Franja de 3 horas seguidas con mas casos. horas: lista de horas (0-23). */
+  function franjaPico(horas) {
+    var v = []; for (var i = 0; i < 24; i++) v.push(0);
+    horas.forEach(function (x) { v[x]++; });
+    var mejor = -1, n = -1;
+    for (var s0 = 0; s0 < 24; s0++) {
+      var t = v[s0] + v[(s0 + 1) % 24] + v[(s0 + 2) % 24];
+      if (t > n) { n = t; mejor = s0; }
+    }
+    return { desde: mejor, hasta: (mejor + 3) % 24, n: n, total: horas.length };
+  }
+
   function htmlDatosYMedidas() {
-    return '' +
-      '<h3>Qué mostraron los datos (abril 2025 a agosto 2026)</h3>' +
+    if (!datos || !tiposActivos) return '<p>Cargando datos...</p>';
+    var lista = filtrados();
+    var c = { H: 0, L: 0, S: 0 };
+    lista.forEach(function (d) { c[d._tipo]++; });
+    var claves = Object.keys(TIPOS).filter(function (k) { return tiposActivos.has(k); });
+    var nb = barriosSeleccionados();
+    var a = $('hallayer-anio').value, m = $('hallayer-mes').value;
+    var h = '<h3>Con tu selección actual</h3>' +
+      '<p><b>Período:</b> ' + esc(etiquetaPeriodo()) +
+      (nb.length ? '<br><b>Barrio:</b> ' + esc(nb.length <= 3 ? nb.join(', ') : nb.length + ' barrios') : '') + '</p>';
+
+    if (!claves.length) {
+      h += '<p>No hay ningún tipo tildado. Tildá al menos uno para ver cantidades.</p>';
+    } else {
+      h += '<ul>' + claves.map(function (k) {
+        return '<li><b>' + esc(TIPOS[k].nombre) + ':</b> ' + c[k] + '</li>';
+      }).join('') + '</ul><p>Total en el mapa: <b>' + lista.length + '</b>' +
+        (excluidos ? '. Otros ' + excluidos + ' tienen la ubicación a revisar y no se dibujan.' : '.') + '</p>';
+    }
+
+    // Zonas con mas casos con este filtro
+    var zonas = [];
+    if (lista.length) {
+      var radio = parseInt(($('hallayer-cal-radio') || {}).value, 10) || 500;
+      try { zonas = calcularZonasCalientes(lista, radio).slice(0, 3); } catch (e) { console.warn('Hallazgos: zonas del resumen', e); }
+      if (zonas.length) {
+        h += '<h3>Zonas con más casos (círculos de ' + radio + ' m)</h3><ol>' + zonas.map(function (z) {
+          return '<li>' + esc(z.dir) + ': <b>' + z.n + '</b> casos</li>';
+        }).join('') + '</ol>';
+      } else {
+        h += '<h3>Zonas con más casos</h3><p>Con esta selección no hay zonas con ' + CAL_MIN + ' casos o más.</p>';
+      }
+    }
+
+    // Hora de los LPR dentro de la seleccion
+    var lpr = lista.filter(function (d) { return d._tipo === 'L' && horaDe(d) >= 0; });
+    var items = '';
+    if (lpr.length) {
+      var tarde = lpr.filter(function (d) { var x = horaDe(d); return x >= 12 && x < 18; }).length;
+      items += '<li><b>LPR:</b> ' + Math.round(tarde * 100 / lpr.length) + '% de las lecturas ocurre de 12 a 18 h (' + tarde + ' de ' + lpr.length + ').</li>';
+    }
+
+    // Robos del mismo periodo
+    var rp = robos.filter(function (d) { return (a === 'all' || d['año'] === a) && (m === 'all' || d['mes'] === m); });
+    var conHora = rp.filter(function (d) { return d._h >= 0; });
+    var noche = conHora.filter(function (d) { return d._h >= 18; }).length;
+    var txtRobos = '<b>Robos del mismo período:</b> ' + rp.length + ' registros' + (nb.length ? ' (de toda la ciudad, no se filtran por barrio)' : '') + '.';
+    if (conHora.length) {
+      txtRobos += ' El ' + Math.round(noche * 100 / conHora.length) + '% se avisa entre las 18 y las 24 h (' + noche + ' de ' + conHora.length + ' con hora).';
+    }
+    items += '<li>' + txtRobos + '</li>';
+    h += '<h3>Horarios</h3><ul>' + items + '</ul>';
+
+    // Medidas: salen de la seleccion, no son texto fijo
+    var med = [];
+    if (conHora.length >= 20) {
+      var fr = franjaPico(conHora.map(function (d) { return d._h; }));
+      med.push('<li><b>Patrullaje preventivo de ' + fr.desde + ' a ' + fr.hasta + ' h:</b> es la franja de 3 horas con más avisos de robo en esta selección (' + fr.n + ' de ' + fr.total + ', ' + Math.round(fr.n * 100 / fr.total) + '%).</li>');
+    }
+    if (lpr.length >= 10) {
+      var fl = franjaPico(lpr.map(function (d) { return horaDe(d); }));
+      med.push('<li><b>Monitoreo LPR reforzado de ' + fl.desde + ' a ' + fl.hasta + ' h</b>, con un operador atento a las alertas de vehículos robados y protocolo para despachar un móvil: es la franja con más lecturas (' + fl.n + ' de ' + fl.total + ', ' + Math.round(fl.n * 100 / fl.total) + '%).</li>');
+    }
+    if (zonas.length) {
+      med.push('<li><b>Verificar en el terreno antes de invertir</b> las zonas con más casos: ' + zonas.map(function (z) { return esc(z.dir) + ' (' + z.n + ')'; }).join('; ') + '. Pueden ser otras con otro período o filtro.</li>');
+    }
+    if (tiposActivos.has('H') && c.H > 0) {
+      med.push('<li><b>Protocolo con Tránsito para autos abandonados:</b> aviso al dueño y acarreo, para que no queden días en la calle. En esta selección hay ' + c.H + ' hallazgos automotor.</li>');
+    }
+    h += '<h3>Medidas que se podrían tomar</h3>' +
+      (med.length ? '<ol>' + med.join('') + '</ol>' : '<p>Con esta selección hay muy pocos casos para sugerir medidas. Ampliá el período o los tipos.</p>') +
+      '<p style="font-size:12px;">Son hipótesis de trabajo que se recalculan con lo elegido; deben evaluarlas quienes conocen la operación en la calle.</p>';
+
+    h += '<h3>Qué permite y qué no permite este mapa</h3>' +
       '<ul>' +
-        '<li><b>Hallazgos:</b> los 470 hallazgos están repartidos en unas 370 zonas (cuadrados de 250 m de lado, unas 2 o 3 cuadras): en 297 de esas zonas hubo un solo caso y el máximo en una zona es 8. No hay una concentración clara. Calles con más casos: Juan B. Justo (19), Alvarado (15) y Pedro Luro (13), con números chicos.</li>' +
-        '<li><b>LPR:</b> 107 recuperos en solo 34 puntos, que son donde hay cámaras. Esquinas más repetidas: Juan B. Justo y Güemes (9), Alió y Beruti (8), Mario Bravo y José Hernández (6) y Polonia y De la Plaza (6). El 53% de las lecturas ocurre de 12 a 18 h.</li>' +
-        '<li><b>Robos:</b> el pico de avisos es de 19 a 22 h. El 40% se avisa entre las 18 y las 24 h (3.513 registros).</li>' +
-        '<li><b>Robos y hallazgos:</b> coinciden en las mismas áreas generales, pero casi nunca en las mismas cuadras. Entre las 30 zonas más cargadas de cada lado, solo 3 coinciden si las zonas son de 250 m, y 9 o 10 si son de 500 m (por pura casualidad se esperarían 1 o 2). Un robo y el hallazgo de ese mismo auto no se pueden unir, porque los datos no traen patente.</li>' +
-      '</ul>' +
-      '<h3>Medidas que se podrían tomar</h3>' +
-      '<ol>' +
-        '<li><b>Patrullaje preventivo</b> en las zonas de robo entre las 19 y las 22 h, que es el pico de avisos.</li>' +
-        '<li><b>Monitoreo LPR reforzado de 12 a 18 h</b>, con un operador dedicado a las alertas de vehículos robados y un protocolo para despachar un móvil en el momento.</li>' +
-        '<li><b>Más cámaras LPR</b> en los corredores donde ya detectan: Mario Bravo, Alió, De la Plaza, Alvarado y Juan B. Justo.</li>' +
-        '<li><b>Protocolo con Tránsito para autos abandonados:</b> aviso al dueño y acarreo, para que no queden días en la calle.</li>' +
-        '<li><b>Verificar en el terreno</b> las esquinas con más casos antes de invertir.</li>' +
-      '</ol>';
+        '<li>Las zonas con más casos <b>no son fijas</b>: cambian al cambiar el período o los tipos. No conviene tratarlas como puntos permanentes.</li>' +
+        '<li>Los hallazgos muestran <b>dónde se detectó un auto</b>, no dónde aparecen los autos robados. Un robo y el hallazgo de ese mismo auto no se pueden unir, porque los datos no traen patente.</li>' +
+        '<li>Los recuperos LPR se concentran donde hay cámaras: más cámaras ahí darían más detecciones, no necesariamente menos robos.</li>' +
+        '<li>Con pocos casos por zona, usar los números como orientación y <b>verificar en el terreno</b> antes de decidir.</li>' +
+      '</ul>';
+    return h;
   }
 
   function cuerpoAyuda() {
-    var cuenta;
-    if (datos) {
-      var c = { H: 0, L: 0, S: 0 };
-      datos.forEach(function (d) { c[d._tipo]++; });
-      cuenta = '<p>En todo el período cargado, la capa muestra <b>' + datos.length + '</b> registros con ubicación confiable: ' +
-        '<b>' + c.H + '</b> hallazgos automotor, <b>' + c.L + '</b> recuperados por lectura de patente (LPR) y <b>' + c.S + '</b> secuestros de vehículo.' +
-        (excluidos ? ' Otros ' + excluidos + ' tienen la ubicación a revisar y no se dibujan.' : '') + '</p>';
-    } else {
-      cuenta = '<p>Tildá «Hallazgos de vehículos» para ver las cantidades cargadas.</p>';
-    }
     return '' +
       '<div class="hal-nota"><b>Antes de leer este mapa.</b><ul style="margin:6px 0 0 18px;padding:0;">' +
         '<li>Los puntos son eventos de monitoreo tipificados como robo automotor, no robos confirmados.</li>' +
         '<li>En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo.</li>' +
         '<li>Las zonas del LPR corresponden a la ubicación de las cámaras.</li>' +
       '</ul></div>' +
-      '<h3>Qué se está mirando</h3>' + cuenta +
+      '<h3>Cómo leer el mapa</h3>' +
       '<p>Este mapa muestra <b>dónde se detectan autos</b>, no necesariamente dónde los dejan los ladrones. Cada tipo depende de quién lo detecta: los recuperos LPR aparecen donde hay cámaras y los secuestros donde hay operativos.</p>' +
       '<p>Con <b>Zonas con más hallazgos</b> el mapa se colorea en amarillo, naranja y rojo según dónde se juntan más hallazgos, y se numeran las 10 zonas con más casos. Respeta los tipos, el año y el mes elegidos. Los colores son relativos: marcan las zonas donde hay más hallazgos que en el resto, aunque en números absolutos sean pocos casos.</p>' +
       '<p>Para ver cuántos robos y hallazgos hay alrededor de un punto, tildá <b>Analizar una zona</b> y hacé clic en el mapa: se dibuja un círculo y se cuentan los dos tipos de casos adentro.</p>' +
@@ -686,7 +761,7 @@
       htmlDatosYMedidas() +
       '<h3>Qué datos faltan para afinar</h3>' +
       '<p>En el evento de hallazgo conviene registrar la <b>patente</b>, para unirlo con el robo; <b>hace cuántos días estaba el auto</b>, según el vecino; la <b>fecha de la denuncia del robo</b>; y el <b>estado del auto</b> (quemado o desarmado).</p>' +
-      '<div class="hal-nota"><b>Límites.</b> El mapa muestra lo que se detecta: donde hay más cámaras o patrullaje, se ve más. Los números por zona son chicos (de 11 a 19 casos por calle). Las medidas son hipótesis de trabajo para que las evalúe quien conoce la operación en la calle. Las lecturas de este texto se hicieron con datos hasta agosto de 2026 y pueden cambiar al sumar meses nuevos.</div>';
+      '<div class="hal-nota"><b>Límites.</b> El mapa muestra lo que se detecta: donde hay más cámaras o patrullaje, se ve más. Los números por zona son chicos, así que sirven de orientación y no de conclusión. Todas las cantidades de «Con tu selección actual» se recalculan con los filtros elegidos.</div>';
   }
 
   function crearModalAyuda() {
@@ -776,7 +851,7 @@
         '<h2>Datos y medidas</h2>' +
         '<button type="button" class="hal-x" id="hallayer-flot-cerrar" aria-label="Cerrar">&times;</button>' +
       '</div>' +
-      '<div class="hal-cuerpo">' + htmlDatosYMedidas() +
+      '<div class="hal-cuerpo"><div id="hallayer-flot-datos">' + htmlDatosYMedidas() + '</div>' +
         '<p style="margin-top:12px;"><button type="button" class="hal-enlace" id="hallayer-flot-ayuda">Cómo interpretar este mapa</button></p>' +
       '</div>';
     document.body.appendChild(caja);
@@ -786,9 +861,21 @@
     return caja;
   }
 
+  function actualizarFlotante() {
+    var caja = $('hallayer-flotante');
+    if (!caja || caja.style.display === 'none') return;
+    var cont = $('hallayer-flot-datos');
+    if (!cont) return;
+    var cuerpo = caja.querySelector('.hal-cuerpo');
+    var arriba = cuerpo ? cuerpo.scrollTop : 0;
+    cont.innerHTML = htmlDatosYMedidas();
+    if (cuerpo) cuerpo.scrollTop = arriba;
+  }
+
   function abrirFlotante() {
     var caja = $('hallayer-flotante') || crearFlotante();
     caja.style.display = 'flex';
+    actualizarFlotante();
     var p = posFlotante || { x: Math.min(250, Math.max(8, window.innerWidth - 460)), y: 100 };
     moverFlotante(caja, p.x, p.y);
   }
@@ -820,7 +907,7 @@
     $('hallayer-mes').addEventListener('change', refrescar);
     if ($('hallayer-calientes')) {
       $('hallayer-calientes').addEventListener('change', function () { calCerrada = false; actualizarCalientes(); });
-      $('hallayer-cal-radio').addEventListener('change', actualizarCalientes);
+      $('hallayer-cal-radio').addEventListener('change', function () { actualizarCalientes(); actualizarFlotante(); });
     }
     $('hallayer-calor').addEventListener('change', function (e) {
       var mapa = window.mymap;
