@@ -644,6 +644,8 @@
   }
 
   /* Franja de 3 horas seguidas con mas casos. horas: lista de horas (0-23). */
+  var UMBRAL_FRANJA = 0.1875;   // 1,5 veces lo esperado si los casos se repartieran parejos (3 de 24 horas = 12,5%)
+
   function franjaPico(horas) {
     var v = []; for (var i = 0; i < 24; i++) v.push(0);
     horas.forEach(function (x) { v[x]++; });
@@ -693,9 +695,11 @@
     // Hora de los LPR dentro de la seleccion
     var lpr = lista.filter(function (d) { return d._tipo === 'L' && horaDe(d) >= 0; });
     var items = '';
-    if (lpr.length) {
+    if (lpr.length >= 10) {
       var tarde = lpr.filter(function (d) { var x = horaDe(d); return x >= 12 && x < 18; }).length;
       items += '<li><b>LPR:</b> ' + Math.round(tarde * 100 / lpr.length) + '% de las lecturas ocurre de 12 a 18 h (' + tarde + ' de ' + lpr.length + ').</li>';
+    } else if (lpr.length) {
+      items += '<li><b>LPR:</b> ' + lpr.length + ' lecturas con hora: son muy pocas para calcular porcentajes por franja.</li>';
     }
 
     // Robos del mismo periodo
@@ -713,11 +717,15 @@
     var med = [];
     if (conHora.length >= 20) {
       var fr = franjaPico(conHora.map(function (d) { return d._h; }));
-      med.push('<li><b>Patrullaje preventivo de ' + fr.desde + ' a ' + fr.hasta + ' h:</b> es la franja de 3 horas con más avisos de robo en esta selección (' + fr.n + ' de ' + fr.total + ', ' + Math.round(fr.n * 100 / fr.total) + '%).</li>');
+      if (fr.n / fr.total >= UMBRAL_FRANJA) {
+        med.push('<li><b>Patrullaje preventivo de ' + fr.desde + ' a ' + fr.hasta + ' h:</b> es la franja de 3 horas con más avisos de robo en esta selección (' + fr.n + ' de ' + fr.total + ', ' + Math.round(fr.n * 100 / fr.total) + '%). Es la hora de aviso, no siempre la del hecho.</li>');
+      } else {
+        med.push('<li><b>Patrullaje por franja horaria:</b> ninguna franja de 3 horas se destaca claramente en los avisos de robo de esta selección (la más alta tiene ' + Math.round(fr.n * 100 / fr.total) + '%; con un reparto parejo sería 12,5%), así que no hay una hora pico para reforzar.</li>');
+      }
     }
     if (lpr.length >= 10) {
       var fl = franjaPico(lpr.map(function (d) { return horaDe(d); }));
-      med.push('<li><b>Monitoreo LPR reforzado de ' + fl.desde + ' a ' + fl.hasta + ' h</b>, con un operador atento a las alertas de vehículos robados y protocolo para despachar un móvil: es la franja con más lecturas (' + fl.n + ' de ' + fl.total + ', ' + Math.round(fl.n * 100 / fl.total) + '%).</li>');
+      if (fl.n / fl.total >= UMBRAL_FRANJA) med.push('<li><b>Monitoreo LPR reforzado de ' + fl.desde + ' a ' + fl.hasta + ' h</b>, con un operador atento a las alertas de vehículos robados y protocolo para despachar un móvil: es la franja con más lecturas (' + fl.n + ' de ' + fl.total + ', ' + Math.round(fl.n * 100 / fl.total) + '%).</li>');
     }
     if (zonas.length) {
       med.push('<li><b>Verificar en el terreno antes de invertir</b> las zonas con más casos: ' + zonas.map(function (z) { return esc(z.dir) + ' (' + z.n + ')'; }).join('; ') + '. Pueden ser otras con otro período o filtro.</li>');
