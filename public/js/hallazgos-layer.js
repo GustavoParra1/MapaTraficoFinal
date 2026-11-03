@@ -386,12 +386,12 @@
     var html =
       '<div style="min-width:230px;">' +
       '<b>Zona analizada</b> (radio ' + radio + ' m)<hr style="margin:6px 0;border:0;border-top:1px solid #d9e1ec;">' +
-      punto('#2f6fdd') + 'Robos de automotor: <b>' + r.robos + '</b><br>' +
+      punto('#2f6fdd') + 'Eventos de robo automotor: <b>' + r.robos + '</b><br>' +
       punto(TIPOS.H.color) + 'Hallazgos de vehículos: <b>' + totalH + '</b><br>' +
       '<div style="margin:2px 0 0 16px;font-size:12px;color:#5b6b82;">' +
         'Hallazgo automotor: ' + r.H + '<br>Recuperado por LPR: ' + r.L + '<br>Secuestro de vehículo: ' + r.S + '</div>' +
       '<div style="margin-top:6px;font-size:12px;color:#5b6b82;">Período: ' + esc(etiquetaPeriodo()) + '</div>' +
-      '<div style="margin-top:6px;font-size:12px;color:#5b6b82;">No se sabe si los autos hallados son los mismos que se robaron ahí: los datos no traen patente.</div>' +
+      '<div style="margin-top:6px;font-size:12px;color:#5b6b82;">No se sabe si los autos hallados son los mismos que se robaron ahí: los datos no traen patente. La dirección de un hallazgo puede ser el lugar del robo o el del hallazgo.</div>' +
       '<div style="margin-top:6px;font-size:11px;color:#8a97ab;">' + ll.lat.toFixed(5) + ', ' + ll.lng.toFixed(5) + '</div>' +
       '</div>';
     L.popup({ maxWidth: 320 }).setLatLng(ll).setContent(html).openOn(mapa);
@@ -578,6 +578,7 @@
       cuerpo.innerHTML = '<p style="margin:0;">No hay zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos con estos filtros. Probá con una zona más grande o con más tipos tildados.</p>';
     } else {
       cuerpo.innerHTML = '<p style="margin:0 0 8px;font-size:12px;color:#5b6b82;">Zonas de ' + radio + ' m con ' + CAL_MIN + ' o más hallazgos, sin superponerse. Tocá una para acercarte y ver también cuántos robos hubo ahí.</p>' +
+        '<p style="margin:0 0 8px;font-size:12px;color:#8a4b00;">En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo.' + (zonas.some(function (z) { return z.tipos && z.tipos.L; }) ? ' Las zonas del LPR corresponden a la ubicación de las cámaras.' : '') + '</p>' +
         zonas.map(function (z, i) {
           var tipos = [z.tipos.H && ('hallazgo automotor ' + z.tipos.H), z.tipos.L && ('LPR ' + z.tipos.L), z.tipos.S && ('secuestro ' + z.tipos.S)].filter(Boolean).join(', ');
           return '<div class="hal-zona-item" role="button" tabindex="0" data-i="' + i + '">' +
@@ -665,6 +666,11 @@
       cuenta = '<p>Tildá «Hallazgos de vehículos» para ver las cantidades cargadas.</p>';
     }
     return '' +
+      '<div class="hal-nota"><b>Antes de leer este mapa.</b><ul style="margin:6px 0 0 18px;padding:0;">' +
+        '<li>Los puntos son eventos de monitoreo tipificados como robo automotor, no robos confirmados.</li>' +
+        '<li>En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo.</li>' +
+        '<li>Las zonas del LPR corresponden a la ubicación de las cámaras.</li>' +
+      '</ul></div>' +
       '<h3>Qué se está mirando</h3>' + cuenta +
       '<p>Este mapa muestra <b>dónde se detectan autos</b>, no necesariamente dónde los dejan los ladrones. Cada tipo depende de quién lo detecta: los recuperos LPR aparecen donde hay cámaras y los secuestros donde hay operativos.</p>' +
       '<p>Con <b>Zonas con más hallazgos</b> el mapa se colorea en amarillo, naranja y rojo según dónde se juntan más hallazgos, y se numeran las 10 zonas con más casos. Respeta los tipos, el año y el mes elegidos. Los colores son relativos: marcan las zonas donde hay más hallazgos que en el resto, aunque en números absolutos sean pocos casos.</p>' +
