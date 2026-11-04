@@ -219,6 +219,9 @@
     }).catch(function (e) { console.warn('Informe de robos: no se pudo capturar el mapa', e); return null; });
   }
 
+  /* Titulo + contenido: si no entra todo en la pagina, pasan juntos a la siguiente (evita titulos solos al pie) */
+  function titulado(ctx, texto, alto) { ctx.espacio(alto + 26); ctx.titulo2(texto); }
+
   function armarPDF(s, textoIA, mapa) {
     var X = (typeof PdfX !== 'undefined') ? PdfX : window.PdfX, C = X.COL, lim = X.limpiar, fmt = X.fmt;
     var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
@@ -265,7 +268,7 @@
     ctx.banner(1, 'Panorama del período', filtrosTxt);
     ctx.caja('info', 'QUÉ ESTAMOS VIENDO', 'Cantidad de robos automotor con los filtros del mapa, cuántos terminaron con detención y cómo evolucionó el último año.');
     if (r.mensual) {
-      ctx.titulo2('Robos por mes (últimos 12 meses)');
+      titulado(ctx, 'Robos por mes (últimos 12 meses)', 36);
       ctx.columnas(r.mensual.valores.map(function (v, i) { return { v: v, l: r.mensual.etiquetas[i].replace(' ', ' ') }; }), { colores: r.mensual.valores.map(function (v, i) { return i === 11 ? C.red : C.pale; }), altura: 36 });
       ctx.leyenda('La barra roja es ' + (r.mensual.elegido ? 'el mes elegido' : 'el último mes con datos') + '. Se cuentan los robos con ubicación y con el filtro de resultado, sin importar el año elegido.' + (r.mensual.enCurso ? ' Es el mes en curso: puede estar incompleto.' : ''));
     }
@@ -276,12 +279,12 @@
     if (r.conHora) {
       var b3 = [], i;
       for (i = 0; i < 8; i++) b3.push({ v: r.hora[3 * i] + r.hora[3 * i + 1] + r.hora[3 * i + 2], l: (3 * i) + '-' + (3 * i + 3) });
-      ctx.titulo2('Robos por franja horaria (' + r.conHora + ' con hora registrada)');
+      titulado(ctx, 'Robos por franja horaria (' + r.conHora + ' con hora registrada)', 34);
       ctx.columnas(b3, { color: C.amber, altura: 34 });
       ctx.leyenda('Horas del día en bloques de 3 horas. Si los casos se repartieran parejos, cada bloque tendría 12,5%.');
     } else ctx.parrafo('No hay hora registrada en este período (los años anteriores a 2025 no la traen).', { color: C.gray });
     if (r.conDia) {
-      ctx.titulo2('Robos por día de la semana');
+      titulado(ctx, 'Robos por día de la semana', 34);
       ctx.columnas(r.dia.map(function (v, k) { return { v: v, l: DIA3[k] }; }), { colores: r.dia.map(function (v, k) { return an.dias.indexOf(k) >= 0 ? C.red : C.blue; }), altura: 34 });
     }
     ctx.caja('ok', 'EN PALABRAS SIMPLES', (an.franja ? 'La franja de ' + textoFranja(an) + ' reúne ' + coma(Math.round(an.franja.share * 1000) / 10) + '% de los avisos (con un reparto parejo sería 12,5%). ' : 'Ninguna franja de 3 horas se destaca claramente. ') + (an.dias.length ? 'Los ' + textoDias(an) + ' tienen más robos que el resto.' : 'Ningún día se destaca con claridad.'));
@@ -289,14 +292,14 @@
 
     /* --- 3. donde --- */
     ctx.banner(3, 'Dónde se concentran', 'Zonas de ' + s.filtros.radioZona + ' m y esquinas con más robos');
-    if (mapa) { ctx.titulo2('Mapa con los filtros actuales'); ctx.imagen(mapa, []); ctx.leyenda('Captura del mapa en el momento de generar el informe. Se ven las capas que estaban activadas.'); }
+    if (mapa) { titulado(ctx, 'Mapa con los filtros actuales', 105); ctx.imagen(mapa, []); ctx.leyenda('Captura del mapa en el momento de generar el informe. Se ven las capas que estaban activadas.'); }
     if (s.zonas.length) {
       ctx.tabla(['#', 'Zona (esquina más cercana al centro)', 'Robos', 'Tendencia', 'Detalle'],
         s.zonas.map(function (z) { return [z.pos, z.dir, z.n, z.tendencia.rotulo, z.tendencia.texto]; }), [0.06, 0.34, 0.09, 0.18, 0.33], { negritaPrimera: false });
       ctx.leyenda('Cada zona suma todos los robos dentro de ' + s.filtros.radioZona + ' m de su centro. Se listan zonas con ' + s.zonasMin + ' robos o más, sin superponerse.');
     } else ctx.parrafo('No hay zonas de ' + s.filtros.radioZona + ' m con ' + s.zonasMin + ' o más robos con estos filtros. Probá con una zona más grande o con otro período.', { color: C.gray });
     if (s.esquinas.length) {
-      ctx.titulo2('Esquinas con más robos');
+      titulado(ctx, 'Esquinas con más robos', Math.min(8, s.esquinas.length) * 7);
       ctx.barras(s.esquinas.slice(0, 8).map(function (e) { return { l: e.dir, v: e.n }; }), { labelW: 78, color: C.red });
     }
     ctx.caja('warn', 'OJO CON ESTO', 'Una zona con muchos robos acumulados puede estar enfriándose, y una con pocos puede estar creciendo. La columna Tendencia compara ' + (r.mensual && r.mensual.elegido ? 'el mes elegido con el anterior' : 'los últimos 3 meses con los 3 anteriores') + '; con menos de ' + DIF_MIN + ' hechos de diferencia se considera estable.');
@@ -309,7 +312,7 @@
       { v: fmt(hp.S), l: 'Secuestro de vehículo', color: C.green }, { v: coma(hp.porCien), l: 'Hallazgos c/100 robos', n: 'por zona, no por vehículo', color: C.blue }
     ]);
     if (s.hallazgosMapa && s.hallazgosMapa.zonas.length) {
-      ctx.titulo2('Zonas con más hallazgos (' + s.hallazgosMapa.radio + ' m) · ' + s.hallazgosMapa.periodo);
+      titulado(ctx, 'Zonas con más hallazgos (' + s.hallazgosMapa.radio + ' m) · ' + s.hallazgosMapa.periodo, 30);
       ctx.tabla(['#', 'Zona', 'Hallazgos', 'Composición'], s.hallazgosMapa.zonas.map(function (z, k) { return [k + 1, z.dir, z.n, z.tipos.H + ' automotor, ' + z.tipos.L + ' LPR, ' + z.tipos.S + ' secuestro']; }), [0.06, 0.44, 0.14, 0.36], { negritaPrimera: false });
     } else ctx.parrafo('El mapa de hallazgos no tiene zonas con 3 casos o más con la selección actual, o la capa no está activa.', { color: C.gray });
     if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', an.coinciden.slice(0, 3).map(function (c) { return 'La zona de robos de ' + c.robo.dir + ' coincide con la zona de hallazgos de ' + c.hallazgo.dir + '.'; }).concat('Puede indicar un corredor de paso o descarte; se confirma con trabajo en terreno.'));

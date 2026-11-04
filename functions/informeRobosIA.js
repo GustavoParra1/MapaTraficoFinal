@@ -63,6 +63,10 @@ REGLAS DE REDACCIÓN ADICIONALES:
 - No expliques qué es un lector LPR ni otros términos que el equipo ya conoce.
 - En "Qué validar antes de decidir" incluí solo aclaraciones metodológicas y datos faltantes (por ejemplo "sin datos de coincidencias"), no recomendaciones nuevas.
 - Mencioná cada dato con su nombre correcto del glosario.
+- El GLOSARIO es solo para vos: no lo copies ni lo parafrasees en la respuesta.
+- Escribí SIEMPRE con palabras comunes. Está prohibido nombrar campos internos del JSON (nada como robos.total, franjaPicoDeAviso, zonasConMasRobos, muestraChica) ni frases como "es null" o "es false". Decí, por ejemplo, "el total de robos" o "la franja con más avisos".
+- Usá viñetas "- " en las tres secciones.
+- Cada viñeta de "Qué validar antes de decidir" es una aclaración metodológica breve o un dato faltante; no repitas definiciones ni expliques cómo se calcula cada dato.
 
 DATOS:
 ${json}
@@ -83,37 +87,47 @@ function cifrasSinRespaldo(texto, datos) {
   return sueltas;
 }
 
-/* Devuelve el texto listo, o null si la respuesta no es confiable. */
-async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
-  if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return null;
-  const doFetch = fetchFn || fetch;
+const CAMPOS_INTERNOS = /\b(robos\.total|porcentajeConDetencion|franjaPicoDeAviso|desdeHora|hastaHora|porcentajeDeLosAvisos|diasPico|evolucionMensual|zonasConMasRobos|esquinasConMasRobos|hallazgosDeVehiculos|hallazgosCada100Robos|lectoresLPR|robosConLectorCerca|porcentajeDeRobosConLectorCerca|sitiosCandidatos|robosQueSumariaDeCobertura|coincidenciasRoboHallazgo|muestraChica|detalleTendencia|senalDebil)\b|\bes\s+(null|false|true)\b/i;
+
+/* Devuelve null si el texto es confiable, o el motivo del rechazo. */
+function validar(texto, datos) {
+  if (texto.length < 40) return 'es demasiado corta';
+  if (!/^## /m.test(texto)) return 'no respeta el formato con subtitulos "## "';
+  if (CAMPOS_INTERNOS.test(texto)) return 'muestra nombres internos de los datos (como robos.total o muestraChica) o dice "es null/false"; escribi con palabras comunes';
+  if (datos.coincidenciasRoboHallazgo === null && /no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) return 'afirma que no hay coincidencias cuando no se pudieron evaluar (decir "sin datos")';
+  if (/(son|resultan|siendo) v[aá]lidas|(sin|no presenta[n]?) restricciones de tama/i.test(texto)) return 'emite un juicio sobre la validez o el tamano de la muestra';
+  const sueltas = cifrasSinRespaldo(texto, datos);
+  if (sueltas.length > MAX_SIN_RESPALDO) return 'incluye cifras que no estan en los datos: ' + sueltas.join(', ');
+  if (sueltas.length) console.warn('Gemini (robos): cifras sin respaldo toleradas:', sueltas.join(', '));
+  return null;
+}
+
+async function pedir(prompt, modelo, apiKey, doFetch) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
   const resp = await doFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: construirPromptRobos(datos) }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
-    })
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
   });
   const data = await resp.json();
   if (!resp.ok) { console.error('Gemini (robos) devolvio error:', JSON.stringify(data)); return null; }
-  const texto = normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-  if (texto.length < 40) { console.error('Gemini (robos): respuesta vacia o muy corta'); return null; }
-  if (!/^## /m.test(texto)) { console.error('Gemini (robos): la respuesta no respeta el formato'); return null; }
-  if (datos.coincidenciasRoboHallazgo === null && /no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) {
-    console.error('Gemini (robos): afirma que no hay coincidencias cuando no se pudo evaluar'); return null;
-  }
-  if (/(son|resultan|siendo) v[aá]lidas|(sin|no presenta[n]?) restricciones de tama/i.test(texto)) {
-    console.error('Gemini (robos): emite un juicio sobre la validez de los datos'); return null;
-  }
-  const sueltas = cifrasSinRespaldo(texto, datos);
-  if (sueltas.length > MAX_SIN_RESPALDO) {
-    console.error('Gemini (robos): respuesta descartada, cifras que no estan en los datos:', sueltas.join(', '));
-    return null;
-  }
-  if (sueltas.length) console.warn('Gemini (robos): cifras sin respaldo toleradas:', sueltas.join(', '));
-  return texto;
+  return normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
 }
 
-module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo };
+/* Devuelve el texto listo, o null si no se logra una respuesta confiable (hasta 2 intentos). */
+async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
+  if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return null;
+  const doFetch = fetchFn || fetch;
+  let aviso = '';
+  for (let intento = 0; intento < 2; intento++) {
+    const texto = await pedir(construirPromptRobos(datos) + aviso, modelo, apiKey, doFetch);
+    if (!texto) continue;
+    const motivo = validar(texto, datos);
+    if (!motivo) return texto;
+    console.error(`Gemini (robos): intento ${intento + 1} rechazado: ${motivo}`);
+    aviso = `\n\nCORRECCION OBLIGATORIA: tu respuesta anterior fue rechazada porque ${motivo}. Reescribila cumpliendo todas las reglas.`;
+  }
+  return null;
+}
+
+module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar };
