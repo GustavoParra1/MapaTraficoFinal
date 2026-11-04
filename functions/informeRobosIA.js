@@ -1,0 +1,97 @@
+// functions/informeRobosIA.js
+//
+// Modo "robos" de generarInformeIA: redacta un analisis breve a partir de las cifras que el
+// navegador ya calculo (informe-robos.js). La IA SOLO redacta; no calcula.
+//
+// Seguridad de contenido:
+//  - El prompt lo arma el servidor (se ignora cualquier "consigna" que mande el navegador).
+//  - Se valida la respuesta: si el texto contiene cifras que no estan en los datos recibidos,
+//    se descarta y el PDF sale sin el apartado de IA (mejor sin analisis que con un numero inventado).
+
+const MAX_JSON = 24000;        // tope de caracteres de datos que se le pasan al modelo
+const MAX_SIN_RESPALDO = 2;    // cifras "sueltas" toleradas antes de descartar la respuesta
+
+function normalizarEspacios(t) {
+  return String(t || '')
+    .replace(/[\u00A0\u2000-\u200A\u202F\u3000]/g, ' ')
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+    .replace(/\*\*/g, '');
+}
+
+function construirPromptRobos(datos) {
+  const json = JSON.stringify(datos).slice(0, MAX_JSON);
+  return `
+Sos un analista de seguridad urbana. Redactás un ANÁLISIS BREVE para un equipo operativo de un centro de monitoreo, sobre robos de automotor en Mar del Plata, en español rioplatense y lenguaje simple (oraciones cortas, sin jerga; si usás un término técnico, explicalo en una frase).
+
+Usá EXCLUSIVAMENTE los datos del bloque DATOS. Los números que escribas tienen que aparecer tal cual en DATOS.
+
+FORMATO (un script lo convierte en PDF, seguilo exacto):
+- Subtítulos con "## " al principio de la línea.
+- Viñetas con "- " al principio, una por línea.
+- Una advertencia destacada, como máximo, en una línea que empiece con "> ".
+- Texto plano, sin asteriscos, sin negritas, sin emojis, sin flechas, sin tablas.
+
+ESTRUCTURA (exactamente estos tres subtítulos, en este orden):
+## Lectura general
+## Qué priorizar
+## Qué validar antes de decidir
+
+REGLAS OBLIGATORIAS:
+- No inventes ni calcules cifras nuevas (nada de sumas, promedios, porcentajes o proyecciones propias). Si querés comparar, usá solo valores que ya estén en DATOS.
+- No nombres calles, barrios ni zonas que no estén en DATOS.
+- No compares con otras ciudades, promedios nacionales ni "estándares" que no estén en DATOS.
+- Si una zona figura con "senalDebil": true, o la muestra es chica ("muestraChica": true), tratá la tendencia como ALERTA y no como prueba.
+- La hora es la del aviso, no necesariamente la del hecho.
+- El cruce entre robos y hallazgos es por zona, no por vehículo (los datos no traen patente); no afirmes que un hallazgo corresponde a un robo concreto.
+- Los sitios para lectores LPR son candidatos a validar en terreno; no afirmes que instalarlos reducirá los robos.
+- No uses frases especulativas ("es posible que", "podría deberse a", "sugiere que"). Cada afirmación tiene que ser un dato de DATOS o una aclaración metodológica neutra.
+- Si un dato es nulo o falta, decilo: "sin datos".
+- Máximo 350 palabras.
+
+DATOS:
+${json}
+`.trim();
+}
+
+/* Cifras (con 2 o mas digitos o con decimales) que aparecen en el texto pero no en los datos. */
+function cifrasSinRespaldo(texto, datos) {
+  const norm = (s) => String(s).replace(',', '.').replace(/^0+(?=\d)/, '').replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  const re = /\d+(?:[.,]\d+)?/g;
+  const permitidas = new Set((JSON.stringify(datos).match(re) || []).map(norm));
+  const sueltas = [];
+  (String(texto).match(re) || []).forEach((n) => {
+    const esEnteroChico = /^\d$/.test(n);             // 0 a 9: cantidades y "3 meses", "3 horas"
+    if (esEnteroChico) return;
+    if (!permitidas.has(norm(n))) sueltas.push(n);
+  });
+  return sueltas;
+}
+
+/* Devuelve el texto listo, o null si la respuesta no es confiable. */
+async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
+  if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return null;
+  const doFetch = fetchFn || fetch;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
+  const resp = await doFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: construirPromptRobos(datos) }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) { console.error('Gemini (robos) devolvio error:', JSON.stringify(data)); return null; }
+  const texto = normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  if (texto.length < 40) { console.error('Gemini (robos): respuesta vacia o muy corta'); return null; }
+  if (!/^## /m.test(texto)) { console.error('Gemini (robos): la respuesta no respeta el formato'); return null; }
+  const sueltas = cifrasSinRespaldo(texto, datos);
+  if (sueltas.length > MAX_SIN_RESPALDO) {
+    console.error('Gemini (robos): respuesta descartada, cifras que no estan en los datos:', sueltas.join(', '));
+    return null;
+  }
+  if (sueltas.length) console.warn('Gemini (robos): cifras sin respaldo toleradas:', sueltas.join(', '));
+  return texto;
+}
+
+module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo };
