@@ -10,6 +10,11 @@
 
 const MAX_JSON = 24000;        // tope de caracteres de datos que se le pasan al modelo
 const MAX_SIN_RESPALDO = 2;    // cifras "sueltas" toleradas antes de descartar la respuesta
+// Si el modelo principal esta saturado (503) o no responde, se prueba con estos, en orden.
+// Si alguno no existe o no esta habilitado para tu clave, simplemente falla y se pasa al siguiente.
+const MODELOS_RESPALDO = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+const MAX_INTENTOS = 3;          // intentos en total (entre todos los modelos)
+const ESPERA_POR_INTENTO_MS = 25000;  // si un modelo no contesta en este tiempo, se pasa al siguiente
 
 function normalizarEspacios(t) {
   return String(t || '')
@@ -108,7 +113,8 @@ async function pedir(prompt, modelo, apiKey, doFetch) {
     const resp = await doFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } }),
+      signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ESPERA_POR_INTENTO_MS) : undefined
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -119,27 +125,33 @@ async function pedir(prompt, modelo, apiKey, doFetch) {
     return { texto: normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim() };
   } catch (err) {
     console.error('Gemini (robos) fallo la conexion:', err && err.message);
+    if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) return { error: `no respondio en ${ESPERA_POR_INTENTO_MS / 1000} segundos` };
     return { error: 'no se pudo conectar con Gemini: ' + (err && err.message ? err.message : err) };
   }
 }
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/* Devuelve { texto, motivos }. texto es null si no se logra una respuesta confiable (hasta 2 intentos);
-   motivos explica que paso en cada intento, para mostrarlo en el aviso del informe. */
+/* Devuelve { texto, motivos }. texto es null si no se logra una respuesta confiable;
+   motivos explica que paso en cada intento, para mostrarlo en el aviso del informe.
+   - Si un modelo falla por la API (saturado, no existe, no responde) se pasa al siguiente modelo.
+   - Si el modelo responde pero el texto no pasa las validaciones, se reintenta con el mismo modelo (una sola vez). */
 async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   const motivos = [];
   if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return { texto: null, motivos: ['los datos del informe llegaron incompletos'] };
   const doFetch = fetchFn || fetch;
-  let aviso = '';
-  for (let intento = 1; intento <= 2; intento++) {
-    const r = await pedir(construirPromptRobos(datos) + aviso, modelo, apiKey, doFetch);
-    if (r.error) { motivos.push(`intento ${intento}: ${r.error}`); if (intento === 1) await esperar(2000); continue; }
-    if (!r.texto) { motivos.push(`intento ${intento}: respuesta vacia`); continue; }
+  const modelos = [modelo].concat(MODELOS_RESPALDO.filter((m) => m !== modelo));
+  let m = 0, aviso = '', rechazos = 0;
+  for (let intento = 1; intento <= MAX_INTENTOS && m < modelos.length; intento++) {
+    const nombre = modelos[m];
+    const r = await pedir(construirPromptRobos(datos) + aviso, nombre, apiKey, doFetch);
+    if (r.error) { motivos.push(`intento ${intento} (${nombre}): ${r.error}`); m++; await esperar(1000); continue; }
+    if (!r.texto) { motivos.push(`intento ${intento} (${nombre}): respuesta vacia`); m++; continue; }
     const motivo = validar(r.texto, datos);
     if (!motivo) return { texto: r.texto, motivos };
-    console.error(`Gemini (robos): intento ${intento} rechazado: ${motivo}`);
-    motivos.push(`intento ${intento}: texto rechazado porque ${motivo}`);
+    console.error(`Gemini (robos): intento ${intento} (${nombre}) rechazado: ${motivo}`);
+    motivos.push(`intento ${intento} (${nombre}): texto rechazado porque ${motivo}`);
+    if (++rechazos >= 2) break;
     aviso = `\n\nCORRECCION OBLIGATORIA: tu respuesta anterior fue rechazada porque ${motivo}. Reescribila cumpliendo todas las reglas.`;
   }
   return { texto: null, motivos };
