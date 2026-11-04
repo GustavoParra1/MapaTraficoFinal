@@ -938,7 +938,17 @@
   window.HallazgosLayer = {
     cargar: function () { return cargarDatos(); },
     sincronizarBarrio: sincronizarBarrio,
-    datos: function () { return datos; }
+    datos: function () { return datos; },
+    /* Lo usa informe-robos.js: lo que se ve en el mapa de hallazgos con la seleccion actual (null si la capa no esta lista) */
+    resumen: function () {
+      if (!datos || !tiposActivos || !$('hallayer-anio')) return null;
+      var lista = filtrados(), c = { H: 0, L: 0, S: 0 };
+      lista.forEach(function (d) { c[d._tipo]++; });
+      var radio = parseInt(($('hallayer-cal-radio') || {}).value, 10) || 500, zonas = [];
+      try { zonas = calcularZonasCalientes(lista, radio).slice(0, 5).map(function (z) { return { lat: z.lat, lon: z.lon, n: z.n, dir: z.dir, tipos: z.tipos }; }); } catch (e) { zonas = []; }
+      return { periodo: etiquetaPeriodo(), barrios: barriosSeleccionados(), c: c, total: lista.length, excluidos: excluidos, radio: radio, zonas: zonas,
+               tipos: Object.keys(TIPOS).filter(function (k) { return tiposActivos.has(k); }) };
+    }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

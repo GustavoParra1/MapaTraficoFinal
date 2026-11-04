@@ -375,6 +375,26 @@
     });
   }
 
+  /* ---------- lectura para el informe (informe-robos.js): mismas zonas y misma evolucion que ve la persona ---------- */
+  function obtener(radioForzado) {
+    var sel = $('zonas-robos-radio');
+    var radio = radioForzado || (sel && parseInt(sel.value, 10)) || 500;
+    var pts = puntos(datosActuales), zs = calcular(pts, radio), base = null, ref = null, general = null;
+    try { base = baseEvolucion(); ref = base && base.length ? referencia(base) : null; } catch (e) { base = null; ref = null; }
+    if (ref) { general = serie(base, ref, null, 0); zs.forEach(function (z) { z.serie = serie(base, ref, z, radio); }); }
+    var porEsquina = {};
+    pts.forEach(function (p) { if (p.dir) porEsquina[p.dir] = (porEsquina[p.dir] || 0) + 1; });
+    var esquinas = Object.keys(porEsquina).map(function (k) { return { dir: k, n: porEsquina[k] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 10);
+    var etiquetas = []; if (ref) for (var i = 0; i < 12; i++) etiquetas.push(corto(ref.k - 11 + i));
+    var hoy = new Date();
+    return {
+      radio: radio, calMin: CAL_MIN, n: pts.length, periodo: periodoTexto(), general: general, esquinas: esquinas,
+      ref: ref ? { k: ref.k, elegido: ref.elegido, etiqueta: nombreMes(ref.k), mesAnterior: nombreMes(ref.k - 1), etiquetas: etiquetas, enCurso: (hoy.getFullYear() * 12 + hoy.getMonth()) === ref.k } : null,
+      zonas: zs.map(function (z) { return { lat: z.lat, lon: z.lon, n: z.n, dir: z.dir, res: z.res, serie: z.serie || null }; })
+    };
+  }
+  window.CIMUZonasRobos = { obtener: obtener };
+
   /* ---------- enganche: cada vez que se filtran los robos, se recalculan las zonas ---------- */
   function enganchar() {
     var f = window.processAndDisplayRobos;
