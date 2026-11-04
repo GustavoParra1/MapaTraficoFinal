@@ -22,6 +22,7 @@
 
 const functions = require('firebase-functions/v1');
 const cors = require('cors')({ origin: true });
+const { redactarRobos } = require('./informeRobosIA');
 
 // Modelo de la capa gratuita de Gemini. Si en el futuro Google cambia
 // el nombre del modelo gratuito, se actualiza solo acá.
@@ -41,6 +42,15 @@ exports.generarInformeIA = functions
       }
 
       try {
+        // --- Modo "robos": analisis breve del informe de robo automotor (informe-robos.js) ---
+        if (req.body?.tipo === 'robos') {
+          const keyRobos = functions.config().gemini?.key;
+          if (!keyRobos) return res.status(500).json({ error: 'Falta configurar la API key de Gemini en el servidor', tipo: 'robos' });
+          const textoRobos = await redactarRobos({ datos: req.body.datos, apiKey: keyRobos, modelo: MODELO_GEMINI });
+          if (!textoRobos) return res.status(502).json({ error: 'La IA no devolvio un analisis confiable', tipo: 'robos' });
+          return res.status(200).json({ texto: textoRobos, tipo: 'robos', modelo: MODELO_GEMINI });
+        }
+
         const datos = req.body?.datos;
         const observaciones = (req.body?.observaciones || '').toString().trim();
         const imagenesUrls = Array.isArray(req.body?.imagenesUrls)
