@@ -10,9 +10,10 @@
   'use strict';
 
   var IA_URL = (typeof window !== 'undefined' && window.CIMU_INFORME_ROBOS_IA_URL) || 'https://us-central1-seguridad-mdp-v2.cloudfunctions.net/generarInformeIA';
-  var IA_TIMEOUT_MS = 45000;
+  var IA_TIMEOUT_MS = 100000;
   var DIA3 = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
   var DIA_LARGO = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  var DIA_PLURAL = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados', 'domingos'];
   var DIF_MIN = 3;            // diferencia minima de hechos para hablar de suba o baja (con menos es ruido)
   var MUESTRA_CHICA = 30;     // menos robos que esto: se avisa que las conclusiones son debiles
 
@@ -115,7 +116,7 @@
   }
 
   function textoFranja(an) { return an.franja ? an.franja.desde + ' a ' + an.franja.hasta + ' h' : null; }
-  function textoDias(an) { return an.dias.length ? an.dias.map(function (i) { return DIA_LARGO[i]; }).join(' y ') : null; }
+  function textoDias(an) { return an.dias.length ? an.dias.map(function (i) { return DIA_PLURAL[i]; }).join(' y ') : null; }
 
   function recomendaciones(s) {
     var an = s.an, out = [], fr = textoFranja(an), dias = textoDias(an);
@@ -199,13 +200,23 @@
      si la funcion en la nube todavia no conoce este modo, contestaria sobre barrios y se descarta. */
   function pedirIA(s) {
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null, timer = ctrl ? setTimeout(function () { ctrl.abort(); }, IA_TIMEOUT_MS) : null;
+    var fin = function (r) { if (timer) clearTimeout(timer); return r; };
     return fetch(IA_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl ? ctrl.signal : undefined,
       body: JSON.stringify({ tipo: 'robos', datos: paraIA(s), consigna: CONSIGNA_IA, observaciones: '' })
-    }).then(function (r) { if (!r.ok) throw new Error('IA ' + r.status); return r.json(); })
-      .then(function (j) { return (j && j.tipo === 'robos' && typeof j.texto === 'string' && j.texto.trim().length > 40) ? j.texto : null; })
-      .catch(function (e) { console.warn('Informe de robos: sin análisis de IA', e); return null; })
-      .then(function (t) { if (timer) clearTimeout(timer); return t; });
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) {
+          var det = (j && j.motivos && j.motivos.length) ? j.motivos.join(' | ') : ((j && j.error) || '');
+          return { texto: null, motivo: 'el servidor respondió ' + r.status + (det ? ': ' + det : '') };
+        }
+        if (j && j.tipo === 'robos' && typeof j.texto === 'string' && j.texto.trim().length > 40) return { texto: j.texto, motivo: '' };
+        return { texto: null, motivo: j && j.tipo !== 'robos' ? 'el servidor todavía no tiene el modo de robos (hay que publicar la función)' : 'la respuesta llegó vacía' };
+      });
+    }).catch(function (e) {
+      console.warn('Informe de robos: sin análisis de IA', e);
+      return { texto: null, motivo: (e && e.name === 'AbortError') ? 'tardó más de ' + Math.round(IA_TIMEOUT_MS / 1000) + ' segundos' : 'no se pudo conectar (' + (e && e.message ? e.message : e) + ')' };
+    }).then(fin);
   }
 
   /* ======================= 4. PDF (usa PdfX de index.html) ======================= */
@@ -384,12 +395,12 @@
       if (!s.robos.n) throw new Error('No hay robos con los filtros actuales.');
       paso('Capturando el mapa…');
       return capturarMapa().then(function (mapa) {
-        paso(usarIA ? 'Redactando análisis…' : 'Armando PDF…');
-        return (usarIA ? pedirIA(s) : Promise.resolve(null)).then(function (txt) {
+        paso(usarIA ? 'Redactando análisis (hasta 1 min)…' : 'Armando PDF…');
+        return (usarIA ? pedirIA(s) : Promise.resolve({ texto: null, motivo: '' })).then(function (ia) {
           paso('Armando PDF…');
-          var pdf = armarPDF(s, txt, mapa);
+          var pdf = armarPDF(s, ia.texto, mapa);
           pdf.save(nombreArchivo(s));
-          if (usarIA && !txt) alert('El informe se generó sin el apartado de IA (no hubo respuesta del servicio).');
+          if (usarIA && !ia.texto) alert('El informe se generó sin el apartado de IA.\n\nMotivo: ' + (ia.motivo || 'no se informó'));
         });
       });
     }).catch(function (e) { console.error('Informe de robos:', e); alert('No pude generar el informe: ' + (e && e.message ? e.message : e)); })
@@ -409,7 +420,7 @@
   }
 
   function iniciar() { crearBoton(); }
-  window.CIMUInformeRobos = { reunir: reunir, armarPDF: armarPDF, recomendaciones: recomendaciones, plan: plan, limitaciones: limitaciones, tendencia: tendencia, analizar: analizar, paraIA: paraIA, consigna: CONSIGNA_IA };
+  window.CIMUInformeRobos = { pedirIA: pedirIA, reunir: reunir, armarPDF: armarPDF, recomendaciones: recomendaciones, plan: plan, limitaciones: limitaciones, tendencia: tendencia, analizar: analizar, paraIA: paraIA, consigna: CONSIGNA_IA };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
     window.addEventListener('load', crearBoton);

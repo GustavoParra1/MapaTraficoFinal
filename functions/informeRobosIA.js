@@ -104,30 +104,45 @@ function validar(texto, datos) {
 
 async function pedir(prompt, modelo, apiKey, doFetch) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
-  const resp = await doFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
-  });
-  const data = await resp.json();
-  if (!resp.ok) { console.error('Gemini (robos) devolvio error:', JSON.stringify(data)); return null; }
-  return normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  try {
+    const resp = await doFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      console.error('Gemini (robos) devolvio error:', JSON.stringify(data));
+      const e = data && data.error ? data.error : {};
+      return { error: `Gemini respondio ${e.code || resp.status} ${e.status || ''} ${String(e.message || '').slice(0, 100)}`.replace(/\s+/g, ' ').trim() };
+    }
+    return { texto: normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim() };
+  } catch (err) {
+    console.error('Gemini (robos) fallo la conexion:', err && err.message);
+    return { error: 'no se pudo conectar con Gemini: ' + (err && err.message ? err.message : err) };
+  }
 }
 
-/* Devuelve el texto listo, o null si no se logra una respuesta confiable (hasta 2 intentos). */
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Devuelve { texto, motivos }. texto es null si no se logra una respuesta confiable (hasta 2 intentos);
+   motivos explica que paso en cada intento, para mostrarlo en el aviso del informe. */
 async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
-  if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return null;
+  const motivos = [];
+  if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return { texto: null, motivos: ['los datos del informe llegaron incompletos'] };
   const doFetch = fetchFn || fetch;
   let aviso = '';
-  for (let intento = 0; intento < 2; intento++) {
-    const texto = await pedir(construirPromptRobos(datos) + aviso, modelo, apiKey, doFetch);
-    if (!texto) continue;
-    const motivo = validar(texto, datos);
-    if (!motivo) return texto;
-    console.error(`Gemini (robos): intento ${intento + 1} rechazado: ${motivo}`);
+  for (let intento = 1; intento <= 2; intento++) {
+    const r = await pedir(construirPromptRobos(datos) + aviso, modelo, apiKey, doFetch);
+    if (r.error) { motivos.push(`intento ${intento}: ${r.error}`); if (intento === 1) await esperar(2000); continue; }
+    if (!r.texto) { motivos.push(`intento ${intento}: respuesta vacia`); continue; }
+    const motivo = validar(r.texto, datos);
+    if (!motivo) return { texto: r.texto, motivos };
+    console.error(`Gemini (robos): intento ${intento} rechazado: ${motivo}`);
+    motivos.push(`intento ${intento}: texto rechazado porque ${motivo}`);
     aviso = `\n\nCORRECCION OBLIGATORIA: tu respuesta anterior fue rechazada porque ${motivo}. Reescribila cumpliendo todas las reglas.`;
   }
-  return null;
+  return { texto: null, motivos };
 }
 
 module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar };

@@ -46,9 +46,9 @@ exports.generarInformeIA = functions
         if (req.body?.tipo === 'robos') {
           const keyRobos = functions.config().gemini?.key;
           if (!keyRobos) return res.status(500).json({ error: 'Falta configurar la API key de Gemini en el servidor', tipo: 'robos' });
-          const textoRobos = await redactarRobos({ datos: req.body.datos, apiKey: keyRobos, modelo: MODELO_GEMINI });
-          if (!textoRobos) return res.status(502).json({ error: 'La IA no devolvio un analisis confiable', tipo: 'robos' });
-          return res.status(200).json({ texto: textoRobos, tipo: 'robos', modelo: MODELO_GEMINI });
+          const rr = await redactarRobos({ datos: req.body.datos, apiKey: keyRobos, modelo: MODELO_GEMINI });
+          if (!rr.texto) return res.status(502).json({ error: 'La IA no devolvio un analisis confiable', tipo: 'robos', motivos: rr.motivos });
+          return res.status(200).json({ texto: rr.texto, tipo: 'robos', modelo: MODELO_GEMINI });
         }
 
         const datos = req.body?.datos;
