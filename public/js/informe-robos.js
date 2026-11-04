@@ -37,6 +37,8 @@
     if (!P || !P.obtener) return Promise.reject(new Error('Falta panorama-robos.js (con obtener())'));
     if (!Z || !Z.obtener) return Promise.reject(new Error('Falta zonas-robos.js (con obtener())'));
     return P.obtener().then(function (pan) {
+      var cargaH = (H && H.cargar) ? Promise.resolve().then(function () { return H.cargar(); }).catch(function () { return null; }) : Promise.resolve();
+      return cargaH.then(function () {
       var zon = Z.obtener(), hal = null;
       try { hal = (H && H.resumen) ? H.resumen() : null; } catch (e) { hal = null; }
       var r = pan.r, res = $('robo-resultado-filter');
@@ -62,6 +64,7 @@
       s.zonas.forEach(function (z) { z.tendencia = tendencia(z.serie, zon.ref); });
       s.an = analizar(s);
       return s;
+      });
     });
   }
 
@@ -122,10 +125,13 @@
     var an = s.an, out = [], fr = textoFranja(an), dias = textoDias(an);
     var focos = an.suben.length ? an.suben : s.zonas.slice(0, 2);
     if (focos.length) {
+      var altaFoco = focos.some(function (z) { return prioZona(z) === 'Alta'; });
       out.push({
-        prio: 'Alta', plazo: 'Inmediato',
+        prio: altaFoco ? 'Alta' : 'Media', plazo: altaFoco ? 'Inmediato' : '30 a 60 días',
         accion: 'Patrullaje dirigido en ' + focos.slice(0, 3).map(function (z) { return z.dir; }).join('; ') + (fr ? ', en la franja de ' + fr : ''),
-        porque: an.suben.length ? 'Son las zonas cuya tendencia sube con los filtros actuales.' : 'Son las zonas con más robos del período (no se detectó una zona en suba clara).'
+        porque: an.suben.length ? 'Son las zonas cuya tendencia sube con los filtros actuales.'
+          : (altaFoco ? 'Son las zonas con más robos del período (no se detectó una zona en suba clara).'
+                      : 'Son las zonas con más robos del período; su tendencia viene bajando, por eso se sostiene el patrullaje sin reforzarlo. Conviene confirmar que no se desplaza a otra zona.')
       });
     }
     if (dias) out.push({ prio: 'Alta', plazo: 'Inmediato', accion: 'Reforzar el servicio los ' + dias, porque: 'Concentra una parte mayor a la esperable de los robos con día registrado.' });
@@ -143,15 +149,24 @@
     if (emergentes.length) out.push({ prio: 'Media', plazo: 'Seguimiento mensual', accion: 'Monitorear como foco emergente: ' + emergentes.slice(0, 3).map(function (z) { return z.dir; }).join('; '), porque: 'Subieron, pero con pocos hechos: es una alerta, no una prueba.' });
     if (s.robos.n >= 10 && s.robos.detPct < 5) out.push({ prio: 'Media', plazo: '60 a 90 días', accion: 'Revisar los protocolos de respuesta inmediata ante un aviso de robo', porque: 'Solo ' + coma(s.robos.detPct) + '% de los robos terminó con detención.' });
     if (s.esquinas.length && s.esquinas[0].n >= 3) out.push({ prio: 'Media', plazo: '60 a 90 días', accion: 'Prevención situacional (iluminación, poda, cámaras) en ' + s.esquinas.slice(0, 2).map(function (e) { return e.dir; }).join('; '), porque: 'Son las esquinas con más robos individuales.' });
-    if (an.bajan.length) out.push({ prio: 'Baja', plazo: 'Seguimiento mensual', accion: 'Sostener presencia mínima en ' + an.bajan.slice(0, 2).map(function (z) { return z.dir; }).join('; '), porque: 'La tendencia bajó: conviene confirmar que no se está desplazando a otra zona.' });
-    return out;
+    var bajanRestantes = an.bajan.filter(function (z) { return focos.indexOf(z) < 0; });
+    if (bajanRestantes.length) out.push({ prio: 'Baja', plazo: 'Seguimiento mensual', accion: 'Sostener presencia mínima en ' + bajanRestantes.slice(0, 2).map(function (z) { return z.dir; }).join('; '), porque: 'La tendencia bajó: conviene confirmar que no se está desplazando a otra zona.' });
+    var ordPrio = { Alta: 0, Media: 1, Baja: 2 };
+    return out.sort(function (a, b) { return ordPrio[a.prio] - ordPrio[b.prio]; });
+  }
+
+  /* Una sola regla de prioridad para recomendaciones y plan (antes cada una tenia la suya y se contradecian) */
+  function prioZona(z) {
+    var tp = z.tendencia.tipo;
+    if (tp === 'sube') return 'Alta';
+    if (tp === 'baja') return z.pos <= 2 ? 'Media' : 'Baja';   // mucho volumen pero bajando
+    return z.pos <= 2 ? 'Alta' : 'Media';                      // estable o sin dato
   }
 
   function plan(s) {
     var an = s.an, fr = textoFranja(an), dias = textoDias(an);
     return s.zonas.slice(0, 6).map(function (z) {
-      var t = z.tendencia.tipo, alta = t === 'sube' || z.pos <= 2 && t !== 'baja';
-      var prio = alta ? 'Alta' : (t === 'baja' ? 'Baja' : 'Media');
+      var prio = prioZona(z);
       return {
         zona: z.dir, prio: prio, dias: dias ? dias.replace(/^./, function (c) { return c.toUpperCase(); }) : 'Sin día destacado',
         franja: fr || 'Sin franja destacada', modalidad: prio === 'Alta' ? 'Móvil fijo + recorrida' : (prio === 'Media' ? 'Recorrida periódica' : 'Pasadas puntuales')
@@ -174,13 +189,14 @@
   }
 
   /* ======================= 3. Analisis redactado por IA (opcional) ======================= */
+  function PC(x) { return coma(x) + '%'; }
   function paraIA(s) {
     var an = s.an, hp = s.hallazgosPanorama;
     return {
       filtros: s.filtros,
       robos: {
-        total: s.robos.n, conDetencion: s.robos.det, porcentajeConDetencion: s.robos.detPct,
-        franjaPicoDeAviso: an.franja ? { desdeHora: an.franja.desde, hastaHora: an.franja.hasta, porcentajeDeLosAvisos: Math.round(an.franja.share * 1000) / 10 } : null,
+        total: s.robos.n, conDetencion: s.robos.det, porcentajeConDetencion: PC(s.robos.detPct),
+        franjaPicoDeAviso: an.franja ? { desdeHora: an.franja.desde, hastaHora: an.franja.hasta, porcentajeDeLosAvisos: PC(Math.round(an.franja.share * 1000) / 10) } : null,
         diasPico: an.dias.map(function (i) { return DIA_LARGO[i]; }),
         evolucionMensual: s.robos.mensual
       },
@@ -188,7 +204,7 @@
       esquinasConMasRobos: s.esquinas.slice(0, 5).map(function (e) { return { esquina: e.dir, robos: e.n }; }),
       hallazgosDeVehiculos: { automotor: hp.H, recuperadoPorLPR: hp.L, secuestros: hp.S, total: hp.total, hallazgosCada100Robos: hp.porCien },
       lectoresLPR: {
-        lectoresEnElMapa: s.lpr.lectores, radioMetros: s.lpr.radio, robosConLectorCerca: s.lpr.cubiertos, porcentajeDeRobosConLectorCerca: s.lpr.pct,
+        lectoresEnElMapa: s.lpr.lectores, radioMetros: s.lpr.radio, robosConLectorCerca: s.lpr.cubiertos, porcentajeDeRobosConLectorCerca: PC(s.lpr.pct),
         sitiosCandidatos: s.lpr.sitios.map(function (x) { return { sitio: x.dir, robosQueSumariaDeCobertura: x.n }; })
       },
       coincidenciasRoboHallazgo: s.hallazgosMapa ? an.coinciden.map(function (c) { return { zonaDeRobos: c.robo.dir, zonaDeHallazgos: c.hallazgo.dir }; }) : null,
@@ -292,14 +308,14 @@
       for (i = 0; i < 8; i++) b3.push({ v: r.hora[3 * i] + r.hora[3 * i + 1] + r.hora[3 * i + 2], l: (3 * i) + '-' + (3 * i + 3) });
       titulado(ctx, 'Robos por franja horaria (' + r.conHora + ' con hora registrada)', 34);
       ctx.columnas(b3, { color: C.amber, altura: 34 });
-      ctx.leyenda('Horas del día en bloques de 3 horas. Si los casos se repartieran parejos, cada bloque tendría 12,5%.');
+      ctx.leyenda('Horas del día en bloques de 3 horas. Si los casos se repartieran parejos, cada bloque tendría 12,5%.' + (an.franja ? ' La franja pico se calcula con una ventana móvil de 3 horas, por eso puede no coincidir con una barra.' : ''));
     } else ctx.parrafo('No hay hora registrada en este período (los años anteriores a 2025 no la traen).', { color: C.gray });
     if (r.conDia) {
       titulado(ctx, 'Robos por día de la semana', 34);
       ctx.columnas(r.dia.map(function (v, k) { return { v: v, l: DIA3[k] }; }), { colores: r.dia.map(function (v, k) { return an.dias.indexOf(k) >= 0 ? C.red : C.blue; }), altura: 34 });
     }
     ctx.caja('ok', 'EN PALABRAS SIMPLES', (an.franja ? 'La franja de ' + textoFranja(an) + ' reúne ' + coma(Math.round(an.franja.share * 1000) / 10) + '% de los avisos (con un reparto parejo sería 12,5%). ' : 'Ninguna franja de 3 horas se destaca claramente. ') + (an.dias.length ? 'Los ' + textoDias(an) + ' tienen más robos que el resto.' : 'Ningún día se destaca con claridad.'));
-    ctx.caja('warn', 'OJO CON ESTO', 'Es la hora del aviso, no siempre la del hecho. Entre 18 y 24 h se concentra el ' + coma(an.noche) + '% de los avisos con hora.');
+    ctx.caja('warn', 'OJO CON ESTO', 'Es la hora del aviso, no siempre la del hecho. De 18 a 23 h se concentra el ' + coma(an.noche) + '% de los avisos con hora.');
 
     /* --- 3. donde --- */
     ctx.banner(3, 'Dónde se concentran', 'Zonas de ' + s.filtros.radioZona + ' m y esquinas con más robos');
@@ -325,7 +341,11 @@
     if (s.hallazgosMapa && s.hallazgosMapa.zonas.length) {
       titulado(ctx, 'Zonas con más hallazgos (' + s.hallazgosMapa.radio + ' m) · ' + s.hallazgosMapa.periodo, 30);
       ctx.tabla(['#', 'Zona', 'Hallazgos', 'Composición'], s.hallazgosMapa.zonas.map(function (z, k) { return [k + 1, z.dir, z.n, z.tipos.H + ' automotor, ' + z.tipos.L + ' LPR, ' + z.tipos.S + ' secuestro']; }), [0.06, 0.44, 0.14, 0.36], { negritaPrimera: false });
-    } else ctx.parrafo('El mapa de hallazgos no tiene zonas con 3 casos o más con la selección actual, o la capa no está activa.', { color: C.gray });
+    } else if (!s.hallazgosMapa) {
+      ctx.parrafo('La capa de hallazgos no estaba cargada al generar el informe, por eso faltan las zonas de hallazgos y las coincidencias con robos. Activala en el mapa y volvé a generar.', { color: C.gray });
+    } else {
+      ctx.parrafo('El mapa de hallazgos no tiene zonas con 3 casos o más con la selección actual.', { color: C.gray });
+    }
     if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', an.coinciden.slice(0, 3).map(function (c) { return 'La zona de robos de ' + c.robo.dir + ' coincide con la zona de hallazgos de ' + c.hallazgo.dir + '.'; }).concat('Puede indicar un corredor de paso o descarte; se confirma con trabajo en terreno.'));
     ctx.caja('warn', 'OJO CON ESTO', 'En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo. Un robo y el hallazgo de ese auto no se pueden unir porque los datos no traen patente.');
 

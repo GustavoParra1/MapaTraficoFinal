@@ -70,6 +70,12 @@ REGLAS DE REDACCIÓN ADICIONALES:
 - Escribí SIEMPRE con palabras comunes. Está prohibido nombrar campos internos del JSON (nada como robos.total, franjaPicoDeAviso, zonasConMasRobos, muestraChica) ni frases como "es null" o "es false". Decí, por ejemplo, "el total de robos" o "la franja con más avisos".
 - Usá viñetas "- " en las tres secciones.
 - Cada viñeta de "Qué validar antes de decidir" es una aclaración metodológica breve o un dato faltante; no repitas definiciones ni expliques cómo se calcula cada dato.
+- Escribí con tildes y eñes correctas (detención, vehículos, días, atención). Las siglas van en mayúscula: LPR.
+- Los porcentajes se escriben con coma decimal y el símbolo pegado al número: 19,8%. Nunca escribas la palabra "porcentaje" después de un número.
+- Si hay un solo día pico, escribí "el día con más avisos es el domingo". Usá plural solo si hay varios.
+- No cierres con conclusiones, valoraciones ni recomendaciones propias. Nada de "inmediata", "urgente" o "crítica": las recomendaciones están en otra sección del informe.
+- Sobre el tamaño de la muestra: hablá solo si la muestra es chica. Si no lo es, no digas nada al respecto.
+- Si no se pudo evaluar la coincidencia entre zonas de robos y de hallazgos, escribí una sola viñeta: "No se pudo evaluar si las zonas de robos coinciden con las de hallazgos."
 
 DATOS:
 ${json}
@@ -92,11 +98,29 @@ function cifrasSinRespaldo(texto, datos) {
 
 const CAMPOS_INTERNOS = /\b(robos\.total|porcentajeConDetencion|franjaPicoDeAviso|desdeHora|hastaHora|porcentajeDeLosAvisos|diasPico|evolucionMensual|zonasConMasRobos|esquinasConMasRobos|hallazgosDeVehiculos|hallazgosCada100Robos|lectoresLPR|robosConLectorCerca|porcentajeDeRobosConLectorCerca|sitiosCandidatos|robosQueSumariaDeCobertura|coincidenciasRoboHallazgo|muestraChica|detalleTendencia|senalDebil)\b|\bes\s+(null|false|true)\b/i;
 
+const DIAS_RE = 'lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo';
+
+/* Arregla errores de formato que el modelo copia de los nombres internos del JSON. */
+function pulirTexto(t) {
+  return String(t)
+    .replace(/(\d+(?:[.,]\d+)?)\s+porcentaje\b/gi, '$1%')
+    .replace(/(\d+)\.(\d+)%/g, '$1,$2%')
+    .replace(/\bdetencion\b/g, 'detención').replace(/\bDetencion\b/g, 'Detención')
+    .replace(/\bvehiculos\b/g, 'vehículos').replace(/\bVehiculos\b/g, 'Vehículos')
+    .replace(/\bvehiculo\b/g, 'vehículo').replace(/\bVehiculo\b/g, 'Vehículo')
+    .replace(/\bdias\b/g, 'días').replace(/\bDias\b/g, 'Días')
+    .replace(/\batencion\b/g, 'atención').replace(/\bAtencion\b/g, 'Atención')
+    .replace(/\blpr\b/g, 'LPR')
+    .replace(new RegExp('\\bLos d[ií]as pico son (' + DIAS_RE + ')\\b', 'gi'), (_, d) => 'El día con más avisos es el ' + d.toLowerCase());
+}
+
 /* Devuelve null si el texto es confiable, o el motivo del rechazo. */
 function validar(texto, datos) {
   if (texto.length < 40) return 'es demasiado corta';
   if (!/^## /m.test(texto)) return 'no respeta el formato con subtitulos "## "';
   if (CAMPOS_INTERNOS.test(texto)) return 'muestra nombres internos de los datos (como robos.total o muestraChica) o dice "es null/false"; escribi con palabras comunes';
+  if (/\b(inmediat[ao]s?|urgente|cr[ií]tic[oa]s?|alarmante)\b/i.test(texto)) return 'usa lenguaje de urgencia o juicio que no esta en los datos; no cierres con conclusiones propias';
+  if (/\bno aplica\b/i.test(texto)) return 'incluye relleno ("no aplica"); omiti lo que no corresponde';
   if (datos.coincidenciasRoboHallazgo === null && /no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) return 'afirma que no hay coincidencias cuando no se pudieron evaluar (decir "sin datos")';
   if (/(son|resultan|siendo) v[aá]lidas|(sin|no presenta[n]?) restricciones de tama/i.test(texto)) return 'emite un juicio sobre la validez o el tamano de la muestra';
   const sueltas = cifrasSinRespaldo(texto, datos);
@@ -188,6 +212,7 @@ async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
       m++; await esperar(1000); continue;
     }
     if (!r.texto) { motivos.push(`intento ${intento} (${nombre}): respuesta vacia`); m++; continue; }
+    r.texto = pulirTexto(r.texto);
     const motivo = validar(r.texto, datos);
     if (!motivo) return { texto: r.texto, motivos };
     console.error(`Gemini (robos): intento ${intento} (${nombre}) rechazado: ${motivo}`);
@@ -198,4 +223,4 @@ async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   return { texto: null, motivos };
 }
 
-module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar, descubrirModelos, puntajeModelo };
+module.exports = { pulirTexto, redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar, descubrirModelos, puntajeModelo };
