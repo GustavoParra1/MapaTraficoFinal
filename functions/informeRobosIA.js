@@ -10,9 +10,7 @@
 
 const MAX_JSON = 24000;        // tope de caracteres de datos que se le pasan al modelo
 const MAX_SIN_RESPALDO = 2;    // cifras "sueltas" toleradas antes de descartar la respuesta
-// Si el modelo principal esta saturado (503) o no responde, se prueba con estos, en orden.
-// Si alguno no existe o no esta habilitado para tu clave, simplemente falla y se pasa al siguiente.
-const MODELOS_RESPALDO = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+// Si el modelo principal falla (saturado, no responde), la funcion le pregunta a Google que modelos puede usar esta clave y prueba con ellos.
 const MAX_INTENTOS = 3;          // intentos en total (entre todos los modelos)
 const ESPERA_POR_INTENTO_MS = 25000;  // si un modelo no contesta en este tiempo, se pasa al siguiente
 
@@ -132,20 +130,63 @@ async function pedir(prompt, modelo, apiKey, doFetch) {
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* ---- descubrimiento de modelos disponibles para esta clave ---- */
+const CACHE_MS = 10 * 60 * 1000;
+let cacheModelos = { t: 0, lista: [] };
+
+function puntajeModelo(nombre) {
+  const v = nombre.match(/gemini-(\d+(?:\.\d+)?)/);
+  let p = (v ? parseFloat(v[1]) : 0) * 100;
+  if (/lite/.test(nombre)) p -= 30;          // los "lite" se saturan mas
+  if (/preview|exp/.test(nombre)) p -= 150;  // preferir versiones estables
+  return p;
+}
+
+/* Devuelve nombres de modelos Gemini "flash" aptos para generar texto, de mejor a peor. */
+async function descubrirModelos(apiKey, doFetch) {
+  if (cacheModelos.lista.length && Date.now() - cacheModelos.t < CACHE_MS) return cacheModelos.lista;
+  try {
+    const resp = await doFetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${apiKey}`, {
+      signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(10000) : undefined
+    });
+    const data = await resp.json();
+    if (!resp.ok) { console.error('Gemini (robos): no se pudo listar modelos:', JSON.stringify(data)); return []; }
+    const lista = (data.models || [])
+      .filter((m) => /^models\/gemini-/.test(m.name) && /flash/.test(m.name)
+        && (m.supportedGenerationMethods || []).includes('generateContent')
+        && !/(image|tts|audio|live|embedding|computer|robotics|vision|thinking|learnlm)/.test(m.name))
+      .map((m) => m.name.replace(/^models\//, ''))
+      .sort((a, b) => puntajeModelo(b) - puntajeModelo(a));
+    cacheModelos = { t: Date.now(), lista };
+    return lista;
+  } catch (err) {
+    console.error('Gemini (robos): fallo al listar modelos:', err && err.message);
+    return [];
+  }
+}
+
 /* Devuelve { texto, motivos }. texto es null si no se logra una respuesta confiable;
    motivos explica que paso en cada intento, para mostrarlo en el aviso del informe.
-   - Si un modelo falla por la API (saturado, no existe, no responde) se pasa al siguiente modelo.
+   - Si un modelo falla por la API (saturado, no existe, no responde), se buscan otros modelos habilitados y se pasa al siguiente.
    - Si el modelo responde pero el texto no pasa las validaciones, se reintenta con el mismo modelo (una sola vez). */
 async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   const motivos = [];
   if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return { texto: null, motivos: ['los datos del informe llegaron incompletos'] };
   const doFetch = fetchFn || fetch;
-  const modelos = [modelo].concat(MODELOS_RESPALDO.filter((m) => m !== modelo));
-  let m = 0, aviso = '', rechazos = 0;
+  let modelos = [modelo], descubierto = false, m = 0, aviso = '', rechazos = 0;
   for (let intento = 1; intento <= MAX_INTENTOS && m < modelos.length; intento++) {
     const nombre = modelos[m];
     const r = await pedir(construirPromptRobos(datos) + aviso, nombre, apiKey, doFetch);
-    if (r.error) { motivos.push(`intento ${intento} (${nombre}): ${r.error}`); m++; await esperar(1000); continue; }
+    if (r.error) {
+      motivos.push(`intento ${intento} (${nombre}): ${r.error}`);
+      if (!descubierto) {
+        descubierto = true;
+        const otros = (await descubrirModelos(apiKey, doFetch)).filter((x) => x !== modelo).slice(0, 2);
+        if (otros.length) { modelos = [modelo].concat(otros); motivos.push(`modelos de respaldo habilitados para esta clave: ${otros.join(', ')}`); }
+        else { modelos = [modelo, modelo, modelo]; motivos.push('no se encontraron modelos de respaldo; se reintenta con el principal'); }
+      }
+      m++; await esperar(1000); continue;
+    }
     if (!r.texto) { motivos.push(`intento ${intento} (${nombre}): respuesta vacia`); m++; continue; }
     const motivo = validar(r.texto, datos);
     if (!motivo) return { texto: r.texto, motivos };
@@ -157,4 +198,4 @@ async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   return { texto: null, motivos };
 }
 
-module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar };
+module.exports = { redactarRobos, construirPromptRobos, cifrasSinRespaldo, validar, descubrirModelos, puntajeModelo };
