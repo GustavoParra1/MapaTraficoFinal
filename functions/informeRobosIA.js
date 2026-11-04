@@ -48,6 +48,22 @@ REGLAS OBLIGATORIAS:
 - Si un dato es nulo o falta, decilo: "sin datos".
 - Máximo 350 palabras.
 
+GLOSARIO (qué significa cada dato; no lo confundas):
+- robos.total: cantidad de robos de automotor del período. porcentajeConDetencion: qué parte terminó con detención.
+- robos.franjaPicoDeAviso: franja de 3 horas con más avisos (desdeHora/hastaHora); null = ninguna franja se destaca.
+- zonasConMasRobos: zonas con más robos acumulados. tendencia: "sube", "baja" o "estable"; detalleTendencia explica la comparación.
+- esquinasConMasRobos: esquinas con más ROBOS. No son hallazgos.
+- hallazgosDeVehiculos: autos encontrados (recuperados o secuestrados). No son robos.
+- lectoresLPR.robosConLectorCerca: cantidad de ROBOS que ocurrieron cerca de un lector. No es cantidad de lectores ni de puntos.
+- lectoresLPR.sitiosCandidatos[].robosQueSumariaDeCobertura: robos adicionales que quedarían cubiertos si se instala un lector ahí. No es cantidad de dispositivos.
+- coincidenciasRoboHallazgo: null = NO se pudo evaluar (nunca digas que "no hay coincidencias"); lista vacía = se evaluó y no hay; con elementos = zonas de robos que coinciden con zonas de hallazgos.
+
+REGLAS DE REDACCIÓN ADICIONALES:
+- No juzgues si los datos o las tendencias son "válidos", "suficientes" o "confiables". Sobre el tamaño de la muestra, solo repetí lo que diga muestraChica.
+- No expliques qué es un lector LPR ni otros términos que el equipo ya conoce.
+- En "Qué validar antes de decidir" incluí solo aclaraciones metodológicas y datos faltantes (por ejemplo "sin datos de coincidencias"), no recomendaciones nuevas.
+- Mencioná cada dato con su nombre correcto del glosario.
+
 DATOS:
 ${json}
 `.trim();
@@ -85,6 +101,12 @@ async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   const texto = normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
   if (texto.length < 40) { console.error('Gemini (robos): respuesta vacia o muy corta'); return null; }
   if (!/^## /m.test(texto)) { console.error('Gemini (robos): la respuesta no respeta el formato'); return null; }
+  if (datos.coincidenciasRoboHallazgo === null && /no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) {
+    console.error('Gemini (robos): afirma que no hay coincidencias cuando no se pudo evaluar'); return null;
+  }
+  if (/(son|resultan|siendo) v[aá]lidas|(sin|no presenta[n]?) restricciones de tama/i.test(texto)) {
+    console.error('Gemini (robos): emite un juicio sobre la validez de los datos'); return null;
+  }
   const sueltas = cifrasSinRespaldo(texto, datos);
   if (sueltas.length > MAX_SIN_RESPALDO) {
     console.error('Gemini (robos): respuesta descartada, cifras que no estan en los datos:', sueltas.join(', '));

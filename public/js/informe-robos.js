@@ -174,12 +174,24 @@
 
   /* ======================= 3. Analisis redactado por IA (opcional) ======================= */
   function paraIA(s) {
+    var an = s.an, hp = s.hallazgosPanorama;
     return {
-      filtros: s.filtros, robos: { n: s.robos.n, detenciones: s.robos.det, porcentajeDetencion: s.robos.detPct, horaPicoAviso: s.an.franja ? { desde: s.an.franja.desde, hasta: s.an.franja.hasta, porcentaje: Math.round(s.an.franja.share * 1000) / 10 } : null, diasPico: s.an.dias.map(function (i) { return DIA_LARGO[i]; }), mensual: s.robos.mensual },
-      zonas: s.zonas.map(function (z) { return { dir: z.dir, robos: z.n, tendencia: z.tendencia.tipo, detalle: z.tendencia.texto, senalDebil: z.tendencia.debil }; }),
-      esquinas: s.esquinas.slice(0, 5), hallazgos: s.hallazgosPanorama, lpr: s.lpr,
-      coincidenciasRoboHallazgo: s.an.coinciden.map(function (c) { return { zonaRobo: c.robo.dir, zonaHallazgo: c.hallazgo.dir }; }),
-      muestraChica: s.an.muestraChica
+      filtros: s.filtros,
+      robos: {
+        total: s.robos.n, conDetencion: s.robos.det, porcentajeConDetencion: s.robos.detPct,
+        franjaPicoDeAviso: an.franja ? { desdeHora: an.franja.desde, hastaHora: an.franja.hasta, porcentajeDeLosAvisos: Math.round(an.franja.share * 1000) / 10 } : null,
+        diasPico: an.dias.map(function (i) { return DIA_LARGO[i]; }),
+        evolucionMensual: s.robos.mensual
+      },
+      zonasConMasRobos: s.zonas.map(function (z) { return { zona: z.dir, robos: z.n, tendencia: z.tendencia.tipo, detalleTendencia: z.tendencia.texto, senalDebil: z.tendencia.debil }; }),
+      esquinasConMasRobos: s.esquinas.slice(0, 5).map(function (e) { return { esquina: e.dir, robos: e.n }; }),
+      hallazgosDeVehiculos: { automotor: hp.H, recuperadoPorLPR: hp.L, secuestros: hp.S, total: hp.total, hallazgosCada100Robos: hp.porCien },
+      lectoresLPR: {
+        lectoresEnElMapa: s.lpr.lectores, radioMetros: s.lpr.radio, robosConLectorCerca: s.lpr.cubiertos, porcentajeDeRobosConLectorCerca: s.lpr.pct,
+        sitiosCandidatos: s.lpr.sitios.map(function (x) { return { sitio: x.dir, robosQueSumariaDeCobertura: x.n }; })
+      },
+      coincidenciasRoboHallazgo: s.hallazgosMapa ? an.coinciden.map(function (c) { return { zonaDeRobos: c.robo.dir, zonaDeHallazgos: c.hallazgo.dir }; }) : null,
+      muestraChica: an.muestraChica
     };
   }
 
