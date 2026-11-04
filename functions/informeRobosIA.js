@@ -11,8 +11,11 @@
 const MAX_JSON = 24000;        // tope de caracteres de datos que se le pasan al modelo
 const MAX_SIN_RESPALDO = 2;    // cifras "sueltas" toleradas antes de descartar la respuesta
 // Si el modelo principal falla (saturado, no responde), la funcion le pregunta a Google que modelos puede usar esta clave y prueba con ellos.
-const MAX_INTENTOS = 3;          // intentos en total (entre todos los modelos)
+const MAX_INTENTOS = 6;           // intentos en total (entre todos los modelos)
 const ESPERA_POR_INTENTO_MS = 25000;  // si un modelo no contesta en este tiempo, se pasa al siguiente
+const TIEMPO_TOTAL_MS = 50000;   // tope de tiempo para todo el proceso (la funcion tiene que permitir mas que esto)
+const ESPERAS_ENTRE_FALLOS_MS = [2000, 4000, 7000, 10000];  // pausa creciente cuando Gemini esta saturado
+const CODIGOS_TRANSITORIOS = [429, 500, 502, 503, 504];     // errores que suelen pasar solos
 
 function normalizarEspacios(t) {
   return String(t || '')
@@ -129,26 +132,31 @@ function validar(texto, datos) {
   return null;
 }
 
-async function pedir(prompt, modelo, apiKey, doFetch) {
+async function pedir(prompt, modelo, apiKey, doFetch, timeoutMs) {
+  const espera = timeoutMs || ESPERA_POR_INTENTO_MS;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
   try {
     const resp = await doFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } }),
-      signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ESPERA_POR_INTENTO_MS) : undefined
+      signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(espera) : undefined
     });
     const data = await resp.json();
     if (!resp.ok) {
       console.error('Gemini (robos) devolvio error:', JSON.stringify(data));
       const e = data && data.error ? data.error : {};
-      return { error: `Gemini respondio ${e.code || resp.status} ${e.status || ''} ${String(e.message || '').slice(0, 100)}`.replace(/\s+/g, ' ').trim() };
+      const codigo = Number(e.code || resp.status);
+      return {
+        error: `Gemini respondio ${e.code || resp.status} ${e.status || ''} ${String(e.message || '').slice(0, 100)}`.replace(/\s+/g, ' ').trim(),
+        transitorio: CODIGOS_TRANSITORIOS.indexOf(codigo) >= 0
+      };
     }
     return { texto: normalizarEspacios(data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim() };
   } catch (err) {
     console.error('Gemini (robos) fallo la conexion:', err && err.message);
-    if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) return { error: `no respondio en ${ESPERA_POR_INTENTO_MS / 1000} segundos` };
-    return { error: 'no se pudo conectar con Gemini: ' + (err && err.message ? err.message : err) };
+    if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) return { error: `no respondio en ${Math.round(espera / 1000)} segundos`, transitorio: true };
+    return { error: 'no se pudo conectar con Gemini: ' + (err && err.message ? err.message : err), transitorio: true };
   }
 }
 
@@ -191,27 +199,44 @@ async function descubrirModelos(apiKey, doFetch) {
 
 /* Devuelve { texto, motivos }. texto es null si no se logra una respuesta confiable;
    motivos explica que paso en cada intento, para mostrarlo en el aviso del informe.
-   - Si un modelo falla por la API (saturado, no existe, no responde), se buscan otros modelos habilitados y se pasa al siguiente.
-   - Si el modelo responde pero el texto no pasa las validaciones, se reintenta con el mismo modelo (una sola vez). */
+   - Si Gemini falla por saturacion o conexion (503, 429, timeout...), se espera un poco y se prueba con el
+     siguiente modelo habilitado, dando la vuelta a la lista las veces que haga falta hasta agotar los intentos
+     o el tiempo total.
+   - Si un modelo no existe o la clave no lo permite (404, 400, 403), se lo saca de la lista.
+   - Si el modelo responde pero el texto no pasa las validaciones, se reintenta una sola vez. */
 async function redactarRobos({ datos, apiKey, modelo, fetchFn }) {
   const motivos = [];
   if (!datos || typeof datos !== 'object' || !datos.robos || !datos.filtros) return { texto: null, motivos: ['los datos del informe llegaron incompletos'] };
   const doFetch = fetchFn || fetch;
-  let modelos = [modelo], descubierto = false, m = 0, aviso = '', rechazos = 0;
-  for (let intento = 1; intento <= MAX_INTENTOS && m < modelos.length; intento++) {
-    const nombre = modelos[m];
-    const r = await pedir(construirPromptRobos(datos) + aviso, nombre, apiKey, doFetch);
+  const inicio = Date.now();
+  const restante = () => TIEMPO_TOTAL_MS - (Date.now() - inicio);
+  let modelos = [modelo], descubierto = false, m = 0, aviso = '', rechazos = 0, fallosApi = 0;
+  for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+    if (restante() < 4000) { motivos.push('se agoto el tiempo disponible'); break; }
+    const pos = m % modelos.length;
+    const nombre = modelos[pos];
+    const r = await pedir(construirPromptRobos(datos) + aviso, nombre, apiKey, doFetch, Math.min(ESPERA_POR_INTENTO_MS, restante() - 1000));
     if (r.error) {
       motivos.push(`intento ${intento} (${nombre}): ${r.error}`);
       if (!descubierto) {
         descubierto = true;
-        const otros = (await descubrirModelos(apiKey, doFetch)).filter((x) => x !== modelo).slice(0, 2);
+        const otros = (await descubrirModelos(apiKey, doFetch)).filter((x) => x !== modelo).slice(0, 3);
         if (otros.length) { modelos = [modelo].concat(otros); motivos.push(`modelos de respaldo habilitados para esta clave: ${otros.join(', ')}`); }
-        else { modelos = [modelo, modelo, modelo]; motivos.push('no se encontraron modelos de respaldo; se reintenta con el principal'); }
+        else motivos.push('no se encontraron modelos de respaldo; se reintenta con el principal');
       }
-      m++; await esperar(1000); continue;
+      if (r.transitorio) {
+        m = pos + 1;
+      } else {
+        modelos.splice(pos, 1);              // modelo que no existe o no esta permitido: se descarta
+        if (!modelos.length) break;
+        m = pos;
+      }
+      const pausa = ESPERAS_ENTRE_FALLOS_MS[Math.min(fallosApi, ESPERAS_ENTRE_FALLOS_MS.length - 1)];
+      fallosApi++;
+      if (restante() > pausa + 4000) await esperar(pausa);
+      continue;
     }
-    if (!r.texto) { motivos.push(`intento ${intento} (${nombre}): respuesta vacia`); m++; continue; }
+    if (!r.texto) { motivos.push(`intento ${intento} (${nombre}): respuesta vacia`); m = pos + 1; continue; }
     r.texto = pulirTexto(r.texto);
     const motivo = validar(r.texto, datos);
     if (!motivo) return { texto: r.texto, motivos };
