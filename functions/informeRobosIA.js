@@ -72,6 +72,8 @@ REGLAS DE REDACCIÓN ADICIONALES:
 - El GLOSARIO es solo para vos: no lo copies ni lo parafrasees en la respuesta.
 - Escribí SIEMPRE con palabras comunes. Está prohibido nombrar campos internos del JSON (nada como robos.total, franjaPicoDeAviso, zonasConMasRobos, muestraChica) ni frases como "es null" o "es false". Decí, por ejemplo, "el total de robos" o "la franja con más avisos".
 - Usá viñetas "- " en las tres secciones.
+- Los hallazgos son tres categorías separadas (automotor, recuperadoPorLPR, secuestros): da cada una con su propia cifra y nunca las sumes ni las mezcles.
+- Si coincidenciasRoboHallazgo trae elementos, nombrá esas zonas. Solo decí que no se pudo evaluar cuando el dato es null.
 - Cada viñeta de "Qué validar antes de decidir" es una aclaración metodológica breve o un dato faltante; no repitas definiciones ni expliques cómo se calcula cada dato.
 - Escribí con tildes y eñes correctas (detención, vehículos, días, atención). Las siglas van en mayúscula: LPR.
 - Los porcentajes se escriben con coma decimal y el símbolo pegado al número: 19,8%. Nunca escribas la palabra "porcentaje" después de un número.
@@ -117,6 +119,25 @@ function pulirTexto(t) {
     .replace(new RegExp('\\bLos d[ií]as pico son (' + DIAS_RE + ')\\b', 'gi'), (_, d) => 'El día con más avisos es el ' + d.toLowerCase());
 }
 
+/* Si el texto da una cifra para una categoria de hallazgo (automotor, secuestros, recuperados por LPR) distinta de la real, devuelve el motivo. */
+function categoriasHallazgoIncorrectas(texto, datos) {
+  const h = datos && datos.hallazgosDeVehiculos;
+  if (!h) return null;
+  const pruebas = [
+    { re: /(\d+)\s+(?:hallazgos?\s+(?:de\s+)?)?(?:veh[ií]culos?\s+)?automotor(?:es)?\b/gi, esperado: h.automotor, nombre: 'hallazgos automotor' },
+    { re: /(\d+)\s+(?:hallazgos?\s+(?:de\s+)?)?secuestros?\b/gi, esperado: h.secuestros, nombre: 'secuestros' },
+    { re: /(\d+)\s+(?:hallazgos?\s+)?recuperad[oa]s?\s+(?:por|mediante)\s+(?:lectura\s+de\s+patente|LPR|lector)/gi, esperado: h.recuperadoPorLPR, nombre: 'recuperados por LPR' }
+  ];
+  for (const p of pruebas) {
+    if (p.esperado == null) continue;
+    let m;
+    while ((m = p.re.exec(texto)) !== null) {
+      if (Number(m[1]) !== Number(p.esperado)) return `dice ${m[1]} ${p.nombre} pero el dato correcto es ${p.esperado}; no sumes ni mezcles las categorias de hallazgos`;
+    }
+  }
+  return null;
+}
+
 /* Devuelve null si el texto es confiable, o el motivo del rechazo. */
 function validar(texto, datos) {
   if (texto.length < 40) return 'es demasiado corta';
@@ -126,6 +147,11 @@ function validar(texto, datos) {
   if (/\bno aplica\b/i.test(texto)) return 'incluye relleno ("no aplica"); omiti lo que no corresponde';
   if (datos.coincidenciasRoboHallazgo === null && /no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) return 'afirma que no hay coincidencias cuando no se pudieron evaluar (decir "sin datos")';
   if (/(son|resultan|siendo) v[aá]lidas|(sin|no presenta[n]?) restricciones de tama/i.test(texto)) return 'emite un juicio sobre la validez o el tamano de la muestra';
+  const coin = datos.coincidenciasRoboHallazgo;
+  if (Array.isArray(coin) && coin.length > 0 && /no se pudo evaluar[^.\n]*coincid|no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) return 'dice que no hay coincidencias o que no se pudieron evaluar, pero los datos traen coincidencias entre zonas de robos y de hallazgos';
+  if (Array.isArray(coin) && coin.length === 0 && /no se pudo evaluar[^.\n]*coincid/i.test(texto)) return 'dice que no se pudo evaluar la coincidencia, pero se evaluo y no hay coincidencias';
+  const catMal = categoriasHallazgoIncorrectas(texto, datos);
+  if (catMal) return catMal;
   const sueltas = cifrasSinRespaldo(texto, datos);
   if (sueltas.length > MAX_SIN_RESPALDO) return 'incluye cifras que no estan en los datos: ' + sueltas.join(', ');
   if (sueltas.length) console.warn('Gemini (robos): cifras sin respaldo toleradas:', sueltas.join(', '));
