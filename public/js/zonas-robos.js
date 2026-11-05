@@ -382,9 +382,14 @@
     var pts = puntos(datosActuales), zs = calcular(pts, radio), base = null, ref = null, general = null;
     try { base = baseEvolucion(); ref = base && base.length ? referencia(base) : null; } catch (e) { base = null; ref = null; }
     if (ref) { general = serie(base, ref, null, 0); zs.forEach(function (z) { z.serie = serie(base, ref, z, radio); }); }
-    var porEsquina = {};
-    pts.forEach(function (p) { if (p.dir) porEsquina[p.dir] = (porEsquina[p.dir] || 0) + 1; });
-    var esquinas = Object.keys(porEsquina).map(function (k) { return { dir: k, n: porEsquina[k] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 10);
+    /* Igual que el Top 10 del mapa (script.js): se agrupa por coordenadas exactas y se muestra la direccion del primer registro de cada punto */
+    var porPunto = {}, ordenPuntos = [];
+    pts.forEach(function (p) {
+      var k = p.lat + ',' + p.lon;
+      if (!porPunto[k]) { porPunto[k] = { dir: p.dir || 'Dirección no especificada', n: 0 }; ordenPuntos.push(k); }
+      porPunto[k].n++;
+    });
+    var esquinas = ordenPuntos.map(function (k) { return porPunto[k]; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 10);
     var etiquetas = []; if (ref) for (var i = 0; i < 12; i++) etiquetas.push(corto(ref.k - 11 + i));
     var hoy = new Date();
     return {
