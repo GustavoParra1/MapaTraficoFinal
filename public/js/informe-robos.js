@@ -44,6 +44,7 @@
       var r = pan.r, res = $('robo-resultado-filter');
       var s = {
         generado: new Date().toISOString(),
+        comisarias: (hal && hal.comisarias) ? hal.comisarias : (window.CIMUJurisdicciones ? window.CIMUJurisdicciones.nombres() : []),   // fuera de "filtros" para no cambiar lo que recibe la IA
         filtros: {
           texto: pan.periodo.texto, anio: pan.periodo.anio || '', mes: pan.periodo.mes || 0,
           resultado: res && res.value ? res.value : 'Todos los Resultados',
@@ -255,7 +256,7 @@
     var pdf = new jsPDF('p', 'mm', 'a4');
     var ctx = X.crear(pdf, { titulo: 'CIMU · Informe de robo automotor' });
     var an = s.an, r = s.robos, fecha = new Date(s.generado).toLocaleString('es-AR', { dateStyle: 'long', timeStyle: 'short' });
-    var filtrosTxt = s.filtros.texto + (s.filtros.resultado !== 'Todos los Resultados' ? ' · Resultado: ' + s.filtros.resultado : '') + (s.filtros.barrios.length ? ' · Barrio: ' + (s.filtros.barrios.length <= 3 ? s.filtros.barrios.join(', ') : s.filtros.barrios.length + ' barrios') : '');
+    var filtrosTxt = s.filtros.texto + (s.filtros.resultado !== 'Todos los Resultados' ? ' · Resultado: ' + s.filtros.resultado : '') + (s.filtros.barrios.length ? ' · Barrio: ' + (s.filtros.barrios.length <= 3 ? s.filtros.barrios.join(', ') : s.filtros.barrios.length + ' barrios') : '') + (s.comisarias && s.comisarias.length ? ' · ' + (s.comisarias.length <= 3 ? s.comisarias.join(', ') : s.comisarias.length + ' comisarías') : '');
 
     /* --- portada --- */
     ctx.setF(C.navy); pdf.rect(0, 0, ctx.pageW, 118, 'F');

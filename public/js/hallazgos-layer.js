@@ -48,7 +48,17 @@
       .map(function (o) { return o.value; })
       .filter(function (v) { return v && v !== 'all'; });
   }
-  function firmaBarrio() { return barriosSeleccionados().slice().sort().join('|'); }
+  /* La firma incluye la comisaria elegida (js/jurisdicciones-filtro.js): si cambia solo la comisaria, tambien se recalcula */
+  function firmaBarrio() {
+    var c = window.CIMUJurisdicciones ? window.CIMUJurisdicciones.firma() : '';
+    return barriosSeleccionados().slice().sort().join('|') + (c ? '#' + c : '');
+  }
+  function textoUbicacion() {
+    var nb = barriosSeleccionados(), nc = window.CIMUJurisdicciones ? window.CIMUJurisdicciones.nombres() : [], p = [];
+    if (nb.length) p.push(nb.length <= 2 ? nb.join(' y ') : nb.length + ' barrios');
+    if (nc.length) p.push(nc.length <= 2 ? nc.join(' y ') : nc.length + ' comisarías');
+    return p.length ? ' (' + p.join(', ') + ')' : '';
+  }
 
   function aplicarBarrio() {
     if (!datos) return;
@@ -248,9 +258,7 @@
     aplicarBarrio();
     actualizarConteos();
     var lista = filtrados();
-    var nb = barriosSeleccionados();
-    $('hallayer-info').textContent = lista.length + (lista.length === 1 ? ' hallazgo' : ' hallazgos') + ' en el mapa' +
-      (nb.length ? ' (' + (nb.length <= 2 ? nb.join(' y ') : nb.length + ' barrios') + ')' : '') +
+    $('hallayer-info').textContent = lista.length + (lista.length === 1 ? ' hallazgo' : ' hallazgos') + ' en el mapa' + textoUbicacion() +
       (excluidos ? '. ' + excluidos + ' con ubicación a revisar no se muestran.' : '');
     capa.clearLayers();
     var marcadores = lista.map(function (d) {
@@ -667,7 +675,8 @@
     var a = $('hallayer-anio').value, m = $('hallayer-mes').value;
     var h = '<h3>Con tu selección actual</h3>' +
       '<p><b>Período:</b> ' + esc(etiquetaPeriodo()) +
-      (nb.length ? '<br><b>Barrio:</b> ' + esc(nb.length <= 3 ? nb.join(', ') : nb.length + ' barrios') : '') + '</p>';
+      (nb.length ? '<br><b>Barrio:</b> ' + esc(nb.length <= 3 ? nb.join(', ') : nb.length + ' barrios') : '') +
+      ((window.CIMUJurisdicciones && window.CIMUJurisdicciones.nombres().length) ? '<br><b>Comisaría:</b> ' + esc(window.CIMUJurisdicciones.nombres().join(', ')) : '') + '</p>';
 
     if (!claves.length) {
       h += '<p>No hay ningún tipo tildado. Tildá al menos uno para ver cantidades.</p>';
@@ -946,7 +955,7 @@
       lista.forEach(function (d) { c[d._tipo]++; });
       var radio = parseInt(($('hallayer-cal-radio') || {}).value, 10) || 500, zonas = [];
       try { zonas = calcularZonasCalientes(lista, radio).slice(0, 5).map(function (z) { return { lat: z.lat, lon: z.lon, n: z.n, dir: z.dir, tipos: z.tipos }; }); } catch (e) { zonas = []; }
-      return { periodo: etiquetaPeriodo(), barrios: barriosSeleccionados(), c: c, total: lista.length, excluidos: excluidos, radio: radio, zonas: zonas,
+      return { periodo: etiquetaPeriodo(), barrios: barriosSeleccionados(), comisarias: window.CIMUJurisdicciones ? window.CIMUJurisdicciones.nombres() : [], c: c, total: lista.length, excluidos: excluidos, radio: radio, zonas: zonas,
                tipos: Object.keys(TIPOS).filter(function (k) { return tiposActivos.has(k); }) };
     }
   };

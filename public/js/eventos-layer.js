@@ -48,7 +48,17 @@
       .map(function (o) { return o.value; })
       .filter(function (v) { return v && v !== 'all'; });
   }
-  function firmaBarrio() { return barriosSeleccionados().slice().sort().join('|'); }
+  /* La firma incluye la comisaria elegida (js/jurisdicciones-filtro.js): si cambia solo la comisaria, tambien se recalcula */
+  function firmaBarrio() {
+    var c = window.CIMUJurisdicciones ? window.CIMUJurisdicciones.firma() : '';
+    return barriosSeleccionados().slice().sort().join('|') + (c ? '#' + c : '');
+  }
+  function textoUbicacion() {
+    var nb = barriosSeleccionados(), nc = window.CIMUJurisdicciones ? window.CIMUJurisdicciones.nombres() : [], p = [];
+    if (nb.length) p.push(nb.length <= 2 ? nb.join(' y ') : nb.length + ' barrios');
+    if (nc.length) p.push(nc.length <= 2 ? nc.join(' y ') : nc.length + ' comisarías');
+    return p.length ? ' (' + p.join(', ') + ')' : '';
+  }
 
   /* Marca cada evento con _enBarrio (true/false) segun la seleccion actual.
      Solo se recalcula cuando cambia la seleccion de barrios (no con cada filtro de año/mes/tipo). */
@@ -246,9 +256,7 @@
     });
     capa.addLayers(marcadores);
     if (calor) calor.setLatLngs(lista.map(function (d) { return [d._lat, d._lon]; }));
-    var nb = barriosSeleccionados();
-    $('evtlayer-info').textContent = lista.length + (lista.length === 1 ? ' evento' : ' eventos') + ' en el mapa' +
-      (nb.length ? ' (' + (nb.length <= 2 ? nb.join(' y ') : nb.length + ' barrios') + ')' : '');
+    $('evtlayer-info').textContent = lista.length + (lista.length === 1 ? ' evento' : ' eventos') + ' en el mapa' + textoUbicacion();
   }
 
   /* ---------- activar / desactivar ---------- */
