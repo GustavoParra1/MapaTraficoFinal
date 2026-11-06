@@ -122,12 +122,25 @@
     return an;
   }
 
+  /* [{ robo: zona, hallazgos: [zonas de hallazgos] }] sin repetir la zona de robos */
+  function coincidenciasAgrupadas(an) {
+    var grupos = [];
+    an.coinciden.forEach(function (c) {
+      var g = grupos.filter(function (x) { return x.robo === c.robo; })[0];
+      if (!g) { g = { robo: c.robo, hallazgos: [] }; grupos.push(g); }
+      if (g.hallazgos.filter(function (h) { return h.dir === c.hallazgo.dir; }).length === 0) g.hallazgos.push(c.hallazgo);
+    });
+    return grupos;
+  }
+  function unir(a) { return a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1]; }
+
   function textoFranja(an) { return an.franja ? an.franja.desde + ' a ' + an.franja.hasta + ' h' : null; }
   function textoDias(an) { return an.dias.length ? an.dias.map(function (i) { return DIA_PLURAL[i]; }).join(' y ') : null; }
 
   function recomendaciones(s) {
     var an = s.an, out = [], fr = textoFranja(an), dias = textoDias(an);
-    var focos = an.suben.length ? an.suben : s.zonas.slice(0, 2);
+    var subenFirmes = an.suben.filter(function (z) { return !z.tendencia.debil; });
+    var focos = subenFirmes.length ? subenFirmes : (an.suben.length ? an.suben : s.zonas.slice(0, 2));   // las de senal debil van aparte, como "foco emergente"
     if (focos.length) {
       var altaFoco = focos.some(function (z) { return prioZona(z) === 'Alta'; });
       out.push({
@@ -156,8 +169,8 @@
         porque: 'Solo ' + coma(s.lpr.pct) + '% de los robos ocurrió a ' + s.lpr.radio + ' m o menos de un lector; el primer sitio sumaría ' + s.lpr.sitios[0].n + ' robos de cobertura.'
       });
     }
-    an.coinciden.slice(0, 2).forEach(function (c) {
-      out.push({ prio: 'Media', plazo: '30 a 60 días', accion: 'Evaluar controles móviles de vehículos en el corredor ' + c.robo.dir, porque: 'La zona de robos coincide con una zona de hallazgos (' + c.hallazgo.dir + '): puede ser una ruta de paso o descarte.' });
+    coincidenciasAgrupadas(an).slice(0, 2).forEach(function (g) {
+      out.push({ prio: 'Media', plazo: '30 a 60 días', accion: 'Evaluar controles móviles de vehículos en el corredor ' + g.robo.dir, porque: 'La zona de robos coincide con ' + (g.hallazgos.length === 1 ? 'una zona de hallazgos' : g.hallazgos.length + ' zonas de hallazgos') + ' (' + unir(g.hallazgos.map(function (h) { return h.dir; })) + '): puede ser una ruta de paso o descarte.' });
     });
     var emergentes = an.suben.filter(function (z) { return z.tendencia.debil; });
     if (emergentes.length) out.push({ prio: 'Media', plazo: 'Seguimiento mensual', accion: 'Monitorear como foco emergente: ' + emergentes.slice(0, 3).map(function (z) { return z.dir; }).join('; '), porque: 'Subieron, pero con pocos hechos: es una alerta, no una prueba.' });
@@ -172,7 +185,7 @@
   /* Una sola regla de prioridad para recomendaciones y plan (antes cada una tenia la suya y se contradecian) */
   function prioZona(z) {
     var tp = z.tendencia.tipo;
-    if (tp === 'sube') return 'Alta';
+    if (tp === 'sube') return z.tendencia.debil ? 'Media' : 'Alta';   // suba con pocos hechos = alerta, no prioridad alta
     if (tp === 'baja') return z.pos <= 2 ? 'Media' : 'Baja';   // mucho volumen pero bajando
     return z.pos <= 2 ? 'Alta' : 'Media';                      // estable o sin dato
   }
@@ -222,7 +235,7 @@
       robos: {
         total: s.robos.n, conDetencion: s.robos.det, porcentajeConDetencion: PC(s.robos.detPct),
         franjaPicoDeAviso: an.franja ? { desdeHora: an.franja.desde, hastaHora: an.franja.hasta, porcentajeDeLosAvisos: PC(Math.round(an.franja.share * 1000) / 10) } : null,
-        diasPico: an.dias.map(function (i) { return DIA_LARGO[i]; }),
+        diasPico: an.dias.length ? an.dias.map(function (i) { return DIA_LARGO[i]; }) : ['ninguno se destaca (reparto parejo)'],
         evolucionMensual: s.robos.mensual
       },
       zonasConMasRobos: s.zonas.map(function (z) { return { zona: z.dir, robos: z.n, tendencia: z.tendencia.tipo, detalleTendencia: z.tendencia.texto, senalDebil: z.tendencia.debil }; }),
@@ -233,6 +246,7 @@
         sitiosCandidatos: s.lpr.sitios.map(function (x) { return { sitio: x.dir, robosQueSumariaDeCobertura: x.n }; })
       },
       coincidenciasRoboHallazgo: s.hallazgosMapa ? an.coinciden.map(function (c) { return { zonaDeRobos: c.robo.dir, zonaDeHallazgos: c.hallazgo.dir }; }) : null,
+      zonasDeRobosQueCoincidenConHallazgos: s.hallazgosMapa ? coincidenciasAgrupadas(an).map(function (g) { return g.robo.dir; }) : null,
       muestraChica: an.muestraChica
     };
   }
@@ -312,7 +326,8 @@
     ctx.puntoClave(n++, 'Dónde', donde, C.blue);
     ctx.puntoClave(n++, 'Tecnología', 'Cobertura LPR de ' + coma(s.lpr.pct) + '% (' + s.lpr.lectores + ' lectores).' + (s.lpr.sitios.length ? ' Primer sitio candidato: ' + s.lpr.sitios[0].dir + ' (+' + s.lpr.sitios[0].n + ' robos).' : ''), C.purple);
     var recs = recomendaciones(s);
-    ctx.puntoClave(n++, 'Qué hacer primero', recs.length ? recs[0].accion + '.' : 'Con esta selección hay pocos datos para recomendar acciones.', C.green);
+    var primeras = recs.filter(function (x) { return x.prio === 'Alta'; }).slice(0, 2);
+    ctx.puntoClave(n++, 'Qué hacer primero', recs.length ? (primeras.length ? primeras : [recs[0]]).map(function (x) { return x.accion + '.'; }).join(' ') : 'Con esta selección hay pocos datos para recomendar acciones.', C.green);
 
     ctx.nuevaPagina(); ctx.st.y = ctx.BOT;     // pagina reservada para el indice
 
@@ -372,7 +387,7 @@
     } else {
       ctx.parrafo('El mapa de hallazgos no tiene zonas con 3 casos o más con la selección actual.', { color: C.gray });
     }
-    if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', an.coinciden.slice(0, 3).map(function (c) { return 'La zona de robos de ' + c.robo.dir + ' coincide con la zona de hallazgos de ' + c.hallazgo.dir + '.'; }).concat('Puede indicar un corredor de paso o descarte; se confirma con trabajo en terreno.'));
+    if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', coincidenciasAgrupadas(an).slice(0, 3).map(function (g) { return 'La zona de robos de ' + g.robo.dir + ' coincide con ' + (g.hallazgos.length === 1 ? 'la zona de hallazgos de ' : 'las zonas de hallazgos de ') + unir(g.hallazgos.map(function (h) { return h.dir; })) + '.'; }).concat('Una coincidencia significa que los círculos se tocan o se superponen; puede indicar un corredor de paso o descarte y se confirma con trabajo en terreno.'));
     ctx.caja('warn', 'OJO CON ESTO', 'En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo. Un robo y el hallazgo de ese auto no se pueden unir porque los datos no traen patente.');
 
     /* --- 5. LPR --- */
@@ -466,7 +481,7 @@
   }
 
   function iniciar() { crearBoton(); }
-  window.CIMUInformeRobos = { pedirIA: pedirIA, reunir: reunir, armarPDF: armarPDF, recomendaciones: recomendaciones, plan: plan, limitaciones: limitaciones, tendencia: tendencia, analizar: analizar, paraIA: paraIA, consigna: CONSIGNA_IA };
+  window.CIMUInformeRobos = { coincidenciasAgrupadas: coincidenciasAgrupadas, pedirIA: pedirIA, reunir: reunir, armarPDF: armarPDF, recomendaciones: recomendaciones, plan: plan, limitaciones: limitaciones, tendencia: tendencia, analizar: analizar, paraIA: paraIA, consigna: CONSIGNA_IA };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
     window.addEventListener('load', crearBoton);
