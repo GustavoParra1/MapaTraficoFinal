@@ -715,7 +715,7 @@
     var rp = robos.filter(function (d) { return (a === 'all' || d['año'] === a) && (m === 'all' || d['mes'] === m); });
     var conHora = rp.filter(function (d) { return d._h >= 0; });
     var noche = conHora.filter(function (d) { return d._h >= 18; }).length;
-    var txtRobos = '<b>Robos del mismo período:</b> ' + rp.length + ' registros' + (nb.length ? ' (de toda la ciudad, no se filtran por barrio)' : '') + '.';
+    var txtRobos = '<b>Robos del mismo período:</b> ' + rp.length + ' registros' + ((nb.length || (window.CIMUJurisdicciones && window.CIMUJurisdicciones.nombres().length)) ? ' (de toda la ciudad, no se filtran por barrio ni por comisaría)' : '') + '.';
     if (conHora.length) {
       txtRobos += ' El ' + Math.round(noche * 100 / conHora.length) + '% se avisa entre las 18 y las 24 h (' + noche + ' de ' + conHora.length + ' con hora).';
     }

@@ -275,10 +275,43 @@
   }
 
   /* ======================= 4. PDF (usa PdfX de index.html) ======================= */
+  /* html2canvas dibuja mal las capas vectoriales de Leaflet (circulos de zona, limite de comisaria, rutas): el <svg> trae su
+     posicion en style="transform: translate3d(x, y, 0)" (x e y negativos: Leaflet lo agranda un 10% por lado) y en la captura
+     queda en 0,0, corrido respecto de mosaicos y marcadores. En la copia que se captura, cada <svg> se reemplaza por una <img>
+     (data URL) con esa misma posicion en left/top, que html2canvas dibuja bien. Los <canvas> solo cambian transform por left/top. */
+  function acomodarCapasSVG(doc) {
+    var capas = doc.querySelectorAll('.leaflet-overlay-pane svg, .leaflet-overlay-pane canvas, .leaflet-shadow-pane svg');
+    Array.prototype.forEach.call(capas, function (el) {
+      var t = /translate(?:3d)?\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px/.exec(el.style.transform || '');
+      var x = t ? parseFloat(t[1]) : 0, y = t ? parseFloat(t[2]) : 0;
+      if (String(el.tagName).toLowerCase() !== 'svg') {
+        if (!t) return;
+        el.style.transform = 'none'; el.style.left = x + 'px'; el.style.top = y + 'px';
+        return;
+      }
+      try {
+        var w = parseFloat(el.getAttribute('width')) || el.clientWidth, h = parseFloat(el.getAttribute('height')) || el.clientHeight;
+        if (!w || !h) throw new Error('svg sin tamano');
+        var xml = new XMLSerializer().serializeToString(el);
+        var img = doc.createElement('img');
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+        img.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;max-width:none;transform:none;pointer-events:none;';
+        el.parentNode.replaceChild(img, el);
+      } catch (e) {
+        console.warn('Informe de robos: no se pudo convertir una capa vectorial', e);
+        el.style.transform = 'none'; el.style.left = x + 'px'; el.style.top = y + 'px';
+      }
+    });
+  }
+
   function capturarMapa() {
     return Promise.resolve().then(function () {
       var m = window.mymap; if (!m || !window.html2canvas) return null;
-      return window.html2canvas(m.getContainer(), { scale: 1, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(function (cv) {
+      return window.html2canvas(m.getContainer(), {
+        scale: 1, useCORS: true, backgroundColor: '#ffffff', logging: false,
+        ignoreElements: function (el) { return !!(el.classList && el.classList.contains('leaflet-control-zoom')); },
+        onclone: acomodarCapasSVG
+      }).then(function (cv) {
         cv.toDataURL('image/jpeg', 0.5);       // si el lienzo quedo "contaminado" por mosaicos sin CORS, esto falla y se omite el mapa
         return cv;
       });
