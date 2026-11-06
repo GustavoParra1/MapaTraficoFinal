@@ -62,7 +62,10 @@ GLOSARIO (qué significa cada dato; no lo confundas):
 - hallazgosDeVehiculos: autos encontrados (recuperados o secuestrados). No son robos.
 - lectoresLPR.robosConLectorCerca: cantidad de ROBOS que ocurrieron cerca de un lector. No es cantidad de lectores ni de puntos.
 - lectoresLPR.sitiosCandidatos[].robosQueSumariaDeCobertura: robos adicionales que quedarían cubiertos si se instala un lector ahí. No es cantidad de dispositivos.
-- coincidenciasRoboHallazgo: null = NO se pudo evaluar (nunca digas que "no hay coincidencias"); lista vacía = se evaluó y no hay; con elementos = zonas de robos que coinciden con zonas de hallazgos.
+- coincidenciasRoboHallazgo: null = NO se pudo evaluar (nunca digas que "no hay coincidencias"); lista vacía = se evaluó y no hay; con elementos = pares (zonaDeRobos, zonaDeHallazgos) que coinciden.
+- zonasDeRobosQueCoincidenConHallazgos: la lista COMPLETA y EXACTA de zonas de robos que coinciden con zonas de hallazgos. Nombrá solo esas; cualquier otra zona de robos NO coincide, aunque figure en zonasConMasRobos.
+- diasPico: si trae "ninguno se destaca (reparto parejo)", escribí "Ningún día se destaca: el reparto es parejo."
+- lectoresLPR.porcentajeDeRobosConLectorCerca: porcentaje del TOTAL de robos. Escribilo así: "el 3% de los robos ocurrió a 300 metros o menos de un lector". No escribas "3% de los robos con lector cerca".
 
 REGLAS DE REDACCIÓN ADICIONALES:
 - No juzgues si los datos o las tendencias son "válidos", "suficientes" o "confiables". Sobre el tamaño de la muestra, solo repetí lo que diga muestraChica.
@@ -80,6 +83,10 @@ REGLAS DE REDACCIÓN ADICIONALES:
 - Si hay un solo día pico, escribí "el día con más avisos es el domingo". Usá plural solo si hay varios.
 - No cierres con conclusiones, valoraciones ni recomendaciones propias. Nada de "inmediata", "urgente" o "crítica": las recomendaciones están en otra sección del informe.
 - Sobre el tamaño de la muestra: hablá solo si la muestra es chica. Si no lo es, no digas nada al respecto.
+- Si hay coincidencias, escribí una viñeta por cada zona de robos de zonasDeRobosQueCoincidenConHallazgos, con las zonas de hallazgos con las que coincide (según coincidenciasRoboHallazgo). No nombres ninguna otra zona como coincidente.
+- Los hallazgos traen su total (total) y los hallazgos cada 100 robos (hallazgosCada100Robos) ya calculados: podés citarlos tal cual. No escribas advertencias del tipo "no deben sumarse".
+- La respuesta NO debe explicar qué significa cada dato (por ejemplo "indica la cantidad de hechos, no la cantidad de dispositivos"): eso es solo para vos.
+- La línea "> " no debe repetir lo que ya dice una viñeta; si no agrega nada nuevo, no la escribas.
 - Si no se pudo evaluar la coincidencia entre zonas de robos y de hallazgos, escribí una sola viñeta: "No se pudo evaluar si las zonas de robos coinciden con las de hallazgos."
 
 DATOS:
@@ -105,9 +112,37 @@ const CAMPOS_INTERNOS = /\b(robos\.total|porcentajeConDetencion|franjaPicoDeAvis
 
 const DIAS_RE = 'lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo';
 
+const PALABRAS_VACIAS = /^(la|el|los|las|una|un|de|del|que|por|con|y|es|en|se|su|al|lo)$/;
+function palabrasClave(s) {
+  return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length > 3 && !PALABRAS_VACIAS.test(w));
+}
+
+/* Quita lo que el modelo copia del glosario (definiciones y advertencias que no son datos) y la linea "> " que repite una vineta. */
+function quitarRelleno(texto) {
+  const FILTRAR = /no (?:deben|se deben|se pueden) sumarse|categor[ií]as separadas|no la cantidad de dispositivos|no es la cantidad de dispositivos/i;
+  let lineas = String(texto).split('\n').filter((l) => !(/^\s*- /.test(l) && FILTRAR.test(l)));
+  const vinetas = lineas.filter((l) => /^\s*- /.test(l)).map(palabrasClave);
+  lineas = lineas.filter((l) => {
+    if (!/^\s*> /.test(l)) return true;
+    const w = palabrasClave(l.replace(/^\s*> /, ''));
+    if (!w.length) return true;
+    return !vinetas.some((v) => w.filter((x) => v.indexOf(x) >= 0).length / w.length >= 0.6);   // repite una viñeta
+  });
+  // Si "Qué validar antes de decidir" quedó sin viñetas, se deja una aclaración real y neutra
+  const i = lineas.findIndex((l) => /^## Qu[eé] validar antes de decidir/i.test(l));
+  if (i >= 0) {
+    const resto = lineas.slice(i + 1);
+    const sig = resto.findIndex((l) => /^## /.test(l));
+    const cuerpo = sig >= 0 ? resto.slice(0, sig) : resto;
+    if (!cuerpo.some((l) => /^\s*- /.test(l))) lineas.splice(i + 1, 0, '- La hora es la del aviso, no necesariamente la del hecho.');
+  }
+  return lineas.join('\n');
+}
+
 /* Arregla errores de formato que el modelo copia de los nombres internos del JSON. */
 function pulirTexto(t) {
-  return String(t)
+  return quitarRelleno(String(t)
+    .replace(/(\d+(?:[.,]\d+)?)%\s+de\s+los\s+robos\s+con\s+lector\s+cerca/gi, '$1% de los robos'))
     .replace(/(\d+(?:[.,]\d+)?)\s+porcentaje\b/gi, '$1%')
     .replace(/(\d+)\.(\d+)%/g, '$1,$2%')
     .replace(/\bdetencion\b/g, 'detención').replace(/\bDetencion\b/g, 'Detención')
@@ -138,6 +173,23 @@ function categoriasHallazgoIncorrectas(texto, datos) {
   return null;
 }
 
+/* Si el texto dice que una zona de robos coincide con hallazgos, esa zona debe estar en la lista real de coincidencias. */
+function normZona(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); }
+function zonasCoincidentesFalsas(texto, datos) {
+  const coin = datos.coincidenciasRoboHallazgo;
+  if (!Array.isArray(coin) || !Array.isArray(datos.zonasConMasRobos)) return null;
+  const reales = new Set(coin.map((c) => normZona(c.zonaDeRobos)));
+  const lineas = String(texto).split('\n').filter((l) => /coincid/i.test(l));
+  if (!lineas.length) return null;
+  const noCoinciden = datos.zonasConMasRobos.map((z) => normZona(z.zona)).filter((z) => z && !reales.has(z));
+  for (const l of lineas) {
+    const n = normZona(l);
+    const mala = noCoinciden.find((z) => n.indexOf(z) >= 0);
+    if (mala) return 'dice que la zona "' + mala + '" coincide con hallazgos, pero no esta en la lista de coincidencias; nombra solo las de zonasDeRobosQueCoincidenConHallazgos';
+  }
+  return null;
+}
+
 /* Devuelve null si el texto es confiable, o el motivo del rechazo. */
 function validar(texto, datos) {
   if (texto.length < 40) return 'es demasiado corta';
@@ -150,6 +202,8 @@ function validar(texto, datos) {
   const coin = datos.coincidenciasRoboHallazgo;
   if (Array.isArray(coin) && coin.length > 0 && /no se pudo evaluar[^.\n]*coincid|no (existen|hay|se registran) coincidencias|sin coincidencias/i.test(texto)) return 'dice que no hay coincidencias o que no se pudieron evaluar, pero los datos traen coincidencias entre zonas de robos y de hallazgos';
   if (Array.isArray(coin) && coin.length === 0 && /no se pudo evaluar[^.\n]*coincid/i.test(texto)) return 'dice que no se pudo evaluar la coincidencia, pero se evaluo y no hay coincidencias';
+  const falsa = zonasCoincidentesFalsas(texto, datos);
+  if (falsa) return falsa;
   const catMal = categoriasHallazgoIncorrectas(texto, datos);
   if (catMal) return catMal;
   const sueltas = cifrasSinRespaldo(texto, datos);

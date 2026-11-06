@@ -387,7 +387,7 @@
     } else {
       ctx.parrafo('El mapa de hallazgos no tiene zonas con 3 casos o más con la selección actual.', { color: C.gray });
     }
-    if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', coincidenciasAgrupadas(an).slice(0, 3).map(function (g) { return 'La zona de robos de ' + g.robo.dir + ' coincide con ' + (g.hallazgos.length === 1 ? 'la zona de hallazgos de ' : 'las zonas de hallazgos de ') + unir(g.hallazgos.map(function (h) { return h.dir; })) + '.'; }).concat('Una coincidencia significa que los círculos se tocan o se superponen; puede indicar un corredor de paso o descarte y se confirma con trabajo en terreno.'));
+    if (an.coinciden.length) ctx.caja('info', 'COINCIDENCIAS ENTRE ROBOS Y HALLAZGOS', coincidenciasAgrupadas(an).slice(0, 5).map(function (g) { return 'La zona de robos de ' + g.robo.dir + ' coincide con ' + (g.hallazgos.length === 1 ? 'la zona de hallazgos de ' : 'las zonas de hallazgos de ') + unir(g.hallazgos.map(function (h) { return h.dir; })) + '.'; }).concat('Una coincidencia significa que los círculos se tocan o se superponen; puede indicar un corredor de paso o descarte y se confirma con trabajo en terreno.'));
     ctx.caja('warn', 'OJO CON ESTO', 'En los hallazgos, la dirección puede ser el lugar del robo o el del hallazgo. Un robo y el hallazgo de ese auto no se pueden unir porque los datos no traen patente.');
 
     /* --- 5. LPR --- */
