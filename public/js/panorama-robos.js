@@ -61,7 +61,15 @@
   }
 
   /* ---------- calculo (funcion pura, sin DOM) ---------- */
-  function calcular(robosRaw, hall, lect, anio, mes, rad, K) {
+  /* Barrio y/o comisaria elegidos (la misma "feature" que usan todas las capas), o null si no hay ninguno */
+  function featSeleccion() {
+    try { return (typeof getSelectedBarrioFeatureCombinada === 'function') ? getSelectedBarrioFeatureCombinada() : null; } catch (e) { return null; }
+  }
+  function dentroDe(x, feat) {
+    try { return isLatLngInMultiPolygon(L.latLng(x.lat, x.lon), feat.geometry.coordinates); } catch (e) { return true; }
+  }
+
+  function calcular(robosRaw, hall, lect, anio, mes, rad, K, feat) {
     var robos = [];
     robosRaw.forEach(function (it) {
       var p = coords(it['Longitud y Latitud']); if (!p) return;
@@ -69,7 +77,7 @@
       var h = parseInt(String(it.hora || '').split(':')[0], 10), d = DIAS.indexOf(norm(it.dia_semana));
       robos.push({ lat: p.lat, lon: p.lon, dir: it['Direccion 0'] || '', h: isNaN(h) ? -1 : h, d: d, r: norm(it.Resultado) });
     });
-    var hs = hall.filter(function (x) { return (!anio || x.anio === String(anio)) && (!mes || x.mes === mes); });
+    var hs = hall.filter(function (x) { return (!anio || x.anio === String(anio)) && (!mes || x.mes === mes) && (!feat || !feat.geometry || dentroDe(x, feat)); });
     var out = { n: robos.length, det: 0, H: 0, L: 0, S: 0, hora: new Array(24).fill(0), conHora: 0, dia: new Array(7).fill(0), conDia: 0, cubiertos: 0, sitios: [], lectores: lect.length };
     hs.forEach(function (x) { out[x.t]++; });
     robos.forEach(function (r) {
@@ -175,7 +183,7 @@
     $('panorama-robos-cuerpo').innerHTML = hallazgos && lectores ? '' : '<p>Cargando datos…</p>';
     cargar().then(function () {
       var p = periodo();
-      ultimo = calcular(robosEntrada, hallazgos, lectores, p.anio, p.mes, radio, 8);
+      ultimo = calcular(robosEntrada, hallazgos, lectores, p.anio, p.mes, radio, 8, featSeleccion());
       if (cb.checked) { dibujar(ultimo, p, radio); capaMapa(); }
     }).catch(function () { $('panorama-robos-cuerpo').innerHTML = '<p>No pude leer los CSV de datos.</p>'; });
   }
@@ -210,7 +218,7 @@
     obtener: function () {
       return cargar().then(function () {
         var p = periodo();
-        return { r: calcular(robosEntrada, hallazgos, lectores, p.anio, p.mes, radio, 8), periodo: p, radio: radio, lectores: lectores.length };
+        return { r: calcular(robosEntrada, hallazgos, lectores, p.anio, p.mes, radio, 8, featSeleccion()), periodo: p, radio: radio, lectores: lectores.length };
       });
     }
   };

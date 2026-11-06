@@ -22,6 +22,9 @@
     'No inventes ni calcules cifras nuevas, no menciones barrios ni calles que no estén en los datos. ' +
     'Si una tendencia se apoya en menos de 8 hechos, llamala "alerta" y no "prueba". ' +
     'Recordá que la hora es la del aviso, que el cruce robos/hallazgos es por zona y no por patente, y que los sitios LPR son candidatos a validar en terreno. ' +
+    'Si "diasPico" está vacío, significa que ningún día se destaca (reparto parejo): decilo así y NO digas que faltan datos. ' +
+    'Los porcentajes de cobertura LPR son porcentajes de los robos (por ejemplo "el 3% de los robos"): no uses la expresión "robos con lector cerca" dos veces en la misma frase. ' +
+    'No repitas la misma frase en más de un lugar. Todas las cifras, incluidos los hallazgos, corresponden a la misma selección (barrio o comisaría) que el resto del informe. ' +
     'Formato: "## " para subtítulos, "- " para viñetas, "> " para una advertencia. Secciones: Lectura general, Qué priorizar, Qué validar antes de decidir. Máximo 350 palabras.';
 
   function $(id) { return document.getElementById(id); }
@@ -52,7 +55,7 @@
         },
         robos: {
           n: r.n, det: r.det, detPct: pct(r.det, r.n), hora: r.hora, conHora: r.conHora, dia: r.dia, conDia: r.conDia,
-          mensual: zon.general ? { valores: zon.general, etiquetas: zon.ref.etiquetas, referencia: zon.ref.etiqueta, anterior: zon.ref.mesAnterior, elegido: zon.ref.elegido, enCurso: zon.ref.enCurso } : null
+          mensual: zon.general ? { k: zon.ref.k, valores: zon.general, etiquetas: zon.ref.etiquetas, referencia: zon.ref.etiqueta, anterior: zon.ref.mesAnterior, elegido: zon.ref.elegido, enCurso: zon.ref.enCurso } : null
         },
         zonas: zon.zonas.map(function (z, i) { return { pos: i + 1, dir: z.dir, n: z.n, lat: z.lat, lon: z.lon, res: (z.res || []).slice(0, 2), serie: z.serie }; }),
         zonasMin: zon.calMin,
@@ -135,6 +138,16 @@
                       : 'Son las zonas con más robos del período; su tendencia viene bajando, por eso se sostiene el patrullaje sin reforzarlo. Conviene confirmar que no se desplaza a otra zona.')
       });
     }
+    // Las zonas con mas volumen no deben quedar afuera solo porque su tendencia es estable
+    var grandes = s.zonas.slice(0, 2).filter(function (z) { return focos.indexOf(z) < 0 && prioZona(z) === 'Alta'; });
+    if (grandes.length) {
+      var nG = suma(grandes.map(function (z) { return z.n; }));
+      out.push({
+        prio: 'Alta', plazo: 'Inmediato',
+        accion: 'Sostener el patrullaje en las zonas con más robos: ' + grandes.map(function (z) { return z.dir; }).join('; ') + (fr ? ', en la franja de ' + fr : ''),
+        porque: 'Concentran ' + nG + ' de ' + s.robos.n + ' robos (' + coma(pct(nG, s.robos.n)) + '%). Su tendencia es estable, pero un volumen alto sostenido sigue siendo prioridad.'
+      });
+    }
     if (dias) out.push({ prio: 'Alta', plazo: 'Inmediato', accion: 'Reforzar el servicio los ' + dias, porque: 'Concentra una parte mayor a la esperable de los robos con día registrado.' });
     if (an.lprBaja && s.lpr.sitios.length) {
       out.push({
@@ -148,7 +161,7 @@
     });
     var emergentes = an.suben.filter(function (z) { return z.tendencia.debil; });
     if (emergentes.length) out.push({ prio: 'Media', plazo: 'Seguimiento mensual', accion: 'Monitorear como foco emergente: ' + emergentes.slice(0, 3).map(function (z) { return z.dir; }).join('; '), porque: 'Subieron, pero con pocos hechos: es una alerta, no una prueba.' });
-    if (s.robos.n >= 10 && s.robos.detPct < 5) out.push({ prio: 'Media', plazo: '60 a 90 días', accion: 'Revisar los protocolos de respuesta inmediata ante un aviso de robo', porque: 'Solo ' + coma(s.robos.detPct) + '% de los robos terminó con detención.' });
+    if (s.robos.n >= 10 && s.robos.detPct < 5) out.push({ prio: 'Media', plazo: '60 a 90 días', accion: 'Revisar los protocolos de respuesta inmediata ante un aviso de robo', porque: 'Solo ' + coma(s.robos.detPct) + '% de los robos terminó con detención. Antes de decidir, confirmar con quien carga los datos qué significa "Asiste Policía y Libera" (suele ser el resultado más frecuente): si es el cierre del aviso y no una liberación, esta cifra no mide la respuesta policial.' });
     if (s.esquinas.length && s.esquinas[0].n >= 3) out.push({ prio: 'Media', plazo: '60 a 90 días', accion: 'Prevención situacional (iluminación, poda, cámaras) en ' + s.esquinas.slice(0, 2).map(function (e) { return e.dir; }).join('; '), porque: 'Son las esquinas con más robos individuales.' });
     var bajanRestantes = an.bajan.filter(function (z) { return focos.indexOf(z) < 0; });
     if (bajanRestantes.length) out.push({ prio: 'Baja', plazo: 'Seguimiento mensual', accion: 'Sostener presencia mínima en ' + bajanRestantes.slice(0, 2).map(function (z) { return z.dir; }).join('; '), porque: 'La tendencia bajó: conviene confirmar que no se está desplazando a otra zona.' });
@@ -175,6 +188,14 @@
     });
   }
 
+  /* true si el ultimo mes con datos es anterior al mes pasado (el informe no refleja lo mas reciente) */
+  function datosAtrasados(s) {
+    var m = s.robos.mensual;
+    if (!m || m.elegido || typeof m.k !== 'number') return false;
+    var hoy = new Date();
+    return (hoy.getFullYear() * 12 + hoy.getMonth()) - m.k >= 2;
+  }
+
   function limitaciones(s) {
     var an = s.an, l = [];
     l.push('Los CSV no tienen patente: el cruce robos/hallazgos es por zona, no por vehículo. "Hallazgos cada 100 robos" no es una tasa de recupero.');
@@ -183,7 +204,10 @@
     l.push('Los puntos son eventos de monitoreo tipificados como robo automotor, no robos confirmados.');
     if (an.muestraChica) l.push('Con ' + s.robos.n + ' robos la muestra es chica: una diferencia de 2 o 3 hechos mueve mucho los porcentajes. Las tendencias son alertas, no pruebas.');
     if (s.robos.mensual && s.robos.mensual.enCurso) l.push('El último mes es el mes en curso y puede estar incompleto.');
-    if (s.hallazgosMapa) l.push('Los hallazgos del mapa usan su propio filtro de año y mes y ' + (s.hallazgosMapa.barrios.length ? 'el barrio elegido' : 'todo el mapa') + '; el panorama de robos cuenta hallazgos por período, sin filtrar por barrio. Por eso las cifras de ambos pueden diferir.');
+    var ubic = (s.hallazgosMapa && s.hallazgosMapa.barrios.length) || (s.comisarias && s.comisarias.length);
+    l.push('Los hallazgos del panorama siguen el año y mes de Robo Automotor; las zonas de hallazgos usan el filtro de año y mes de la capa de hallazgos. ' + (ubic ? 'Ambos respetan el barrio o la comisaría elegidos.' : 'Sin barrio ni comisaría elegidos, se cuenta toda la ciudad.') + ' Por eso las cifras pueden diferir.');
+    if (s.comisarias && s.comisarias.length) l.push('La comisaría se asigna por la ubicación del robo dentro de su límite: los robos ubicados justo sobre un borde o fuera de toda jurisdicción pueden quedar sin comisaría, o figurar en dos.');
+    if (datosAtrasados(s)) l.push('El último mes con datos es ' + s.robos.mensual.referencia + ': el informe no incluye los meses siguientes, así que no refleja lo más reciente.');
     if (s.hallazgosMapa && s.hallazgosMapa.excluidos) l.push(s.hallazgosMapa.excluidos + ' hallazgos tienen la ubicación a revisar y no se cuentan en las zonas.');
     l.push('Los sitios sugeridos para lectores LPR son candidatos: hay que validar calles, accesos, energía, conectividad y ángulo de captura.');
     return l;
@@ -300,6 +324,7 @@
       ctx.columnas(r.mensual.valores.map(function (v, i) { return { v: v, l: r.mensual.etiquetas[i].replace(' ', ' ') }; }), { colores: r.mensual.valores.map(function (v, i) { return i === 11 ? C.red : C.pale; }), altura: 36 });
       ctx.leyenda('La barra roja es ' + (r.mensual.elegido ? 'el mes elegido' : 'el último mes con datos') + '. Se cuentan los robos con ubicación y con el filtro de resultado, sin importar el año elegido.' + (r.mensual.enCurso ? ' Es el mes en curso: puede estar incompleto.' : ''));
     }
+    if (datosAtrasados(s)) ctx.caja('warn', 'DATOS AL DÍA', 'El último mes con datos es ' + r.mensual.referencia + '. El informe no incluye los meses siguientes, por eso una baja o suba del último mes puede no reflejar la situación actual.');
     ctx.caja('ok', 'EN PALABRAS SIMPLES', r.n + ' ' + pl(r.n, 'robo', 'robos') + ' en el período, con ' + r.det + ' ' + pl(r.det, 'detención', 'detenciones') + ' (' + coma(r.detPct) + '%).' + (an.muestraChica ? ' Son pocos casos: conviene mirar la evolución en períodos más largos.' : ''));
 
     /* --- 2. cuando --- */

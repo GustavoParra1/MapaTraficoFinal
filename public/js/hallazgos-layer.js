@@ -951,6 +951,7 @@
     /* Lo usa informe-robos.js: lo que se ve en el mapa de hallazgos con la seleccion actual (null si la capa no esta lista) */
     resumen: function () {
       if (!datos || !tiposActivos || !$('hallayer-anio')) return null;
+      aplicarBarrio();   // marca cada hallazgo segun el barrio/comisaria elegidos, aunque la capa de hallazgos no este tildada
       var lista = filtrados(), c = { H: 0, L: 0, S: 0 };
       lista.forEach(function (d) { c[d._tipo]++; });
       var radio = parseInt(($('hallayer-cal-radio') || {}).value, 10) || 500, zonas = [];
